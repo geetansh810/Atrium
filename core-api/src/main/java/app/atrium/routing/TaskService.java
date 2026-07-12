@@ -1,0 +1,225 @@
+package app.atrium.routing;
+
+import app.atrium.common.FieldValidationException;
+import app.atrium.common.KeysetCursors;
+import app.atrium.common.NotFoundException;
+import app.atrium.common.TenantContext;
+import app.atrium.registry.AgentDirectory;
+import app.atrium.routing.api.TaskDtos.CreateTaskRequest;
+import app.atrium.routing.api.TaskDtos.SubtaskCreate;
+import app.atrium.routing.api.TaskDtos.TaskListQuery;
+import app.atrium.routing.domain.Subtask;
+import app.atrium.routing.domain.SubtaskRepository;
+import app.atrium.routing.domain.Task;
+import app.atrium.routing.domain.TaskEvent;
+import app.atrium.routing.domain.TaskEventRepository;
+import app.atrium.routing.domain.TaskRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Task lifecycle owner (05 §routing). Queue reads are always company-scoped;
+ * every state change goes through TaskEventRecorder in the same transaction.
+ * No LLM calls, no provider names, no role-specific branching — ever.
+ */
+@Service
+public class TaskService {
+
+    private static final Set<String> STATUSES = Set.of("queued", "claimed", "in_progress",
+            "flagged", "pending_review", "approved", "rejected", "cancelled");
+    private static final Set<String> VIEWS = Set.of("my", "assigned", "completed");
+
+    private final TaskRepository tasks;
+    private final SubtaskRepository subtasks;
+    private final TaskEventRepository taskEvents;
+    private final AgentDirectory agentDirectory;
+    private final TaskEventRecorder recorder;
+    private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
+
+    public TaskService(TaskRepository tasks, SubtaskRepository subtasks,
+                       TaskEventRepository taskEvents, AgentDirectory agentDirectory,
+                       TaskEventRecorder recorder, ObjectMapper objectMapper,
+                       EntityManager entityManager) {
+        this.tasks = tasks;
+        this.subtasks = subtasks;
+        this.taskEvents = taskEvents;
+        this.agentDirectory = agentDirectory;
+        this.recorder = recorder;
+        this.objectMapper = objectMapper;
+        this.entityManager = entityManager;
+    }
+
+    /** One page of tasks plus the subtasks of the page's members. */
+    public record TaskPage(List<Task> tasks, String nextCursor) {}
+
+    public record TaskDetail(Task task, List<Subtask> subtasks) {}
+
+    public record EventPage(List<TaskEvent> events, String nextCursor) {}
+
+    @Transactional
+    public TaskDetail create(UUID companyId, CreateTaskRequest request) {
+        // Roles are data: the skill must exist on the roster, not in a switch (05 §routing).
+        if (agentDirectory.findBySkill(companyId, request.requiredSkill()).isEmpty()) {
+            throw new FieldValidationException(Map.of("requiredSkill",
+                    "no agent in this company has skill '" + request.requiredSkill() + "'"));
+        }
+
+        UUID billingTaskId = null;
+        int requestDepth = 0;
+        if (request.parentTaskId() != null) {
+            Task parent = tasks.findByIdAndCompanyId(request.parentTaskId(), companyId)
+                    .orElseThrow(() -> NotFoundException.of("Parent task", request.parentTaskId()));
+            billingTaskId = parent.getBillingTaskId() != null
+                    ? parent.getBillingTaskId() : parent.getId();
+            requestDepth = parent.getRequestDepth() + 1;
+        }
+
+        Task task = new Task(companyId, request.parentTaskId(), request.requiredSkill(),
+                request.title(), request.description(),
+                request.priority() != null ? request.priority() : 3,
+                request.etaMinutes(), TenantContext.userId().orElse(null),
+                billingTaskId, requestDepth);
+        tasks.save(task);
+        if (task.getBillingTaskId() == null) {
+            task.billToSelf();      // root of a request chain bills to itself (15 §1)
+        }
+
+        List<SubtaskCreate> requestedSubtasks =
+                request.subtasks() != null ? request.subtasks() : List.of();
+        List<Subtask> created = new ArrayList<>(requestedSubtasks.size());
+        for (int i = 0; i < requestedSubtasks.size(); i++) {
+            created.add(subtasks.save(new Subtask(task.getId(), requestedSubtasks.get(i).label(), i)));
+        }
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("title", task.getTitle());
+        payload.put("requiredSkill", task.getRequiredSkill());
+        payload.put("priority", task.getPriority());
+        if (task.getParentTaskId() != null) {
+            payload.put("parentTaskId", task.getParentTaskId().toString());
+        }
+        recorder.record(task, "created", actor(), payload);
+
+        return new TaskDetail(task, created);
+    }
+
+    @Transactional(readOnly = true)
+    public TaskPage list(UUID companyId, TaskListQuery query) {
+        int limit = clampLimit(query.limit());
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM tasks WHERE company_id = :companyId");
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("companyId", companyId);
+
+        if (query.status() != null) {
+            if (!STATUSES.contains(query.status())) {
+                throw new FieldValidationException(Map.of("status", "must be one of " + STATUSES));
+            }
+            sql.append(" AND status = :status");
+            params.put("status", query.status());
+        }
+        if (query.skill() != null) {
+            sql.append(" AND required_skill = :skill");
+            params.put("skill", query.skill());
+        }
+        if (query.agentId() != null) {
+            sql.append(" AND assigned_agent_id = :agentId");
+            params.put("agentId", query.agentId());
+        }
+        if (query.view() != null) {
+            appendViewClause(sql, params, query.view());
+        }
+        if (query.cursor() != null) {
+            KeysetCursors.Position position = KeysetCursors.decode(query.cursor());
+            sql.append(" AND (created_at, id) < (:cursorCreatedAt, :cursorId)");
+            params.put("cursorCreatedAt", position.createdAt());
+            params.put("cursorId", position.id());
+        }
+        sql.append(" ORDER BY created_at DESC, id DESC");
+
+        Query nativeQuery = entityManager.createNativeQuery(sql.toString(), Task.class);
+        params.forEach(nativeQuery::setParameter);
+        nativeQuery.setMaxResults(limit + 1);
+
+        @SuppressWarnings("unchecked")
+        List<Task> page = nativeQuery.getResultList();
+        String nextCursor = null;
+        if (page.size() > limit) {
+            page = page.subList(0, limit);
+            Task last = page.get(limit - 1);
+            nextCursor = KeysetCursors.encode(last.getCreatedAt(), last.getId());
+        }
+        return new TaskPage(page, nextCursor);
+    }
+
+    @Transactional(readOnly = true)
+    public TaskDetail get(UUID companyId, UUID taskId) {
+        Task task = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+        return new TaskDetail(task, subtasks.findByTaskScoped(taskId, companyId));
+    }
+
+    @Transactional(readOnly = true)
+    public EventPage events(UUID companyId, UUID taskId, Integer limit, String cursor) {
+        tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+
+        int pageSize = clampLimit(limit);
+        KeysetCursors.Position after = cursor != null
+                ? KeysetCursors.decode(cursor)
+                : new KeysetCursors.Position(Instant.EPOCH, new UUID(0, 0));
+        List<TaskEvent> page = taskEvents.findPageAfter(taskId, companyId,
+                after.createdAt(), after.id(), PageRequest.of(0, pageSize + 1));
+
+        String nextCursor = null;
+        if (page.size() > pageSize) {
+            page = page.subList(0, pageSize);
+            TaskEvent last = page.get(pageSize - 1);
+            nextCursor = KeysetCursors.encode(last.getCreatedAt(), last.getId());
+        }
+        return new EventPage(page, nextCursor);
+    }
+
+    private void appendViewClause(StringBuilder sql, Map<String, Object> params, String view) {
+        if (!VIEWS.contains(view)) {
+            throw new FieldValidationException(Map.of("view", "must be one of " + VIEWS));
+        }
+        switch (view) {
+            case "my" -> {
+                UUID userId = TenantContext.userId().orElseThrow(() -> new FieldValidationException(
+                        Map.of("view", "view=my requires the X-User-Id header")));
+                sql.append(" AND created_by_user_id = :viewUserId");
+                params.put("viewUserId", userId);
+            }
+            case "assigned" -> sql.append(" AND assigned_agent_id IS NOT NULL");
+            // "completed" tab = shipped work; approval is the only ship gate (07)
+            case "completed" -> sql.append(" AND status = 'approved'");
+            default -> throw new IllegalStateException("unreachable");
+        }
+    }
+
+    private int clampLimit(Integer limit) {
+        if (limit == null) return 50;
+        if (limit < 1 || limit > 200) {
+            throw new FieldValidationException(Map.of("limit", "must be between 1 and 200"));
+        }
+        return limit;
+    }
+
+    private String actor() {
+        return TenantContext.userId().map(id -> "user:" + id).orElse("system");
+    }
+}

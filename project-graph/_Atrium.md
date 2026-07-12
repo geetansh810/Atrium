@@ -7,14 +7,14 @@ Multi-tenant SaaS: companies hire AI agents as employees — roles, skills, hier
 ## Services
 - [[web-dashboard]] — React dashboard (BUILT, mock data)
 - [[web-office]] — future SkyOffice Phaser client (NOT STARTED, fork only)
-- [[core-api]] — Spring Boot source of truth (REGISTRY LIVE — M0.1+M0.2 done: scaffold, migrations V1/V2/V2_1, full registry module)
+- [[core-api]] — Spring Boot source of truth (TASK WRITER LIVE — M0.1–M0.3 done: scaffold, migrations, registry, routing writer + outbox)
 - [[office-realtime]] — Colyseus presence server (NOT STARTED, fork only)
 
 ## core-api modules
 [[registry]] · [[routing]] · [[execution]] · [[accountability]] · [[realtimebridge]]
 
 ## Cross-cutting
-- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (SPEC'D, docs 12–17)
+- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (OUTBOX WRITER LIVE at M0.3; rest spec'd, docs 12–17)
 - [[data-model]] — Postgres schema, the contract everything mirrors
 - [[realtime-events]] — Redis pub/sub bridge, core-api → office
 - [[milestones]] — 26-milestone plan + what's actually done

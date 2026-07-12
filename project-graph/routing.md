@@ -2,7 +2,7 @@
 
 **What:** [[core-api]] module owning tasks, subtasks, skill queues, claim/lease, and the task state machine (`queued → claimed → in_progress → pending_review → approved|rejected`, + `flagged`, `cancelled`).
 
-**State: NOT STARTED.** Milestones M0.3 (create/list/get/events), M0.4 (claim loop & lease), M0.6 (approve/reject), M2.2 (dependencies + flow graph) — M0.3/M0.4 cards amended in `atrium-docs/17-backend-execution-plan.md`.
+**State: WRITER LIVE (M0.3 done, 2026-07-13 session 6).** Built: Task/Subtask/TaskEvent entities+repos (company-scoped; subtasks scoped via task join), `TaskStateGuard` (matrix in `routing/domain`, sole owner of the package-private status setter; illegal move → 409), `TaskEventRecorder` (task_events + outbox in ONE `MANDATORY`-propagation helper), create/list/get/events endpoints with keyset pagination envelope (`KeysetCursors`/`PageEnvelope` in common), skill validated via AgentDirectory, billing_task_id root=self/parent-copy + request_depth. Remaining: M0.4 (claim loop & lease), M0.6 (approve/reject), M2.2 (dependencies + flow graph) — M0.4 card amended in `atrium-docs/17-backend-execution-plan.md`.
 
 **Rev C additions ([[agent-platform]]):** claim query gains `attempt = attempt + 1` + paused-agent guard (17 §M0.4 supersedes 03's SQL); every state change also writes `outbox_events` in-tx via `TaskEventRecorder`; tasks carry `billing_task_id`/`request_depth`; M2.2 fan-out is exact-once via `task_decompositions` fingerprint; claim 409 = never retry.
 
