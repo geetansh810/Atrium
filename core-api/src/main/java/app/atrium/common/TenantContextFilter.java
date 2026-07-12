@@ -27,7 +27,10 @@ public class TenantContextFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String companyHeader = request.getHeader(COMPANY_HEADER);
         String userHeader = request.getHeader(USER_HEADER);
-        boolean tenantRequired = request.getRequestURI().startsWith("/api/");
+        // POST /api/v1/companies is the bootstrap call — no tenant exists yet
+        boolean companyCreation = "POST".equals(request.getMethod())
+                && "/api/v1/companies".equals(request.getRequestURI());
+        boolean tenantRequired = request.getRequestURI().startsWith("/api/") && !companyCreation;
 
         UUID companyId;
         UUID userId;

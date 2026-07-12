@@ -33,6 +33,15 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(FieldValidationException.class)
+    public ProblemDetail onFieldValidation(FieldValidationException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Request failed validation");
+        problem.setTitle("Validation failed");
+        problem.setProperty("fieldErrors", e.getFieldErrors());
+        return problem;
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail onConstraintViolation(ConstraintViolationException e) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());

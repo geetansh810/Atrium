@@ -20,9 +20,10 @@ class CompanySmokeTest extends IntegrationTestBase {
 
     @Test
     void bothMigrationsApplyOnPgvector() {
-        Integer applied = jdbc.queryForObject(
-                "SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class);
-        assertThat(applied).isEqualTo(2);
+        Integer coreAndPlatform = jdbc.queryForObject(
+                "SELECT count(*) FROM flyway_schema_history WHERE success AND version IN ('1','2')",
+                Integer.class);
+        assertThat(coreAndPlatform).isEqualTo(2);
 
         Integer vector = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_extension WHERE extname = 'vector'", Integer.class);
