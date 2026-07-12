@@ -1,0 +1,10 @@
+.office-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.office-canvas canvas {
+  display: block;
+}

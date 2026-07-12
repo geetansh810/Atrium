@@ -1,0 +1,58 @@
+{
+  "templates": [
+    {
+      "key": "research-specialist",
+      "title": "Research Specialist",
+      "description": "Web research, data gathering, market intelligence.",
+      "skillTags": ["Web Search", "Data Extraction", "Summarization", "Analysis"],
+      "modelProvider": "anthropic",
+      "modelName": "claude-sonnet-5",
+      "defaultBudgetTokens": 2000000
+    },
+    {
+      "key": "data-analyst",
+      "title": "Data Analyst",
+      "description": "Turns raw datasets into decision-ready analysis.",
+      "skillTags": ["Data Analysis", "Reporting", "SQL"],
+      "modelProvider": "openai",
+      "modelName": "gpt-5",
+      "defaultBudgetTokens": 2000000
+    },
+    {
+      "key": "software-engineer",
+      "title": "Software Engineer",
+      "description": "Builds and reviews code changes end to end.",
+      "skillTags": ["Coding", "Code Review", "Testing"],
+      "modelProvider": "anthropic",
+      "modelName": "claude-sonnet-5",
+      "defaultBudgetTokens": 2500000
+    },
+    {
+      "key": "correspondence-agent",
+      "title": "Correspondence Agent",
+      "description": "Email triage and drafted responses for review.",
+      "skillTags": ["Email Triage", "Drafting"],
+      "modelProvider": "anthropic",
+      "modelName": "claude-haiku-4-5",
+      "defaultBudgetTokens": 1200000
+    },
+    {
+      "key": "reporting-specialist",
+      "title": "Reporting Specialist",
+      "description": "Compiles agent output into shareable reports.",
+      "skillTags": ["Reporting", "Data Visualization"],
+      "modelProvider": "openai",
+      "modelName": "gpt-5",
+      "defaultBudgetTokens": 1500000
+    },
+    {
+      "key": "hr-specialist",
+      "title": "HR Specialist",
+      "description": "Onboarding flows and policy questions.",
+      "skillTags": ["Onboarding", "Policy"],
+      "modelProvider": "google",
+      "modelName": "gemini-2.5-pro",
+      "defaultBudgetTokens": 800000
+    }
+  ]
+}

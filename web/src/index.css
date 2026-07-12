@@ -1,0 +1,78 @@
+:root {
+  --bg: #0e1525;
+  --panel: #1a2233;
+  --panel-alt: #171f30;
+  --sidebar: #131a2b;
+  --border: #26314a;
+  --border-subtle: #212a40;
+
+  --text: #eaeef6;
+  --text-muted: #8d97ac;
+  --text-faint: #5c687f;
+
+  --accent: #17b3a3;
+  --accent-hover: #1ecbb9;
+  --invite: #3d6fe0;
+  --invite-hover: #4c7dee;
+
+  --status-online: #3ecf8e;
+  --status-working: #3ecf8e;
+  --status-in-meeting: #f5a623;
+  --status-away: #f5a623;
+  --status-in-focus: #4fa8e0;
+  --status-flagged: #e0574c;
+  --status-offline: #5c687f;
+
+  --avatar-1: #3d6fe0;
+  --avatar-2: #17b3a3;
+  --avatar-3: #9b7ce0;
+  --avatar-4: #e0574c;
+  --avatar-5: #f5a623;
+  --avatar-6: #4fa8e0;
+
+  --font-display: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

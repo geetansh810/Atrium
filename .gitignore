@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+
+# Node (web/, office-realtime/)
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.log
+
+# Java / Maven (core-api/)
+target/
+*.class
+
+# Secrets — only .env.example is committed
+.env
+.env.*
+!.env.example
+
+# Editor / local tool state
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.claude/settings.local.json

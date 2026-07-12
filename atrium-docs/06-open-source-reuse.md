@@ -1,0 +1,45 @@
+# 06 — Open-Source Reuse Strategy
+
+Two upstream projects cut months off this build. Rule of thumb: **fork SkyOffice's code, mine Paperclip's patterns.**
+
+## A. SkyOffice — fork and adapt (the office surface)
+
+**Repo:** `github.com/kevinshen56714/SkyOffice` · **License:** MIT · ~1.2k stars, TypeScript ≈98%.
+**Stack (verified):** Phaser 3 (game engine) + Colyseus (WebSocket server) + React/Redux (client shell) + PeerJS (WebRTC — we strip this). Repo layout: `client/` (Phaser+React), `server/` (Colyseus), `types/` (shared).
+**Built-in features we inherit free:** tile-map office with rooms, WASD/arrow movement, `E` to sit, avatar name tags, real-time text chat with dialog bubbles, custom/private rooms, multi-user presence.
+
+### Fork plan (maps to milestones M2.4a–M2.4c)
+1. **M2.4a — Vendor & boot:** fork into monorepo as `office-realtime/` (their `server/`) and `web/src/office/` (their `client/`), plus `types/` merged into `shared-types/`. Get it running unmodified inside our docker-compose. Deliverable: stock SkyOffice reachable at `/office`. Also: verify LimeZu asset licensing for commercial use (see 05 §web/office).
+2. **M2.4b — Strip & wire identity:** remove PeerJS/webcam/screen-share/whiteboard code paths and UI; replace room-selection lobby with auto-join `office:{companyId}` gated by a core-api room token; user avatar named from the logged-in user.
+3. **M2.4c — Agent avatars:** add server-driven avatars: Redis subscriber in `office-realtime` consumes `agent.status_changed` etc., sets each agent avatar's target location (from `office_layout`), status dot color, and activity bubble. Bootstrap from `GET /office-state`. Straight-line walk v1; pathfinding later.
+
+### Why fork rather than depend
+SkyOffice isn't a library — it's an app. Forking is the intended reuse mode (MIT, "PRs welcome"). We take the ~80% (rendering, movement, presence, chat) and own the 20% that is our actual product (agents as avatars, state-driven positions).
+
+## B. Paperclip — mine, don't fork (the orchestration patterns)
+
+**What it is (from market research earlier in this project):** the dominant MIT-licensed open-source "AI company" orchestrator — org-chart roles, per-agent budgets, approval gates, multi-company isolation, check-in/heartbeat agent scheduling. Node.js, self-hosted, developer-facing, no hosted version.
+
+**Why not fork it wholesale:** our core is deliberately Java/Spring (owner's strength, and the differentiation is the hosted/verified/visual layer, not the orchestration engine). Forking a fast-moving Node core we'd diverge from immediately buys risk, not speed.
+
+**What to mine (milestone M0.0 — evaluation spike, timeboxed to one session):**
+1. Clone it; read the docs and the modules for: budget metering, approval gating, agent check-in scheduling, org/role modeling, and multi-tenant isolation.
+2. Write `docs/notes/paperclip-findings.md` answering: How do they model roles vs. agents? How is budget enforced (pre-call, post-call, both)? What's their approval-gate UX? How do they isolate tenants? What failure modes do their issues/discussions reveal (hallucinated output, approval fatigue, prompt-injection reports)?
+3. Adopt **patterns** into our specs (03/04/05) where they're better than ours; note deliberate divergences.
+4. If any of their standalone MIT utilities (e.g. provider price tables for cost calculation) are cleanly importable, list them for reuse with attribution.
+
+> ⚠️ Exact repo URL, module names, and APIs must be verified at spike time — the space is consolidating fast and details may have changed since this doc was written (July 2026). Treat this section's claims about Paperclip as research-era snapshots, not gospel.
+
+## C. Other ready-made pieces (use, don't build)
+- **Colyseus** (comes with SkyOffice) — realtime rooms. **Flyway** — migrations. **springdoc-openapi** — serves 04 as live Swagger.
+- **LLM SDKs:** official Anthropic/OpenAI/Google Java or REST clients behind our `LlmClient` interface.
+- **Langfuse or Helicone (self-host/free tier)** — optional LLM tracing in dev; our `usage_records` remains the billing source of truth.
+- **Stripe metered billing** (Phase 3) — never hand-roll invoicing.
+
+## D. License & attribution ledger (keep updated)
+| Component | License | Obligation |
+|---|---|---|
+| SkyOffice (code) | MIT | Keep copyright notice; credit in-app (they request a courtesy mention/coffee) |
+| LimeZu art assets | itch.io license — **verified 2026-07-12 (M2.4a)** | Free tier is NON-commercial only. **Must buy the paid tier (~$1.50+/pack: Modern Office Revamped, Modern Interiors, etc.) before commercial launch** — blocker for M3.5, fine for dev. Paid tier: commercial use OK, credit LimeZu (link to limezu.itch.io) in-app, never redistribute/resell the raw assets |
+| Paperclip (patterns/utils) | MIT (verify) | Attribution for any imported code |
+| Phaser 3 / Colyseus / React | MIT | Notices in a THIRD-PARTY-LICENSES file |

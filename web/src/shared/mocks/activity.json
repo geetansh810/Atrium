@@ -1,0 +1,18 @@
+{
+  "events": [
+    { "id": "ev-1", "agentId": "agent-research", "text": "Completed task: Industry Report", "createdAt": "2026-07-12T10:21:00Z" },
+    { "id": "ev-2", "agentId": "agent-research", "text": "Started task: Analyze Q2 Market Trends", "createdAt": "2026-07-12T10:05:00Z" },
+    { "id": "ev-3", "agentId": "agent-research", "text": "Found 24 new data sources", "createdAt": "2026-07-12T09:47:00Z" },
+    { "id": "ev-4", "agentId": "agent-research", "text": "Joined Meeting Room Alpha", "createdAt": "2026-07-12T09:30:00Z" },
+    { "id": "ev-5", "agentId": "agent-data-analyst", "text": "Progress 65% on Analyze Q2 Data", "createdAt": "2026-07-12T10:18:00Z" },
+    { "id": "ev-6", "agentId": "agent-data-analyst", "text": "Joined Meeting Room Alpha", "createdAt": "2026-07-12T10:15:00Z" },
+    { "id": "ev-7", "agentId": "agent-data-analyst", "text": "Completed subtask: Clean & validate data", "createdAt": "2026-07-12T09:55:00Z" },
+    { "id": "ev-8", "agentId": "agent-email", "text": "Flagged task: Vendor Portal Follow-ups", "createdAt": "2026-07-12T10:12:00Z" },
+    { "id": "ev-9", "agentId": "agent-email", "text": "Drafted 18 of 45 replies", "createdAt": "2026-07-12T10:02:00Z" },
+    { "id": "ev-10", "agentId": "agent-coder", "text": "Entered Focus Pod 2", "createdAt": "2026-07-12T09:12:00Z" },
+    { "id": "ev-11", "agentId": "agent-coder", "text": "Submitted Add Export API Tests for review", "createdAt": "2026-07-12T08:40:00Z" },
+    { "id": "ev-12", "agentId": "agent-hr", "text": "Submitted Refresh Onboarding Doc for review", "createdAt": "2026-07-12T09:50:00Z" },
+    { "id": "ev-13", "agentId": "agent-report", "text": "Queued: Draft Q2 Report", "createdAt": "2026-07-12T09:25:00Z" },
+    { "id": "ev-14", "agentId": "agent-report", "text": "Compiled weekly metrics snapshot", "createdAt": "2026-07-12T09:05:00Z" }
+  ]
+}

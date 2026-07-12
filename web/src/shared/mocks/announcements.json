@@ -1,0 +1,25 @@
+{
+  "announcements": [
+    {
+      "id": "ann-1",
+      "title": "All-hands meeting",
+      "body": "Tomorrow at 11:00 AM in Meeting Room Alpha. Q2 numbers and roadmap.",
+      "category": "company",
+      "createdAt": "2026-07-11T17:00:00Z"
+    },
+    {
+      "id": "ann-2",
+      "title": "New agent plugin available!",
+      "body": "Check out the productivity booster in the plugin registry.",
+      "category": "update",
+      "createdAt": "2026-07-11T12:00:00Z"
+    },
+    {
+      "id": "ann-3",
+      "title": "System maintenance",
+      "body": "This weekend 2:00–4:00 AM. Agents will pause and resume automatically.",
+      "category": "maintenance",
+      "createdAt": "2026-07-10T09:00:00Z"
+    }
+  ]
+}

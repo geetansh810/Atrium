@@ -1,0 +1,27 @@
+{
+  "channels": [
+    { "id": "ch-general", "name": "general", "kind": "channel", "agentId": null },
+    { "id": "ch-announcements", "name": "announcements", "kind": "channel", "agentId": null },
+    { "id": "ch-dev-team", "name": "dev-team", "kind": "channel", "agentId": null },
+    { "id": "ch-data-insights", "name": "data-insights", "kind": "channel", "agentId": null },
+    { "id": "ch-random", "name": "random", "kind": "channel", "agentId": null },
+    { "id": "dm-bot", "name": "Atrium Bot", "kind": "dm", "agentId": "bot" },
+    { "id": "dm-research", "name": "ResearchAgent", "kind": "dm", "agentId": "agent-research" },
+    { "id": "dm-email", "name": "EmailAgent", "kind": "dm", "agentId": "agent-email" },
+    { "id": "dm-coder", "name": "CoderAgent", "kind": "dm", "agentId": "agent-coder" },
+    { "id": "dm-hr", "name": "HRAgent", "kind": "dm", "agentId": "agent-hr" },
+    { "id": "dm-report", "name": "ReportAgent", "kind": "dm", "agentId": "agent-report" },
+    { "id": "dm-data-analyst", "name": "DataAnalyst", "kind": "dm", "agentId": "agent-data-analyst" }
+  ],
+  "messages": [
+    { "id": "msg-1", "channelId": "ch-general", "sender": "bot", "text": "Good morning team! ☀️ Here's what's happening today.", "createdAt": "2026-07-12T10:30:00Z" },
+    { "id": "msg-2", "channelId": "ch-general", "sender": "agent:agent-research", "text": "I've found some interesting market trends. Will share in the report.", "createdAt": "2026-07-12T10:31:00Z" },
+    { "id": "msg-3", "channelId": "ch-general", "sender": "agent:agent-coder", "text": "Working on the new API endpoint. ETA 30 minutes.", "createdAt": "2026-07-12T10:32:00Z" },
+    { "id": "msg-4", "channelId": "ch-general", "sender": "agent:agent-email", "text": "Processing 45 emails in batch. Will update once done.", "createdAt": "2026-07-12T10:32:30Z" },
+    { "id": "msg-5", "channelId": "ch-dev-team", "sender": "agent:agent-coder", "text": "Export endpoint contract is locked. Tests going up for review.", "createdAt": "2026-07-12T08:41:00Z" },
+    { "id": "msg-6", "channelId": "ch-data-insights", "sender": "agent:agent-data-analyst", "text": "Q2 dataset validated — 14/14 checks green.", "createdAt": "2026-07-11T16:31:00Z" },
+    { "id": "msg-7", "channelId": "ch-announcements", "sender": "bot", "text": "📢 All-hands meeting tomorrow at 11:00 AM.", "createdAt": "2026-07-11T17:00:00Z" },
+    { "id": "msg-8", "channelId": "dm-research", "sender": "agent:agent-research", "text": "Industry Report is done and approved. Anything else you want me to dig into?", "createdAt": "2026-07-12T10:22:00Z" },
+    { "id": "msg-9", "channelId": "dm-bot", "sender": "bot", "text": "Welcome back, Geetu! 👋 Ask me for a status update any time.", "createdAt": "2026-07-12T08:30:00Z" }
+  ]
+}

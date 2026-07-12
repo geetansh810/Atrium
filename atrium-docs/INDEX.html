@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atrium — Development Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF1EF; --paper-deep:#E3E8E5; --card:#F8F9F7;
+    --ink:#1B2430; --ink-soft:#55606B; --ink-faint:#8A94A0;
+    --blueprint:#1E3F63; --blueprint-line:#2E77A6; --blueprint-pale:#D7E4EC;
+    --brass:#B9863B; --brass-deep:#8C6428;
+    --sage:#4F7358; --sage-pale:#E3EBE4;
+    --rust:#9C4A3C;
+    --line:#C7D0CC;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'IBM Plex Sans',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15.5px;line-height:1.65;}
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0;color:var(--ink);}
+  p{margin:0 0 13px;}
+  a{color:var(--blueprint-line);}
+  .mono{font-family:var(--font-mono);}
+  .shell{display:flex;max-width:1360px;margin:0 auto;}
+  .directory{width:240px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:26px 0 26px 24px;border-right:1px solid var(--line);}
+  .directory .brand{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase;}
+  .directory .brand strong{display:block;font-family:var(--font-display);font-size:19px;color:var(--ink);letter-spacing:0;text-transform:none;font-weight:700;margin-top:2px;}
+  .directory nav{margin-top:22px;}
+  .directory a{display:flex;gap:9px;align-items:baseline;text-decoration:none;color:var(--ink-soft);font-size:13px;padding:5px 8px 5px 0;border-left:2px solid transparent;}
+  .directory a:hover{color:var(--blueprint);border-left-color:var(--blueprint-line);}
+  .directory a .num{font-family:var(--font-mono);font-size:10.5px;color:var(--brass-deep);width:20px;flex-shrink:0;}
+  .main{flex:1;min-width:0;padding:0 42px 80px;}
+  .cover{padding:56px 0 36px;border-bottom:2px solid var(--blueprint);}
+  .cover .kicker{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blueprint-line);margin-bottom:16px;}
+  .cover h1{font-size:44px;line-height:1.05;}
+  .cover .tag{font-size:17.5px;color:var(--ink-soft);max-width:680px;margin-top:14px;}
+  .sheet{padding:48px 0;border-bottom:1px solid var(--line);}
+  .sheet:last-child{border-bottom:none;}
+  .sheet-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;}
+  .sheet-head .sheetno{font-family:var(--font-mono);font-size:12.5px;color:var(--brass-deep);border:1px solid var(--brass);padding:2px 8px;flex-shrink:0;}
+  .sheet-head h2{font-size:27px;}
+  .lede{font-size:16.5px;color:var(--ink-soft);max-width:760px;margin-bottom:22px;}
+  .grid{display:grid;gap:14px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:1fr 1fr 1fr;}
+  .card{background:var(--card);border:1px solid var(--line);padding:17px 19px;}
+  .card h3{font-size:14.5px;margin-bottom:6px;}
+  .card p{font-size:13px;color:var(--ink-soft);margin-bottom:0;}
+  .card .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--blueprint-line);margin-bottom:6px;display:block;}
+  .callout{border-left:3px solid var(--blueprint-line);background:var(--blueprint-pale);padding:14px 20px;margin:20px 0;font-size:14px;color:var(--blueprint);max-width:760px;}
+  /* step flow */
+  .step{display:grid;grid-template-columns:52px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--line);}
+  .step:first-of-type{border-top:none;}
+  .step .n{font-family:var(--font-mono);font-size:15px;color:var(--paper);background:var(--blueprint);width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:2px;}
+  .step h3{font-size:15.5px;margin-bottom:4px;}
+  .step p{font-size:13.5px;color:var(--ink-soft);margin-bottom:0;}
+  .step a{font-weight:500;}
+  /* doc map table */
+  table.docs{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0;}
+  table.docs th{background:var(--blueprint);color:var(--paper);font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;padding:9px 13px;text-align:left;}
+  table.docs td{border-bottom:1px solid var(--line);padding:9px 13px;color:var(--ink-soft);vertical-align:top;}
+  table.docs td:first-child{font-family:var(--font-mono);font-size:12.5px;white-space:nowrap;}
+  /* images */
+  .figure{border:1px solid var(--ink);margin:20px 0;background:#fff;}
+  .figure img{display:block;width:100%;height:auto;}
+  .figure figcaption{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);padding:9px 13px;border-top:1px solid var(--line);background:var(--card);}
+  .diagram{background:var(--card);border:1px solid var(--line);padding:18px;margin:22px 0;}
+  .diagram svg{width:100%;height:auto;display:block;}
+  .diagram-cap{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);margin-top:8px;text-align:center;}
+  .code-block{background:#1B2430;color:#DCE3EA;font-family:var(--font-mono);font-size:12px;padding:14px 16px;overflow-x:auto;margin:14px 0;line-height:1.55;white-space:pre;}
+  ul.plain{margin:0;padding-left:18px;color:var(--ink-soft);font-size:14px;}
+  ul.plain li{margin-bottom:5px;}
+  .pill{display:inline-block;font-family:var(--font-mono);font-size:11px;background:var(--blueprint);color:var(--paper);padding:4px 10px;border-radius:2px;margin:0 6px 6px 0;}
+  .pill.alt{background:var(--brass);}
+  @media(max-width:900px){
+    .directory{display:none;}
+    .main{padding:0 18px 60px;}
+    .cover h1{font-size:32px;}
+    .grid-2,.grid-3{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="directory">
+    <div class="brand">Development hub<strong>Atrium</strong></div>
+    <nav>
+      <a href="#start"><span class="num">01</span> Start here — the flow</a>
+      <a href="#overview"><span class="num">02</span> What we're building</a>
+      <a href="#hld"><span class="num">03</span> HLD — system design</a>
+      <a href="#lld"><span class="num">04</span> LLD — module design</a>
+      <a href="#stack"><span class="num">05</span> Tech stack</a>
+      <a href="#docmap"><span class="num">06</span> Document map</a>
+      <a href="#milestones"><span class="num">07</span> Milestones at a glance</a>
+      <a href="#prompts"><span class="num">08</span> Session prompt recipe</a>
+      <a href="#deploy"><span class="num">09</span> Deployment summary</a>
+      <a href="#rules"><span class="num">10</span> Non-negotiables</a>
+    </nav>
+  </aside>
+  <main class="main">
+
+    <div class="cover">
+      <div class="kicker">Single entry point — open this file first, every time</div>
+      <h1>Atrium Development Hub</h1>
+      <p class="tag">Everything needed to build Atrium with AI coding agents, connected in one place: the plan, the contracts, the prompts, the diagrams, and the visual ground truth. Keep this folder together — all links are relative.</p>
+    </div>
+
+    <section class="sheet" id="start">
+      <div class="sheet-head"><span class="sheetno">01</span><h2>Start here — the development flow</h2></div>
+      <p class="lede">Follow these steps in order. Steps 4–7 repeat for every one of the 26 milestones.</p>
+      <div class="step"><div class="n">1</div><div><h3>Read the master plan once, fully</h3><p>Open <a href="00-MASTER-PLAN.md">00-MASTER-PLAN.md</a>. Everything else hangs off it. Bookmark its §1 priming block — you'll paste it constantly.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h3>Skim the product spec &amp; look at the reference images</h3><p><a href="01-product-spec.md">01-product-spec.md</a> + the three images in §02 below. This is the destination; keep it loaded in your head.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h3>Set up the workspace</h3><p>Create the git repo, copy this <span class="mono">docs/</span> folder into it, install Docker + JDK 17 + Node 20. Clone SkyOffice and Paperclip side-by-side for the M0.0 spike.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h3>Pick the next unchecked milestone</h3><p>From <a href="07-milestones.md">07-milestones.md</a> master tracker. Always the next one — dependencies are encoded in the order.</p></div></div>
+      <div class="step"><div class="n">5</div><div><h3>Open a fresh AI session and paste the recipe</h3><p>Priming block (from 00 §1) → the ready-made prompt for that milestone from <a href="11-session-prompts.md">11-session-prompts.md</a> → the 📎 doc excerpts it lists. For UI milestones, attach the reference image too.</p></div></div>
+      <div class="step"><div class="n">6</div><div><h3>Review the diff like it came from a stranger</h3><p>Use the checklist in <a href="09-llm-workflow.md">09-llm-workflow.md</a>. Tenant scoping, in-transaction events, no secrets, no role-branching in routing.</p></div></div>
+      <div class="step"><div class="n">7</div><div><h3>Run the Done-when yourself, then tick the tracker</h3><p>Not the AI's word — your own eyes. Then commit (<span class="mono">m0.4-claim-loop</span> branch style per <a href="08-conventions.md">08-conventions.md</a>), log one line in <span class="mono">docs/notes/session-log.md</span>, and go back to step 4.</p></div></div>
+      <div class="step"><div class="n">8</div><div><h3>At phase boundaries, re-read the phase's goal</h3><p>Phase pages in <a href="07-milestones.md">07-milestones.md</a>. Phase 1 especially: the pilot is a process milestone — a real person, not more code.</p></div></div>
+      <div class="step"><div class="n">9</div><div><h3>From M2.4a, follow the deployment plan alongside</h3><p><a href="10-deployment.md">10-deployment.md</a>: staging appears at M2.4c, full prod at M3.5.</p></div></div>
+      <div class="callout"><strong>The single most important habit:</strong> one milestone per session, contract docs updated <em>before</em> code when anything changes, and no diff merges unread. This is what makes 26 independent AI sessions produce one coherent system.</div>
+    </section>
+
+    <section class="sheet" id="overview">
+      <div class="sheet-head"><span class="sheetno">02</span><h2>What we're building</h2></div>
+      <p class="lede">Atrium is a multi-tenant SaaS where companies hire AI agents as real employees — roles, skills, an org hierarchy, token-based payroll budgets, human approval gates — all visible in a live 2D pixel-art virtual office.</p>
+      <div class="grid grid-3">
+        <div class="card"><span class="eyebrow">The roster</span><h3>Agents as employees</h3><p>Hired into deep, scoped roles (ResearchAgent, CoderAgent, HRAgent…), each with a manager, a model, skills, and a monthly token budget metered like salary.</p></div>
+        <div class="card"><span class="eyebrow">The guarantee</span><h3>Nothing ships unreviewed</h3><p>Every task ends in pending-review. Approval gates, escalation to hierarchy, and an append-only audit trail are the core product, not add-ons.</p></div>
+        <div class="card"><span class="eyebrow">The signature</span><h3>The office is the status board</h3><p>Agent avatars' positions <em>are</em> their live state: desk = working, meeting room = escalated, focus pod = deep work, help desk = waiting on you.</p></div>
+      </div>
+      <figure class="figure"><img src="assets/reference-1-office-main-view.png" alt="Reference: main office view"><figcaption>Reference 1 — target main screen: office map, Who's Here roster, My Tasks + Agent Status rails, Atrium Bot. (Concept mock — build target for M2.4a–c, M2.5.)</figcaption></figure>
+      <figure class="figure"><img src="assets/reference-2-full-ui-composite.png" alt="Reference: full UI composite"><figcaption>Reference 2 — secondary surfaces: Agent Profile, My Workspace with subtasks, Analytics, Chat, Focus Pod, Announcements, Task Flow. (Build target for M2.2, M2.3, M2.5, M2.6.)</figcaption></figure>
+      <figure class="figure"><img src="assets/reference-3-skyoffice-original.png" alt="Reference: SkyOffice original"><figcaption>Reference 3 — unmodified SkyOffice (MIT), the codebase we fork: movement, rooms, presence, and chat come free. (Baseline for M0.0, M2.4a–b.)</figcaption></figure>
+    </section>
+
+    <section class="sheet" id="hld">
+      <div class="sheet-head"><span class="sheetno">03</span><h2>HLD — high-level system design</h2></div>
+      <p class="lede">Three services, one source of truth. core-api owns all business state; the office and dashboard are projections of it. Full detail in <a href="02-architecture.md">02-architecture.md</a>.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 920 560" role="img">
+          <title>Atrium high-level design</title>
+          <desc>Users reach the React web app, which talks REST to the Spring Boot core API and WebSocket to the Colyseus office-realtime service. Core API persists to Postgres and Redis, calls external LLM providers, and publishes events over Redis pub/sub to office-realtime. An AWS deployment band shows CloudFront/S3, ALB, ECS Fargate, RDS and ElastiCache.</desc>
+          <defs><marker id="hah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1B2430" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+
+          <rect x="370" y="14" width="180" height="46" rx="4" fill="#F8F9F7" stroke="#1B2430"/>
+          <text x="460" y="33" text-anchor="middle" font-family="IBM Plex Mono" font-size="12.5" font-weight="500" fill="#1B2430">Users (browser)</text>
+          <text x="460" y="49" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#8A94A0">owners · members · pilots</text>
+
+          <line x1="460" y1="60" x2="460" y2="92" stroke="#1B2430" marker-end="url(#hah)"/>
+
+          <rect x="280" y="92" width="360" height="72" rx="4" fill="#D7E4EC" stroke="#2E77A6" stroke-width="1.3"/>
+          <text x="460" y="115" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="500" fill="#1E3F63">web (React)</text>
+          <text x="460" y="133" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#2E77A6">/dashboard — roster · tasks · analytics · budgets</text>
+          <text x="460" y="149" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#2E77A6">/office — forked SkyOffice Phaser 3 client</text>
+
+          <path d="M370,164 L370,205 L305,205 L305,228" fill="none" stroke="#1B2430" marker-end="url(#hah)"/>
+          <text x="310" y="196" font-family="IBM Plex Mono" font-size="10" fill="#55606B">REST /api/v1</text>
+          <path d="M550,164 L550,205 L640,205 L640,228" fill="none" stroke="#1B2430" marker-end="url(#hah)"/>
+          <text x="565" y="196" font-family="IBM Plex Mono" font-size="10" fill="#55606B">WebSocket (Colyseus)</text>
+
+          <rect x="120" y="228" width="370" height="118" rx="4" fill="#F8F9F7" stroke="#1B2430" stroke-width="1.3"/>
+          <text x="305" y="250" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="500" fill="#1B2430">core-api (Spring Boot · Java 17)</text>
+          <text x="305" y="268" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#8A94A0">SOURCE OF TRUTH</text>
+          <rect x="138" y="280" width="80" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="178" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#55606B">registry</text>
+          <rect x="226" y="280" width="80" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="266" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#55606B">routing</text>
+          <rect x="314" y="280" width="80" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="354" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#55606B">execution</text>
+          <rect x="402" y="280" width="72" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="438" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#55606B">account.</text>
+          <rect x="196" y="312" width="220" height="24" fill="#EEF1EF" stroke="#C7D0CC" stroke-dasharray="3 3"/><text x="306" y="328" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#8A94A0">realtimebridge (events out)</text>
+
+          <rect x="540" y="228" width="230" height="118" rx="4" fill="#F8F9F7" stroke="#1B2430" stroke-width="1.3"/>
+          <text x="655" y="252" text-anchor="middle" font-family="IBM Plex Mono" font-size="12.5" font-weight="500" fill="#1B2430">office-realtime</text>
+          <text x="655" y="270" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#8A94A0">(Colyseus · TS · SkyOffice fork)</text>
+          <text x="655" y="296" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#55606B">presence · movement · chat rooms</text>
+          <text x="655" y="312" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#55606B">agent avatar driver</text>
+          <text x="655" y="332" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#9C4A3C">stateless — never writes business data</text>
+
+          <path d="M490,300 L540,300" fill="none" stroke="#1B2430" stroke-dasharray="4 3" marker-end="url(#hah)"/>
+          <text x="493" y="292" font-family="IBM Plex Mono" font-size="9" fill="#8C6428">bootstrap GET /office-state</text>
+
+          <rect x="120" y="392" width="150" height="52" rx="4" fill="#E3EBE4" stroke="#4F7358"/>
+          <text x="195" y="413" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="500" fill="#3d5940">PostgreSQL</text>
+          <text x="195" y="430" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#4F7358">truth + task queue (RLS)</text>
+          <rect x="300" y="392" width="150" height="52" rx="4" fill="#E3EBE4" stroke="#4F7358"/>
+          <text x="375" y="413" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="500" fill="#3d5940">Redis</text>
+          <text x="375" y="430" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#4F7358">cache + pub/sub events</text>
+          <rect x="490" y="392" width="180" height="52" rx="4" fill="#F1E1DE" stroke="#9C4A3C"/>
+          <text x="580" y="413" text-anchor="middle" font-family="IBM Plex Mono" font-size="11.5" font-weight="500" fill="#7c3a2e">LLM providers</text>
+          <text x="580" y="430" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="#9C4A3C">Anthropic · OpenAI · Google</text>
+
+          <line x1="230" y1="346" x2="200" y2="392" stroke="#1B2430" marker-end="url(#hah)"/>
+          <line x1="330" y1="346" x2="368" y2="392" stroke="#1B2430" marker-end="url(#hah)"/>
+          <line x1="420" y1="346" x2="545" y2="392" stroke="#1B2430" marker-end="url(#hah)"/>
+          <text x="452" y="372" font-family="IBM Plex Mono" font-size="9.5" fill="#55606B">LlmClient abstraction</text>
+          <path d="M450,418 L655,418 L655,346" fill="none" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#hah)"/>
+          <text x="668" y="380" font-family="IBM Plex Mono" font-size="9.5" fill="#8C6428">pub/sub: atrium:events:{co}</text>
+
+          <rect x="120" y="478" width="650" height="66" rx="4" fill="none" stroke="#8A94A0" stroke-dasharray="6 4"/>
+          <text x="138" y="500" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="#8A94A0">AWS PROD (M3.5)</text>
+          <text x="445" y="504" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#55606B">Route53 → CloudFront+S3 (web) · ALB (sticky WS) → ECS Fargate (core-api, office-realtime)</text>
+          <text x="445" y="524" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#55606B">RDS Postgres · ElastiCache Redis · Secrets Manager · CloudWatch alarms · GitHub Actions CI/CD</text>
+        </svg>
+        <div class="diagram-cap">Fig. H1 — system context, containers, and the AWS deployment band. Canonical version: 02-architecture.md</div>
+      </div>
+      <div class="grid grid-3">
+        <div class="card"><span class="eyebrow">Design decision</span><h3>Modular monolith core</h3><p>Four modules in one Spring Boot app — module boundaries enforced by package + interfaces, not network hops. Split later only on evidence.</p></div>
+        <div class="card"><span class="eyebrow">Design decision</span><h3>Postgres as the v1 queue</h3><p><span class="mono">FOR UPDATE SKIP LOCKED</span> + lease gives exactly-once claiming with zero extra infra. Kafka/RabbitMQ only when throughput demands.</p></div>
+        <div class="card"><span class="eyebrow">Design decision</span><h3>Office = projection</h3><p>office-realtime holds nothing durable. Kill it, restart it, it rebuilds from <span class="mono">/office-state</span>. Business truth is never at risk from the visual layer.</p></div>
+      </div>
+    </section>
+
+    <section class="sheet" id="lld">
+      <div class="sheet-head"><span class="sheetno">04</span><h2>LLD — low-level design</h2></div>
+      <p class="lede">The task lifecycle is the spine of the whole system. Every module's internals exist to serve one of these steps. Contracts: <a href="03-data-model.md">03-data-model.md</a> · <a href="04-api-contract.md">04-api-contract.md</a> · <a href="05-module-specs.md">05-module-specs.md</a>.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 920 500" role="img">
+          <title>Task lifecycle sequence</title>
+          <desc>Sequence diagram: User creates a task via routing; the agent runner claims it with SKIP LOCKED; execution builds a prompt and calls the LLM, recording usage idempotently; completion moves it to pending review; the realtime bridge publishes events to the office; the user approves and rollups update.</desc>
+          <defs><marker id="lah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1B2430" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+          <g font-family="IBM Plex Mono">
+          <rect x="20" y="16" width="110" height="30" fill="#F8F9F7" stroke="#1B2430"/><text x="75" y="36" text-anchor="middle" font-size="11.5" font-weight="500" fill="#1B2430">User / Web</text>
+          <rect x="190" y="16" width="110" height="30" fill="#F8F9F7" stroke="#1B2430"/><text x="245" y="36" text-anchor="middle" font-size="11.5" font-weight="500" fill="#1B2430">routing</text>
+          <rect x="360" y="16" width="120" height="30" fill="#F8F9F7" stroke="#1B2430"/><text x="420" y="36" text-anchor="middle" font-size="11.5" font-weight="500" fill="#1B2430">execution</text>
+          <rect x="540" y="16" width="130" height="30" fill="#F1E1DE" stroke="#9C4A3C"/><text x="605" y="36" text-anchor="middle" font-size="11.5" font-weight="500" fill="#7c3a2e">LLM provider</text>
+          <rect x="720" y="16" width="180" height="30" fill="#D7E4EC" stroke="#2E77A6"/><text x="810" y="36" text-anchor="middle" font-size="11" font-weight="500" fill="#1E3F63">bridge → office</text>
+          <line x1="75" y1="46" x2="75" y2="480" stroke="#C7D0CC"/><line x1="245" y1="46" x2="245" y2="480" stroke="#C7D0CC"/><line x1="420" y1="46" x2="420" y2="480" stroke="#C7D0CC"/><line x1="605" y1="46" x2="605" y2="480" stroke="#C7D0CC"/><line x1="810" y1="46" x2="810" y2="480" stroke="#C7D0CC"/>
+
+          <line x1="75" y1="76" x2="245" y2="76" stroke="#1B2430" marker-end="url(#lah)"/><text x="160" y="68" text-anchor="middle" font-size="10" fill="#55606B">POST /tasks {skill}</text>
+          <text x="255" y="98" font-size="9.5" fill="#8A94A0">tx: insert task(queued) + event(created)</text>
+          <line x1="245" y1="108" x2="810" y2="108" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#lah)"/><text x="520" y="100" text-anchor="middle" font-size="9.5" fill="#8C6428">task.created</text>
+
+          <line x1="420" y1="144" x2="245" y2="144" stroke="#1B2430" marker-end="url(#lah)"/><text x="335" y="136" text-anchor="middle" font-size="10" fill="#55606B">claim(skill) [poll]</text>
+          <text x="255" y="166" font-size="9.5" fill="#8A94A0">tx: SKIP LOCKED → claimed + lease(10m) + BudgetGuard.canSpend + event(claimed)</text>
+          <line x1="245" y1="178" x2="810" y2="178" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#lah)"/><text x="520" y="170" text-anchor="middle" font-size="9.5" fill="#8C6428">agent.status_changed(working) → avatar walks to desk</text>
+
+          <text x="430" y="206" font-size="9.5" fill="#8A94A0">build prompt: role_definition.system_prompt + task (+ rejection feedback)</text>
+          <line x1="420" y1="222" x2="605" y2="222" stroke="#1B2430" marker-end="url(#lah)"/><text x="512" y="214" text-anchor="middle" font-size="10" fill="#55606B">complete(req)</text>
+          <line x1="605" y1="252" x2="420" y2="252" stroke="#1B2430" marker-end="url(#lah)"/><text x="512" y="244" text-anchor="middle" font-size="10" fill="#55606B">result + tokens</text>
+          <text x="430" y="276" font-size="9.5" fill="#8A94A0">tx: usage_records(idempotency_key taskId:attempt) + budgets.spent += tokens</text>
+          <text x="430" y="292" font-size="9.5" fill="#8A94A0">update progress/subtasks · renew lease while working</text>
+          <line x1="420" y1="304" x2="810" y2="304" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#lah)"/><text x="600" y="296" text-anchor="middle" font-size="9.5" fill="#8C6428">task.progress {65%, eta} → bubble updates</text>
+
+          <line x1="420" y1="336" x2="245" y2="336" stroke="#1B2430" marker-end="url(#lah)"/><text x="335" y="328" text-anchor="middle" font-size="10" fill="#55606B">complete(artifact)</text>
+          <text x="255" y="358" font-size="9.5" fill="#8A94A0">tx: artifact + status=pending_review + event(completed)</text>
+          <line x1="245" y1="370" x2="810" y2="370" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#lah)"/><text x="520" y="362" text-anchor="middle" font-size="9.5" fill="#8C6428">task.completed + chat.message (agent) + bot.notice</text>
+
+          <line x1="75" y1="406" x2="245" y2="406" stroke="#1B2430" marker-end="url(#lah)"/><text x="160" y="398" text-anchor="middle" font-size="10" fill="#55606B">POST /approve</text>
+          <text x="255" y="428" font-size="9.5" fill="#8A94A0">guard: no open children/subtasks → tx: approved + event(approved) + rollup stats</text>
+          <line x1="245" y1="440" x2="810" y2="440" stroke="#8C6428" stroke-dasharray="4 3" marker-end="url(#lah)"/><text x="520" y="432" text-anchor="middle" font-size="9.5" fill="#8C6428">task.approved → avatar idle / next task</text>
+          <text x="460" y="470" text-anchor="middle" font-size="10" fill="#9C4A3C">alt paths: reject → feedback stored → in_progress · flag → in_meeting · lease expiry → requeued (idempotency key blocks double-billing)</text>
+          </g>
+        </svg>
+        <div class="diagram-cap">Fig. L1 — task lifecycle sequence with transaction boundaries and event emissions</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card"><span class="eyebrow">routing — internals</span><h3>TaskService · ClaimService · LeaseReclaimJob</h3><p><span class="mono">ClaimService.claim(companyId, agentId, skill)</span> wraps the canonical SKIP LOCKED query + BudgetGuard in one tx. <span class="mono">LeaseReclaimJob</span> (@Scheduled 60s) requeues expired leases. State machine enforced in <span class="mono">TaskStateGuard</span> — every transition validates the current status or 409s, and appends its event in the same tx.</p></div>
+        <div class="card"><span class="eyebrow">execution — internals</span><h3>AgentRunner · PromptAssembler · LlmClient</h3><p>One runner loop per active agent (virtual threads). <span class="mono">PromptAssembler.build(roleDef, task, feedback?)</span> — pure function, unit-testable, secrets structurally impossible (it only sees those three inputs). <span class="mono">LlmClient</span> impls per provider; failures → <span class="mono">TaskService.flag()</span>, never a crash.</p></div>
+        <div class="card"><span class="eyebrow">accountability — internals</span><h3>BudgetGuard · UsageRecorder · StatsRollup</h3><p><span class="mono">UsageRecorder.record()</span> inserts with the idempotency key and increments <span class="mono">spent_tokens</span> atomically. <span class="mono">StatsRollup</span> updates <span class="mono">agent_stats_daily</span> on approve/reject + nightly. Success rate = approved ÷ (approved+rejected).</p></div>
+        <div class="card"><span class="eyebrow">office-realtime — internals</span><h3>OfficeRoom · AgentAvatarDriver · EventSubscriber</h3><p><span class="mono">OfficeRoom.onCreate</span> → fetch <span class="mono">/office-state</span>, spawn avatars. <span class="mono">EventSubscriber</span> (Redis) → <span class="mono">AgentAvatarDriver.apply(event)</span> → target tile from <span class="mono">office_layout</span> map, tween walk, set dot color + bubble icon. Room join requires HMAC room token; company mismatch → reject.</p></div>
+      </div>
+      <div class="callout"><strong>LLD rule of thumb for AI sessions:</strong> if a change can't be expressed as one of these named components doing its stated job, the design is drifting — stop and update <a href="05-module-specs.md">05-module-specs.md</a> first.</div>
+    </section>
+
+    <section class="sheet" id="stack">
+      <div class="sheet-head"><span class="sheetno">05</span><h2>Tech stack</h2></div>
+      <div class="grid grid-3">
+        <div class="card"><span class="eyebrow">Backend core</span><h3>Java 17 · Spring Boot 3.x</h3><p>Maven, Flyway, springdoc-openapi, Testcontainers, bucket4j (M3.5).</p></div>
+        <div class="card"><span class="eyebrow">Data</span><h3>PostgreSQL 16 · Redis 7</h3><p>Postgres: truth + queue + RLS. Redis: cache + pub/sub event bus.</p></div>
+        <div class="card"><span class="eyebrow">Realtime office</span><h3>Colyseus · Phaser 3 (SkyOffice fork)</h3><p>TypeScript strict; PeerJS/webcam stripped; agent avatars added.</p></div>
+        <div class="card"><span class="eyebrow">Frontend</span><h3>React · Vite · React Query</h3><p>Redux Toolkit only inside the office slice (inherited). theme.ts tokens.</p></div>
+        <div class="card"><span class="eyebrow">AI layer</span><h3>LlmClient abstraction</h3><p>Anthropic / OpenAI / Google per agent row; usage metered per call.</p></div>
+        <div class="card"><span class="eyebrow">Infra</span><h3>Docker · AWS · GitHub Actions</h3><p>Compose locally; ECS Fargate + RDS + ElastiCache + CloudFront in prod; Stripe metered billing (M3.3).</p></div>
+      </div>
+    </section>
+
+    <section class="sheet" id="docmap">
+      <div class="sheet-head"><span class="sheetno">06</span><h2>Document map</h2></div>
+      <p class="lede">Every file in this package, what it's for, and when to hand it to an AI session. Keep the folder intact — links are relative.</p>
+      <table class="docs">
+        <tr><th>File</th><th>Purpose</th><th>Give to AI session when…</th></tr>
+        <tr><td><a href="00-MASTER-PLAN.md">00-MASTER-PLAN.md</a></td><td>Index + the priming block (§1)</td><td>Every session — priming block always</td></tr>
+        <tr><td><a href="01-product-spec.md">01-product-spec.md</a></td><td>Vision, features, full UI spec from the reference images</td><td>Any user-facing feature</td></tr>
+        <tr><td><a href="02-architecture.md">02-architecture.md</a></td><td>Services, monorepo layout, data flow, realtime bridge</td><td>Backend / integration work</td></tr>
+        <tr><td><a href="03-data-model.md">03-data-model.md</a></td><td>Full schema (V1–V3), canonical claim query, invariants</td><td>Anything touching data</td></tr>
+        <tr><td><a href="04-api-contract.md">04-api-contract.md</a></td><td>REST endpoints + WebSocket events</td><td>Any API or frontend work</td></tr>
+        <tr><td><a href="05-module-specs.md">05-module-specs.md</a></td><td>Per-module owns / provides / must-not</td><td>Work inside a specific module</td></tr>
+        <tr><td><a href="06-open-source-reuse.md">06-open-source-reuse.md</a></td><td>SkyOffice fork plan, Paperclip mining, license ledger</td><td>M0.0 + M2.4a–c</td></tr>
+        <tr><td><a href="07-milestones.md">07-milestones.md</a></td><td>All 26 milestone cards + master tracker</td><td>Every session — one card</td></tr>
+        <tr><td><a href="08-conventions.md">08-conventions.md</a></td><td>Code style, git, testing bar, security rules, DoD</td><td>Referenced by the priming block</td></tr>
+        <tr><td><a href="09-llm-workflow.md">09-llm-workflow.md</a></td><td>Session template, review checklist, stuck-LLM playbook</td><td>You, before/after each session</td></tr>
+        <tr><td><a href="10-deployment.md">10-deployment.md</a></td><td>Environments, AWS, CI/CD, observability, backups</td><td>M2.4c staging · M3.5 prod</td></tr>
+        <tr><td><a href="11-session-prompts.md">11-session-prompts.md</a></td><td>Ready-to-paste prompt for every milestone</td><td>Every session — copy the block</td></tr>
+        <tr><td><a href="assets/README.md">assets/</a></td><td>3 reference images + what each verifies</td><td>Any UI milestone (attach the image)</td></tr>
+      </table>
+    </section>
+
+    <section class="sheet" id="milestones">
+      <div class="sheet-head"><span class="sheetno">07</span><h2>Milestones at a glance</h2></div>
+      <p class="lede">26 milestones, 5 phases. Full cards with Done-when checks in <a href="07-milestones.md">07-milestones.md</a>; matching prompts in <a href="11-session-prompts.md">11-session-prompts.md</a>.</p>
+      <div>
+        <span class="pill">PHASE 0 · Foundation</span>
+        <span class="pill alt">M0.0 OSS spike</span><span class="pill alt">M0.1 scaffold</span><span class="pill alt">M0.2 registry</span><span class="pill alt">M0.3 routing</span><span class="pill alt">M0.4 claim/lease</span><span class="pill alt">M0.5 first agent</span><span class="pill alt">M0.6 approval</span><span class="pill alt">M0.7 budgets</span><span class="pill alt">M0.8 task board</span>
+      </div>
+      <div style="margin-top:10px;">
+        <span class="pill">PHASE 1 · Validate</span>
+        <span class="pill alt">M1.1 content role</span><span class="pill alt">M1.2 real pilot</span><span class="pill alt">M1.3 feedback</span>
+      </div>
+      <div style="margin-top:10px;">
+        <span class="pill">PHASE 2 · Expand</span>
+        <span class="pill alt">M2.1 PM+design</span><span class="pill alt">M2.2 dependencies</span><span class="pill alt">M2.3 ledger+analytics</span><span class="pill alt">M2.4a fork boot</span><span class="pill alt">M2.4b strip+identity</span><span class="pill alt">M2.4c agent avatars</span><span class="pill alt">M2.5 chat+escalations</span><span class="pill alt">M2.6 profile+workspace</span>
+      </div>
+      <div style="margin-top:10px;">
+        <span class="pill">PHASE 3 · Multi-tenant</span>
+        <span class="pill alt">M3.1 auth</span><span class="pill alt">M3.2 isolation</span><span class="pill alt">M3.3 billing</span><span class="pill alt">M3.4 onboarding</span><span class="pill alt">M3.5 prod deploy</span>
+      </div>
+      <div style="margin-top:10px;">
+        <span class="pill">PHASE 4 · Compliance</span>
+        <span class="pill alt">M4.1 legal gated</span><span class="pill alt">M4.2 HR audited</span><span class="pill alt">M4.3 docs</span>
+      </div>
+    </section>
+
+    <section class="sheet" id="prompts">
+      <div class="sheet-head"><span class="sheetno">08</span><h2>Session prompt recipe</h2></div>
+      <p class="lede">The exact assembly for every AI coding session. Ready-made per-milestone blocks live in <a href="11-session-prompts.md">11-session-prompts.md</a>.</p>
+      <div class="code-block">┌ 1. PRIMING BLOCK        ← 00-MASTER-PLAN.md §1 (always, verbatim)
+├ 2. MILESTONE PROMPT     ← 11-session-prompts.md (the block for this milestone)
+├ 3. 📎 CONTRACT EXCERPTS ← the sections the block lists (03/04/05 excerpts)
+├ 4. CURRENT STATE        ← `tree -L 3` of the service + 1–3 key existing files
+└ 5. For UI work          ← attach the reference image from assets/</div>
+      <p style="color:var(--ink-soft);font-size:14px;">After the session: review with the <a href="09-llm-workflow.md">09 checklist</a> → run the Done-when yourself → tick the tracker in <a href="07-milestones.md">07</a> → one line in <span class="mono">docs/notes/session-log.md</span>.</p>
+    </section>
+
+    <section class="sheet" id="deploy">
+      <div class="sheet-head"><span class="sheetno">09</span><h2>Deployment summary</h2></div>
+      <p class="lede">Full plan in <a href="10-deployment.md">10-deployment.md</a>. The short version:</p>
+      <div class="grid grid-3">
+        <div class="card"><span class="eyebrow">M0.1 → local</span><h3>docker-compose everything</h3><p>postgres, redis, core-api, office-realtime, web. <span class="mono">make dev</span> boots the world.</p></div>
+        <div class="card"><span class="eyebrow">M2.4c → staging</span><h3>Small AWS, same shape</h3><p>Stood up when the office demo exists — pilots and demos run here, never off a laptop.</p></div>
+        <div class="card"><span class="eyebrow">M3.5 → prod</span><h3>Tag-gated CI/CD</h3><p>GitHub Actions: PR checks → staging auto-deploy + smoke → manual-approval prod deploy. Zero console steps. Zero-downtime migrations (expand→migrate→contract).</p></div>
+      </div>
+    </section>
+
+    <section class="sheet" id="rules" style="border-bottom:none;">
+      <div class="sheet-head"><span class="sheetno">10</span><h2>Non-negotiables</h2></div>
+      <p class="lede">If an AI session's output violates any of these, the session is wrong — not the rule.</p>
+      <ul class="plain" style="font-size:14.5px;">
+        <li><strong>Tenant isolation everywhere.</strong> Every query company-scoped; Colyseus rooms and Redis channels company-prefixed; RLS from M3.2.</li>
+        <li><strong>Exactly-once, provably.</strong> SKIP LOCKED claiming + lease + idempotency keys. A redelivered task never double-bills.</li>
+        <li><strong>Append-only audit.</strong> Every state change is a task_events row in the same transaction. No overwrites, ever.</li>
+        <li><strong>Nothing ships unreviewed.</strong> pending_review is a hard gate — for the agents' work, and for the AI-written code building this platform.</li>
+        <li><strong>Roles are data.</strong> New capability = registry row + queue. An <span class="mono">if (skill == …)</span> in routing is a bug by definition.</li>
+        <li><strong>Secrets never meet prompts.</strong> Structurally: the PromptAssembler only ever sees role definition + task + feedback.</li>
+        <li><strong>The office lies to no one.</strong> It renders real state from core-api — there is no separate office state to drift out of sync.</li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

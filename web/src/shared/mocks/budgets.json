@@ -1,0 +1,17 @@
+{
+  "budgets": [
+    { "id": "bud-company", "agentId": null, "period": "2026-07", "capTokens": 10000000, "spentTokens": 6480000 },
+    { "id": "bud-research", "agentId": "agent-research", "period": "2026-07", "capTokens": 2000000, "spentTokens": 1540000 },
+    { "id": "bud-data-analyst", "agentId": "agent-data-analyst", "period": "2026-07", "capTokens": 2000000, "spentTokens": 1230000 },
+    { "id": "bud-email", "agentId": "agent-email", "period": "2026-07", "capTokens": 1200000, "spentTokens": 1104000 },
+    { "id": "bud-coder", "agentId": "agent-coder", "period": "2026-07", "capTokens": 2500000, "spentTokens": 1610000 },
+    { "id": "bud-hr", "agentId": "agent-hr", "period": "2026-07", "capTokens": 800000, "spentTokens": 296000 },
+    { "id": "bud-report", "agentId": "agent-report", "period": "2026-07", "capTokens": 1500000, "spentTokens": 700000 }
+  ],
+  "costPerTask": [
+    { "taskId": "task-industry-report", "tokens": 412000, "costUsd": 6.18 },
+    { "taskId": "task-analyze-q2", "tokens": 268000, "costUsd": 4.02 },
+    { "taskId": "task-reply-emails", "tokens": 154000, "costUsd": 1.16 },
+    { "taskId": "task-build-api", "tokens": 121000, "costUsd": 1.82 }
+  ]
+}

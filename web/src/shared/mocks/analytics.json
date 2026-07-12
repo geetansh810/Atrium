@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "totalAgents": 6,
+    "totalAgentsDelta": "+2 this week",
+    "tasksCompleted": 342,
+    "tasksCompletedDelta": "+18%",
+    "avgSuccessRate": 97.5,
+    "avgSuccessRateDelta": "+2.3%",
+    "focusMinutesToday": 1122,
+    "focusMinutesDelta": "+12%"
+  },
+  "tasks7d": [
+    { "day": "Mon", "count": 42 },
+    { "day": "Tue", "count": 58 },
+    { "day": "Wed", "count": 38 },
+    { "day": "Thu", "count": 65 },
+    { "day": "Fri", "count": 81 },
+    { "day": "Sat", "count": 74 },
+    { "day": "Sun", "count": 90 }
+  ],
+  "agentPerformance": [
+    { "agentId": "agent-research", "successRate": 98 },
+    { "agentId": "agent-data-analyst", "successRate": 97 },
+    { "agentId": "agent-coder", "successRate": 96 },
+    { "agentId": "agent-email", "successRate": 95 },
+    { "agentId": "agent-report", "successRate": 94 },
+    { "agentId": "agent-hr", "successRate": 92 }
+  ],
+  "topSkills": [
+    { "skill": "Data Analysis", "sharePct": 32 },
+    { "skill": "Web Research", "sharePct": 28 },
+    { "skill": "Code Generation", "sharePct": 18 },
+    { "skill": "Reporting", "sharePct": 12 },
+    { "skill": "Automation", "sharePct": 10 }
+  ]
+}
