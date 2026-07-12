@@ -2,6 +2,7 @@ package app.atrium.registry;
 
 import app.atrium.registry.domain.Agent;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -12,4 +13,6 @@ import java.util.UUID;
 public interface AgentDirectory {
 
     List<Agent> findBySkill(UUID companyId, String skill);
+
+    Optional<Agent> findById(UUID companyId, UUID agentId);
 }

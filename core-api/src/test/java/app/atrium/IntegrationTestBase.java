@@ -14,7 +14,9 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Postgres MUST be the pgvector image — V2__agent_platform.sql runs
  * {@code CREATE EXTENSION vector} and fails on stock postgres.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        // fast lease sweeps so reclaim tests observe the REAL scheduled path in seconds
+        properties = "atrium.lease.reclaim-ms=1000")
 public abstract class IntegrationTestBase {
 
     @ServiceConnection

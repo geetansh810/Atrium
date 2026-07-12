@@ -117,6 +117,17 @@ public class Task {
         this.billingTaskId = this.id;
     }
 
+    /** Worker heartbeat (04: POST /tasks/{id}/lease/renew) — assignment must be verified first. */
+    public void renewLease(Instant until) {
+        this.leaseExpiresAt = until;
+    }
+
+    /** Lease-reclaim cleanup (03 §reclaim: assigned_agent_id=NULL) — after guard → 'queued'. */
+    public void clearAssignment() {
+        this.assignedAgentId = null;
+        this.leaseExpiresAt = null;
+    }
+
     /**
      * Deliberately package-private: status moves only through
      * {@link app.atrium.routing.TaskStateGuard}-checked service code.

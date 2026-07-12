@@ -28,6 +28,8 @@ management:
 atrium:
   product-name: ${PRODUCT_NAME:Atrium}
   base-url: ${APP_BASE_URL:http://localhost:5173}
+  lease:
+    reclaim-ms: 60000       # LeaseReclaimJob sweep interval (03 §reclaim: every minute)
 
 ---
 spring:

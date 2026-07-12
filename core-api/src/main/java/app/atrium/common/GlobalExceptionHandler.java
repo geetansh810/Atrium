@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * RFC-7807 {@code application/problem+json} for every error surface (04 §Errors).
@@ -46,6 +48,22 @@ public class GlobalExceptionHandler {
     public ProblemDetail onConstraintViolation(ConstraintViolationException e) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
         problem.setTitle("Validation failed");
+        return problem;
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ProblemDetail onMissingHeader(MissingRequestHeaderException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Missing required header " + e.getHeaderName());
+        problem.setTitle("Bad request");
+        return problem;
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail onTypeMismatch(MethodArgumentTypeMismatchException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Malformed value for '" + e.getName() + "'");
+        problem.setTitle("Bad request");
         return problem;
     }
 

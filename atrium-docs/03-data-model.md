@@ -195,20 +195,30 @@ CREATE TABLE billing_accounts (
 -- company_id = current_setting('app.company_id')::uuid policy on every business table.
 ```
 
-## The claim query (canonical — copy exactly)
+## The claim query (canonical — copy exactly; amended at M0.4 per 17 §M0.4)
 
 ```sql
 UPDATE tasks SET status='claimed', assigned_agent_id=$agentId,
-  claimed_at=now(), lease_expires_at=now() + interval '10 minutes'
+  claimed_at=now(), lease_expires_at=now() + interval '10 minutes',
+  attempt = attempt + 1                          -- M0.4: usage idempotency = taskId:attempt
 WHERE id = (
   SELECT id FROM tasks
   WHERE company_id=$companyId AND required_skill=$skill AND status='queued'
+    AND NOT EXISTS (SELECT 1 FROM agents a
+                    WHERE a.id=$agentId AND a.paused)  -- M0.4: paused agents never claim
   ORDER BY priority, created_at
   FOR UPDATE SKIP LOCKED
   LIMIT 1
 )
 RETURNING *;
 ```
+
+The Worker API endpoint `POST /tasks/{id}/claim` (04) claims one **named** task:
+the inner SELECT swaps `required_skill=$skill … ORDER BY … LIMIT 1` for
+`id=$taskId`, keeping every other clause (status guard, paused guard,
+`FOR UPDATE SKIP LOCKED`, the SET list) verbatim. The skill-ordered form is the
+runner's claim-next (M0.5b). `BudgetGuard.canSpend` runs in the same service
+transaction as either form.
 
 **Lease reclaim job** (every minute): `UPDATE tasks SET status='queued', assigned_agent_id=NULL WHERE status IN ('claimed','in_progress') AND lease_expires_at < now()` + `task_events(requeued)`. Workers renew the lease while actively working. The `usage_records.idempotency_key` (`taskId:attemptNo`) guarantees a redelivered task can't double-bill.
 

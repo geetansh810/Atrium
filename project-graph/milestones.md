@@ -11,10 +11,11 @@
 - ✅ M0.1 (2026-07-12, session 5) — [[core-api]] scaffolded: Boot 3.5.6/Java 17, 8 module packages + boundary docs, common/ (TenantContext/problem+json/utils), Flyway V1+V2 applied on pgvector, compose stack boots health-UP, Testcontainers smoke green. Done-when verified in full.
 - ✅ M0.2 (2026-07-12, session 5) — [[registry]] built: entities/repos/endpoints, RuntimeRegistry + llm_loop descriptor, AgentDirectory, V2_1 seed (3 templates + model catalog). 9/9 tests green; Done-when verified in full.
 - ✅ M0.3 (2026-07-13, session 6) — [[routing]] writer + eventbus outbox: OutboxWriter (MANDATORY-propagation same-tx), TaskStateGuard, TaskEventRecorder, task create/list/get/events with keyset pagination, billing chain fields. 20/20 tests green; Done-when verified in full (isolation + exactly one task_events AND one outbox_events row per create).
-- ☐ Everything else. Next: M0.4 claim loop & lease (amended card in doc 17). Real M2.4a–c server halves (Colyseus vendor, room tokens, Redis presence) still pending.
+- ✅ M0.4 (2026-07-13, session 6) — claim loop & lease: WorkBroker/PostgresWorkBroker (amended canonical claim SQL, id-keyed; 03 updated per 17), Worker API claim/renew (X-Agent-Id, 409 names holder), LeaseReclaimJob (advisory-lock singleton). 26/26 tests; Done-when verified (3×20 exactly-once, scheduled requeue w/ visible event, attempt++ per claim).
+- ☐ Everything else. Next: M0.5a LLM provider SPI + Anthropic (doc 17 card). Real M2.4a–c server halves (Colyseus vendor, room tokens, Redis presence) still pending.
 
 **Rev C (2026-07-12):** backend sequence now lives in `atrium-docs/17-backend-execution-plan.md` ([[agent-platform]]) — amends M0.1/M0.2/M0.4, splits M0.5a/b, redefines M0.8 (mock→API swap), adds MB-0, M0.75 and the M-SK/CTX/MEM/LN/KN/AR agent-depth series before/around Phase 1. M0.0's Paperclip half ✅ (findings in `atrium-docs/notes/`).
 
-**Likely next:** M0.4 (claim loop & lease) per doc 17.
+**Likely next:** M0.5a (LLM provider SPI + Anthropic) per doc 17.
 
 Links: [[_Atrium]] · [[core-api]] · [[web-dashboard]] · [[web-office]] · [[office-realtime]]
