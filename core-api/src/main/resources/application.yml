@@ -30,6 +30,14 @@ atrium:
   base-url: ${APP_BASE_URL:http://localhost:5173}
   lease:
     reclaim-ms: 60000       # LeaseReclaimJob sweep interval (03 §reclaim: every minute)
+  llm:
+    timeout: ${ATRIUM_LLM_TIMEOUT:120s}     # per-call cap, enforced by LlmRouter (13 §1)
+    retry:                                  # 13 §1.3 in-attempt schedules
+      rate-limited-backoff: 2s,8s,30s
+      provider-down-backoff: 5s,20s
+    anthropic:
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      api-key: ${ANTHROPIC_API_KEY:}        # secret — never logged, never in prompts
 
 ---
 spring:
