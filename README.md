@@ -10,7 +10,7 @@ positions ARE their live status.
 | Path | What | Status |
 |---|---|---|
 | `web/` | React dashboard + Phaser office canvas | Feature-complete on JSON mocks |
-| `core-api/` | Java 17 / Spring Boot 3.x source of truth | Not started (specs done) |
+| `core-api/` | Java 17 / Spring Boot 3.x source of truth | Scaffolded (M0.1) — schema V1+V2, no endpoints yet |
 | `office-realtime/` | Forked SkyOffice Colyseus server | Not started (fork only) |
 | `atrium-docs/` | Contract docs 00–17 — schema, APIs, milestone cards | Complete through Rev C |
 | `project-graph/` | Wiki-linked knowledge graph; start at `_Atrium.md` | Maintained every session |

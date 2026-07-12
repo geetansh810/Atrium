@@ -12,7 +12,9 @@ Multi-tenant SaaS where companies hire AI agents as employees: roles, skills, or
 
 ## Current state (update this section every session)
 
-**Last session (2026-07-12, session 5): MB-0 done — git repo live.** `git init` on `main`, root commit `chore: init monorepo (web frontend on mocks + docs)` (151 files: web/, atrium-docs/, project-graph/, .claude/launch.json — settings.local.json gitignored). Added root `.gitignore` (node/maven/env/OS), `.env.example` (08 §Config vars + doc-17 Rev C keys, milestone-annotated), README stub, `Makefile` (`dev`/`check`/`test`; core-api & office-realtime targets no-op gracefully until those dirs exist). Done-when verified: one commit with all three trees; `make check` runs web typecheck+lint clean (3 pre-existing fast-refresh lint warnings, non-blocking). Still zero backend code / no DB.
+**Last session (2026-07-12, session 5): MB-0 + M0.1 done — backend exists.** M0.1 (branch `m0.1-scaffold`): `core-api/` Maven scaffold — Spring Boot 3.5.6 / Java 17 (web, data-jpa, validation, actuator, data-redis, flyway+postgres), Maven wrapper vendored (only-script, Maven 3.9.9 — no system mvn needed). 8 module packages with `package-info.java` boundary docs per 12 §2. `common/`: `TenantContext` (ThreadLocal, bound by `TenantContextFilter` from `X-Company-Id`/`X-User-Id`; `/api/**` requires company header → 400 problem+json), `GlobalExceptionHandler` (RFC-7807 incl. `fieldErrors` map, `NotFoundException`/`ConflictException`), `Ids`, `ClockConfig`. Flyway `V1__core.sql` (03 §V1 verbatim + 15 §1 ALTERs folded) + `V2__agent_platform.sql` (15 §§2–4, `CREATE EXTENSION vector`). Root `docker-compose.yml` (pgvector/pgvector:pg16 + redis:7 + core-api w/ healthcheck deps), `core-api/Dockerfile` (multi-stage temurin 17). `IntegrationTestBase` (singleton Testcontainers, pgvector image + redis, `@ServiceConnection`) + `CompanySmokeTest` (3 tests). **Done-when verified:** compose boots clean, both migrations apply (compose AND Testcontainers), `GET /actuator/health`=200 (`{"status":"UP"}`), company insert+read green; `make check` green (now runs core-api verify too). JPA entities deliberately NOT created — that's M0.2; smoke test uses JdbcTemplate.
+
+**Earlier in session 5: MB-0 done — git repo live.** `git init` on `main`, root commit `chore: init monorepo (web frontend on mocks + docs)` (151 files: web/, atrium-docs/, project-graph/, .claude/launch.json — settings.local.json gitignored). Added root `.gitignore` (node/maven/env/OS), `.env.example` (08 §Config vars + doc-17 Rev C keys, milestone-annotated), README stub, `Makefile` (`dev`/`check`/`test`; core-api & office-realtime targets no-op gracefully until those dirs exist). Done-when verified: one commit with all three trees; `make check` runs web typecheck+lint clean (3 pre-existing fast-refresh lint warnings, non-blocking). Still zero backend code / no DB.
 
 **Session 4 (2026-07-12):** Backend fully planned — Rev C "agent platform" doc set written (docs only, zero code, deliberate plan-first decision). Any later session can generate backend code from the docs alone; only grunt work + tests remain.
 
@@ -33,14 +35,17 @@ Multi-tenant SaaS where companies hire AI agents as employees: roles, skills, or
 
 **Session 2 (2026-07-12):** Full dashboard on JSON mocks — mock layer (`mocks/*.json` → `mockData.ts` → `store.tsx`, the API swap point), all reference-2 panels + modals, shell wired to store. No tests (deliberate).
 
-**Likely next:** M0.1 — core-api Maven scaffold, Flyway V1/V2 migrations, docker-compose (pgvector:pg16 + redis:7), Testcontainers smoke test. Branch `m0.1-scaffold` per git conventions. Follow `atrium-docs/17-backend-execution-plan.md` cards in order, one per session.
+**Likely next:** M0.2 — Registry module: entities+repos (every repo method takes companyId), endpoints per 04 §Registry + 16 §1, `RuntimeRegistry` descriptor for `llm_loop` (validateConfig only), hire via `roleTemplateKey`, manager-cycle validation, `V2_1__seed.sql` (3 role templates + model_catalog rows). Branch `m0.2-registry`. Follow `atrium-docs/17-backend-execution-plan.md` cards in order, one per session.
 
 ## Commands
 
 ```bash
-cd web && npm run dev      # dev server on :5173
-cd web && npx tsc -b       # typecheck
-cd web && npm run lint     # oxlint
+cd web && npm run dev        # dev server on :5173
+cd web && npx tsc -b         # typecheck
+cd web && npm run lint       # oxlint
+cd core-api && ./mvnw test   # backend tests (Docker must be running — Testcontainers)
+docker compose up            # pgvector + redis + core-api on :8080
+make check                   # web typecheck+lint + core-api verify
 ```
 
 Browser preview: `.claude/launch.json` has a `web-dev` config (uses cwd `web`, port 5173).

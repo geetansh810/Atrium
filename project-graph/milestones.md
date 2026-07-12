@@ -8,10 +8,11 @@
 - ✅ Dashboard shell + all panels ([[web-dashboard]] + [[frontend-shared]]) — the UI half of M0.8/M2.3/M2.5/M2.6, built early on mock data.
 - ✅ [[web-office]] — SkyOffice client vendored (client half of M2.4a), stripped (M2.4b scope), agent avatars driven by the mock store (M2.4c preview). LimeZu license verified: paid tier required before commercial launch (06 §D).
 - ✅ MB-0 (2026-07-12, session 5) — git repo initialized on `main`, root commit with web/ + docs + graph; root `.gitignore`/`.env.example`/`README`/`Makefile` (`make dev|check|test`, graceful no-ops for absent services).
-- ☐ Everything else. M0.1 (backend scaffold) is the next entry point for [[core-api]] (M0.0's Paperclip half done). Real M2.4a–c server halves (Colyseus vendor, room tokens, Redis presence) still pending.
+- ✅ M0.1 (2026-07-12, session 5) — [[core-api]] scaffolded: Boot 3.5.6/Java 17, 8 module packages + boundary docs, common/ (TenantContext/problem+json/utils), Flyway V1+V2 applied on pgvector, compose stack boots health-UP, Testcontainers smoke green. Done-when verified in full.
+- ☐ Everything else. Next: M0.2 registry (entities/repos/endpoints, RuntimeRegistry stub, V2_1 seed). Real M2.4a–c server halves (Colyseus vendor, room tokens, Redis presence) still pending.
 
 **Rev C (2026-07-12):** backend sequence now lives in `atrium-docs/17-backend-execution-plan.md` ([[agent-platform]]) — amends M0.1/M0.2/M0.4, splits M0.5a/b, redefines M0.8 (mock→API swap), adds MB-0, M0.75 and the M-SK/CTX/MEM/LN/KN/AR agent-depth series before/around Phase 1. M0.0's Paperclip half ✅ (findings in `atrium-docs/notes/`).
 
-**Likely next:** M0.1 (core-api scaffold + V1/V2 migrations + compose) per doc 17.
+**Likely next:** M0.2 (registry module + seed migration) per doc 17.
 
 Links: [[_Atrium]] · [[core-api]] · [[web-dashboard]] · [[web-office]] · [[office-realtime]]
