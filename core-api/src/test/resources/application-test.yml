@@ -1,0 +1,15 @@
+# Profile-specific: MERGES on top of src/main/resources/application.yml
+# (a same-named application.yml here would instead fully REPLACE it on the
+# test classpath and silently drop unrelated config, e.g. the anthropic
+# block — hence the profile-specific filename + IntegrationTestBase
+# activating "test").
+atrium:
+  relay:
+    # Test-suite default: near-never. Every IntegrationTestBase subclass's
+    # context shares one Postgres/Redis (Testcontainers reuse), so an
+    # always-on OutboxRelay in one context can silently "steal" and publish
+    # rows a DIFFERENT context's test expects to control (the advisory lock
+    # only picks one winning instance per tick — it doesn't care which
+    # context that instance belongs to). app.atrium.realtimebridge.OutboxRelayTest
+    # overrides this back down via its own @TestPropertySource.
+    interval-ms: 3600000

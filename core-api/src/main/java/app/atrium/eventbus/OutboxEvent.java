@@ -54,6 +54,11 @@ public class OutboxEvent {
         this.payload = event.payload();
     }
 
+    /** Called only by {@link JpaOutboxRelayGateway}, in the same tx as the claiming SELECT. */
+    void markPublished(Instant at) {
+        this.publishedAt = at;
+    }
+
     public Long getId() { return id; }
     public UUID getCompanyId() { return companyId; }
     public String getTopic() { return topic; }

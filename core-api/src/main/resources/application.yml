@@ -30,6 +30,9 @@ atrium:
   base-url: ${APP_BASE_URL:http://localhost:5173}
   lease:
     reclaim-ms: 60000       # LeaseReclaimJob sweep interval (03 §reclaim: every minute)
+  relay:
+    interval-ms: 250        # OutboxRelay poll interval (12 §3)
+    retention-cron: "0 0 3 * * *"   # OutboxRetentionJob: nightly at 3am (15 §2)
   llm:
     timeout: ${ATRIUM_LLM_TIMEOUT:120s}     # per-call cap, enforced by LlmRouter (13 §1)
     retry:                                  # 13 §1.3 in-attempt schedules

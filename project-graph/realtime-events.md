@@ -2,7 +2,7 @@
 
 **What:** the Redis pub/sub contract between [[realtimebridge]] (publisher) and [[office-realtime]] (subscriber). Channel: `atrium:events:{companyId}`.
 
-**State: NOT STARTED** (spec only).
+**State: LIVE (M0.75).** [[realtimebridge]]'s `OutboxRelay` publishes this exact contract from the transactional outbox.
 
 **Event shapes (compact JSON, dot.case types):**
 ```json

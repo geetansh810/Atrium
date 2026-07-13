@@ -2,6 +2,7 @@ package app.atrium;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -26,6 +27,10 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         // fast lease sweeps so reclaim tests observe the REAL scheduled path in seconds
         properties = "atrium.lease.reclaim-ms=1000")
+// activates application-test.yml (merges over application.yml) — see its
+// header comment: keeps every context's OutboxRelay near-dormant by default
+// so it can't race a DIFFERENT context's mocked-relay assertions.
+@ActiveProfiles("test")
 public abstract class IntegrationTestBase {
 
     @ServiceConnection
