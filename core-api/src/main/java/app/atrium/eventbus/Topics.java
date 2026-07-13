@@ -27,4 +27,9 @@ public final class Topics {
     public static String system(UUID companyId) {
         return PREFIX + companyId + "/system";
     }
+
+    /** {@code atrium/v1/{companyId}/budget/{agentId|company}} (12 §4). */
+    public static String budget(UUID companyId, UUID agentId) {
+        return PREFIX + companyId + "/budget/" + (agentId != null ? agentId : "company");
+    }
 }

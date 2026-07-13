@@ -30,6 +30,8 @@ ALTER TABLE budgets
   ADD COLUMN alert_pct SMALLINT NOT NULL DEFAULT 80;           -- soft-alert tier → budget.threshold event (once per period)
 ```
 
+**M0.7 addendum (`V3__budget_alerted_at.sql`, applied after V1/V2):** `alert_pct` above shipped in V1 ahead of the enforcement code; M0.7 adds `budgets.alerted_at TIMESTAMPTZ` (nullable) for the once-per-period dedupe named above — the natural key is already `(company_id, agent_id, period)` UNIQUE, so a new period gets a new row and `alerted_at` resets for free.
+
 Semantics: `billing_task_id` = self for user-created roots, copied from parent on child creation. `paused=true` ⇒ runtime stopped + claims refused (checked in the claim query's WHERE via join, see 17 M0.4 card). Frontend `types.ts` gains these fields (optional, defaulted — mock data unaffected).
 
 ## 2. Event backbone (12 §3)

@@ -10,10 +10,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /**
  * Starts/stops an agent's runtime loop on the lifecycle triggers named in
- * 13 §3.2/17 §M0.5b: hire, unpause, pause. (Budget auto-pause is M0.7 —
- * NoopBudgetGuard never fires it yet; process-shutdown cleanup is each
- * runtime's own {@code @PreDestroy}, since only it knows which agents it
- * has running.)
+ * 13 §3.2/17 §M0.5b: hire, unpause, pause (M0.7 adds budget auto-pause via
+ * {@code AgentDirectory.pauseForBudget}, which calls {@link #stop} the same
+ * way; process-shutdown cleanup is each runtime's own {@code @PreDestroy},
+ * since only it knows which agents it has running.)
  *
  * <p>Deferred to after the caller's transaction commits — hire()/patch() are
  * still mid-write when this is called, and a poll tick that can't yet see the

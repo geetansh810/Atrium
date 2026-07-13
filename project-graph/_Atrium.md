@@ -7,7 +7,7 @@ Multi-tenant SaaS: companies hire AI agents as employees — roles, skills, hier
 ## Services
 - [[web-dashboard]] — React dashboard (BUILT, mock data)
 - [[web-office]] — future SkyOffice Phaser client (NOT STARTED, fork only)
-- [[core-api]] — Spring Boot source of truth (APPROVAL GATE LIVE — M0.1–M0.6 done: scaffold, migrations, registry, routing + outbox + claim/lease, LLM provider SPI + Anthropic, agent runtime loop, approve/reject + rejection-feedback rework)
+- [[core-api]] — Spring Boot source of truth (BUDGET ENFORCEMENT LIVE — M0.1–M0.7 done: scaffold, migrations, registry, routing + outbox + claim/lease, LLM provider SPI + Anthropic, agent runtime loop, approve/reject + rejection-feedback rework, real budget caps + soft-alert + auto-pause)
 - [[office-realtime]] — Colyseus presence server (NOT STARTED, fork only)
 
 ## core-api modules
