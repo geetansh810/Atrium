@@ -41,6 +41,9 @@ atrium:
     anthropic:
       base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
       api-key: ${ANTHROPIC_API_KEY:}        # secret — never logged, never in prompts
+    google:
+      base-url: ${GOOGLE_BASE_URL:https://generativelanguage.googleapis.com}
+      api-key: ${GOOGLE_API_KEY:}           # secret — never logged, never in prompts
 
 ---
 spring:

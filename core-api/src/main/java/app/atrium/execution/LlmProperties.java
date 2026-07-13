@@ -10,9 +10,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * The API key is a secret: never log it, never let it near a prompt (08 §Security).
  */
 @ConfigurationProperties(prefix = "atrium.llm")
-public record LlmProperties(Duration timeout, Retry retry, Anthropic anthropic) {
+public record LlmProperties(Duration timeout, Retry retry, Anthropic anthropic, Google google) {
 
     public record Retry(List<Duration> rateLimitedBackoff, List<Duration> providerDownBackoff) {}
 
     public record Anthropic(String baseUrl, String apiKey) {}
+
+    public record Google(String baseUrl, String apiKey) {}
 }

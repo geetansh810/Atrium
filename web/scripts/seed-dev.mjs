@@ -65,6 +65,19 @@ const AGENTS = [
     about: "Investigates topics and summarizes findings with sources.",
     budgetTokens: 2_000_000,
   },
+  {
+    // Free-tier path: a coder backed by Gemini's free model. If only GOOGLE_API_KEY
+    // is set, the Anthropic agents above park at the pre-dispatch gate and this one
+    // claims all the Coding work — so the full claim→work→approve loop runs at $0.
+    roleTemplateKey: "coder",
+    name: "GeminiCoder",
+    roleTitle: "Software Engineer (Gemini)",
+    skillTags: ["Coding", "Code Review", "Testing"],
+    modelProvider: "google",
+    modelName: "gemini-3.1-flash-lite",
+    about: "Free-tier coder backed by Gemini 3.1 Flash-Lite.",
+    budgetTokens: 2_000_000,
+  },
 ];
 
 async function main() {

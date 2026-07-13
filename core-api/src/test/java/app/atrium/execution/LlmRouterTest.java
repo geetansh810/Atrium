@@ -40,7 +40,8 @@ class LlmRouterTest {
                 new LlmProperties.Retry(
                         List.of(Duration.ZERO, Duration.ZERO, Duration.ZERO),
                         List.of(Duration.ZERO, Duration.ZERO)),
-                new LlmProperties.Anthropic("http://unused", ""));
+                new LlmProperties.Anthropic("http://unused", ""),
+                new LlmProperties.Google("http://unused", ""));
         return new LlmRouter(List.of(provider), catalog, properties);
     }
 

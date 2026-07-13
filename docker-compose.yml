@@ -34,6 +34,12 @@ services:
       DATABASE_USER: atrium
       DATABASE_PASSWORD: atrium
       REDIS_URL: redis://redis:6379
+      # LLM provider keys (13 §1) — read from a root .env file (Compose auto-loads
+      # it) or the shell environment. Never set a default here; a blank value is
+      # the correct "not configured" state (ProviderReadiness.isReady()=false).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
