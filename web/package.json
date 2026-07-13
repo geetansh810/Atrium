@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:dev": "node scripts/seed-dev.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
     "phaser": "^3.90.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { CloseIcon } from "../../shared/icons";
-import { roleTemplates } from "../../shared/mockData";
 import { useApp } from "../../shared/store";
 import type { ModelProvider } from "../../shared/types";
 import "./panels.css";
@@ -9,6 +8,7 @@ import "./panels.css";
 // (role, skills, model, budget, manager).
 export function InviteAgentModal() {
   const { state, dispatch } = useApp();
+  const roleTemplates = state.roleTemplates;
   const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
@@ -48,6 +48,7 @@ export function InviteAgentModal() {
         managerAgentId: managerId || null,
         about: about.trim() || `${roleTitle.trim()} agent.`,
         budgetTokens: Math.max(1, Number(budget) || 1_000_000),
+        roleTemplateKey: templateKey,
       },
     });
   };

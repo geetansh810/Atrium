@@ -25,6 +25,15 @@ public class TenantContextFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        // CORS preflight (M0.8: browser dashboard calls core-api cross-origin from
+        // Vite) never carries the dev headers — this filter runs ahead of Spring's
+        // CORS handling in the chain, so an OPTIONS request would otherwise 400
+        // before DispatcherServlet ever gets to add the CORS response headers.
+        if ("OPTIONS".equals(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String companyHeader = request.getHeader(COMPANY_HEADER);
         String userHeader = request.getHeader(USER_HEADER);
         // POST /api/v1/companies is the bootstrap call — no tenant exists yet
