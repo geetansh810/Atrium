@@ -1,14 +1,20 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Avatar } from "../../shared/Avatar";
 import { formatTimeAgo } from "../../shared/format";
 import { useApp } from "../../shared/store";
 import type { Task } from "../../shared/types";
-import { PanelShell } from "./PanelShell";
+import { StatusPill } from "../../ui/StatusPill";
+import { EmptyState } from "../../ui/EmptyState";
+import "./ReviewInbox.css";
 
-// The two-clicks-from-login escalation surface (01-product-spec §3.9):
-// every pending_review + flagged item, newest first.
-export function ApprovalsPanel() {
+// The two-clicks-from-login escalation surface (01-product-spec §3.9),
+// promoted to a routed page (MF-3) — replaces ApprovalsPanel. Every
+// pending_review + flagged item, newest first; count matches escalationCount
+// so the nav badge and this page never disagree.
+export function ReviewInbox() {
   const { state, dispatch } = useApp();
+  const navigate = useNavigate();
   const [feedbackFor, setFeedbackFor] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
 
@@ -26,46 +32,45 @@ export function ApprovalsPanel() {
   };
 
   return (
-    <PanelShell
-      title="Approvals & Escalations"
-      subtitle={`${queue.length} item${queue.length === 1 ? "" : "s"} waiting on you`}
-      width={520}
-    >
-      {queue.length === 0 && <div className="empty-note">All clear — nothing needs review. 🎉</div>}
+    <div className="review-inbox">
+      <header className="review-inbox-head">
+        <h1>Review Inbox</h1>
+        <p>{queue.length} item{queue.length === 1 ? "" : "s"} waiting on you.</p>
+      </header>
+
+      {queue.length === 0 && (
+        <EmptyState title="All clear — nothing needs review." />
+      )}
 
       {queue.map((task) => {
         const agent = task.assignedAgentId ? agentById.get(task.assignedAgentId) : undefined;
         const isFlagged = task.status === "flagged";
         return (
-          <div className="approval-card" key={task.id}>
-            <div className="approval-top">
-              <span className="approval-title">{task.title}</span>
-              <span className={`status-badge ${task.status}`}>
-                {isFlagged ? "Flagged" : "Pending Review"}
-              </span>
+          <div className="review-card" key={task.id}>
+            <div className="review-card-top">
+              <span className="review-card-title">{task.title}</span>
+              <StatusPill label={isFlagged ? "Flagged" : "Pending Review"} tone={isFlagged ? "danger" : "warning"} />
             </div>
             {agent && (
-              <div className="approval-agent">
+              <div className="review-card-agent">
                 <Avatar name={agent.name} seed={agent.id} size={20} />
                 {agent.name} · {formatTimeAgo(task.completedAt ?? task.createdAt)}
               </div>
             )}
 
             {isFlagged && task.flagReason && <div className="artifact-box flag">{task.flagReason}</div>}
-            {!isFlagged && task.artifact && (
-              <div className="artifact-box">{task.artifact.content}</div>
-            )}
+            {!isFlagged && task.artifact && <div className="artifact-box">{task.artifact.content}</div>}
 
             {feedbackFor === task.id ? (
               <>
                 <textarea
-                  className="approval-feedback"
+                  className="review-feedback"
                   placeholder={isFlagged ? "Guidance for the agent…" : "What needs to change?"}
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   autoFocus
                 />
-                <div className="approval-actions">
+                <div className="review-card-actions">
                   <button className="btn primary sm" disabled={!feedback.trim()} onClick={() => sendBack(task)}>
                     {isFlagged ? "Send guidance & resume" : "Reject with feedback"}
                   </button>
@@ -81,9 +86,12 @@ export function ApprovalsPanel() {
                 </div>
               </>
             ) : (
-              <div className="approval-actions">
+              <div className="review-card-actions">
                 {!isFlagged && (
-                  <button className="btn accent sm" onClick={() => dispatch({ type: "approveTask", taskId: task.id })}>
+                  <button
+                    className="btn accent sm"
+                    onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
+                  >
                     Approve
                   </button>
                 )}
@@ -96,10 +104,7 @@ export function ApprovalsPanel() {
                 >
                   {isFlagged ? "Reply & unblock" : "Reject"}
                 </button>
-                <button
-                  className="btn sm"
-                  onClick={() => dispatch({ type: "openPanel", panel: "workspace", taskId: task.id })}
-                >
+                <button className="btn sm" onClick={() => navigate(`/tasks/${task.id}`)}>
                   Open task
                 </button>
               </div>
@@ -107,6 +112,6 @@ export function ApprovalsPanel() {
           </div>
         );
       })}
-    </PanelShell>
+    </div>
   );
 }

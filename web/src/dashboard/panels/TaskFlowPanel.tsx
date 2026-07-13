@@ -1,5 +1,6 @@
 import { Avatar } from "../../shared/Avatar";
 import { useApp } from "../../shared/store";
+import { useAppNav } from "../../shared/nav";
 import type { Task } from "../../shared/types";
 import { PanelShell } from "./PanelShell";
 
@@ -12,6 +13,7 @@ function nodeClass(task: Task): string {
 // Parent → children graph per GET /tasks/{id}/flow (reference-2 "Task Flow").
 export function TaskFlowPanel() {
   const { state, dispatch } = useApp();
+  const nav = useAppNav();
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
 
   const roots = state.tasks.filter((t) =>
@@ -62,7 +64,7 @@ export function TaskFlowPanel() {
         <div
           className={nodeClass(root)}
           style={{ cursor: "pointer" }}
-          onClick={() => dispatch({ type: "openPanel", panel: "workspace", taskId: root.id })}
+          onClick={() => nav.openTask(root.id)}
         >
           {rootAgent && <Avatar name={rootAgent.name} seed={rootAgent.id} size={26} />}
           <span className="flow-node-title">{rootAgent?.name ?? "Unassigned"}</span>
@@ -80,7 +82,7 @@ export function TaskFlowPanel() {
                     <div
                       className={nodeClass(child)}
                       style={{ cursor: "pointer" }}
-                      onClick={() => dispatch({ type: "openPanel", panel: "workspace", taskId: child.id })}
+                      onClick={() => nav.openTask(child.id)}
                     >
                       {agent && <Avatar name={agent.name} seed={agent.id} size={26} />}
                       <span className="flow-node-title">{agent?.name ?? "Unassigned"}</span>

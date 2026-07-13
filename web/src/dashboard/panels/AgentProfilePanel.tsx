@@ -3,12 +3,14 @@ import { ProgressBar } from "../../shared/ProgressBar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
 import { formatClockTime, formatFocusTime, formatTimeAgo } from "../../shared/format";
 import { useApp } from "../../shared/store";
+import { useAppNav } from "../../shared/nav";
 import { PanelShell } from "./PanelShell";
 
 const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
 
 export function AgentProfilePanel() {
   const { state, dispatch } = useApp();
+  const nav = useAppNav();
   const agent = state.agents.find((a) => a.id === state.ui.selectedAgentId);
   if (!agent) return null;
 
@@ -58,7 +60,7 @@ export function AgentProfilePanel() {
         <div
           key={task.id}
           className="profile-task"
-          onClick={() => dispatch({ type: "openPanel", panel: "workspace", taskId: task.id })}
+          onClick={() => nav.openTask(task.id)}
         >
           <div className="profile-task-top">
             <span>{task.title}</span>

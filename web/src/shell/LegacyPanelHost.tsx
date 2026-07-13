@@ -2,20 +2,16 @@ import { useApp } from "../shared/store";
 import { AgentProfilePanel } from "../dashboard/panels/AgentProfilePanel";
 import { AnalyticsPanel } from "../dashboard/panels/AnalyticsPanel";
 import { AnnouncementsPanel } from "../dashboard/panels/AnnouncementsPanel";
-import { ApprovalsPanel } from "../dashboard/panels/ApprovalsPanel";
 import { BudgetPanel } from "../dashboard/panels/BudgetPanel";
 import { ChatPanel } from "../dashboard/panels/ChatPanel";
 import { FocusPodPanel } from "../dashboard/panels/FocusPodPanel";
 import { TaskFlowPanel } from "../dashboard/panels/TaskFlowPanel";
-import { WorkspacePanel } from "../dashboard/panels/WorkspacePanel";
 
 const PANELS = {
   profile: AgentProfilePanel,
-  workspace: WorkspacePanel,
   analytics: AnalyticsPanel,
   chat: ChatPanel,
   announcements: AnnouncementsPanel,
-  approvals: ApprovalsPanel,
   budget: BudgetPanel,
   flow: TaskFlowPanel,
   focus: FocusPodPanel,

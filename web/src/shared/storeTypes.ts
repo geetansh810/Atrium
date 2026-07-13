@@ -17,12 +17,10 @@ import type {
 
 export type PanelKey =
   | "profile"
-  | "workspace"
   | "analytics"
   | "chat"
   | "announcements"
   | "flow"
-  | "approvals"
   | "budget"
   | "focus";
 

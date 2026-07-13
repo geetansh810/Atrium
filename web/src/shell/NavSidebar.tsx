@@ -4,7 +4,6 @@ import { escalationCount, useApp } from "../shared/store";
 import type { PanelKey } from "../shared/store";
 import {
   AnalyticsIcon,
-  ApprovalsIcon,
   ChatIcon,
   CoinsIcon,
   EmployeesIcon,
@@ -17,7 +16,6 @@ import {
   ProjectsIcon,
   ReportsIcon,
   TasksIcon,
-  WorkspaceIcon,
 } from "../shared/icons";
 import "./NavSidebar.css";
 
@@ -37,11 +35,9 @@ const PRIMARY_NAV = [
 // while its routed replacement is still a placeholder page. Retired
 // milestone-by-milestone as each panel gets a real page (gone by MF-6).
 const CLASSIC_PANELS: { label: string; panel: PanelKey; icon: typeof ChatIcon }[] = [
-  { label: "My Workspace", panel: "workspace", icon: WorkspaceIcon },
   { label: "Chat", panel: "chat", icon: ChatIcon },
   { label: "Analytics", panel: "analytics", icon: AnalyticsIcon },
   { label: "Announcements", panel: "announcements", icon: MegaphoneIcon },
-  { label: "Approvals", panel: "approvals", icon: ApprovalsIcon },
   { label: "Payroll", panel: "budget", icon: CoinsIcon },
   { label: "Task Flow", panel: "flow", icon: FlowIcon },
 ];
@@ -82,9 +78,6 @@ export function NavSidebar() {
           >
             <PanelIcon />
             <span>{label}</span>
-            {panel === "approvals" && escalations > 0 && (
-              <span className="nav-sidebar-count">{escalations}</span>
-            )}
           </button>
         ))}
       </nav>

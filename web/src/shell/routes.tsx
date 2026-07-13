@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 import { MissionControlPage } from "../pages/mission/MissionControlPage";
 import { TasksPage } from "../pages/tasks/TasksPage";
+import { ReviewInbox } from "../pages/tasks/ReviewInbox";
 import { WorkflowPage } from "../pages/workflow/WorkflowPage";
 import { EmployeesPage } from "../pages/employees/EmployeesPage";
 import { OrganizationPage } from "../pages/organization/OrganizationPage";
@@ -16,6 +17,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<MissionControlPage />} />
       <Route path="/tasks" element={<TasksPage />} />
+      <Route path="/tasks/review" element={<ReviewInbox />} />
+      <Route path="/tasks/:id" element={<TasksPage />} />
       <Route path="/workflow" element={<WorkflowPage />} />
       <Route path="/employees" element={<EmployeesPage />} />
       <Route path="/organization" element={<OrganizationPage />} />

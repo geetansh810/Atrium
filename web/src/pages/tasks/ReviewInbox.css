@@ -1,0 +1,75 @@
+.review-inbox {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.review-inbox-head h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.review-inbox-head p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.review-card {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.review-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.review-card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.review-card-agent {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.review-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.review-feedback {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 54px;
+  margin-top: 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.review-feedback:focus {
+  border-color: var(--accent);
+}
