@@ -14,15 +14,67 @@
       "createdAt": "2026-07-12T09:10:00Z",
       "completedAt": null,
       "subtasks": [
-        { "id": "sub-q2-1", "label": "Load sales dataset", "position": 1, "state": "done" },
-        { "id": "sub-q2-2", "label": "Clean & validate data", "position": 2, "state": "done" },
-        { "id": "sub-q2-3", "label": "Identify key trends", "position": 3, "state": "doing" },
-        { "id": "sub-q2-4", "label": "Generate visualizations", "position": 4, "state": "todo" },
-        { "id": "sub-q2-5", "label": "Write summary", "position": 5, "state": "todo" }
+        {
+          "id": "sub-q2-1",
+          "label": "Load sales dataset",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-q2-2",
+          "label": "Clean & validate data",
+          "position": 2,
+          "state": "done"
+        },
+        {
+          "id": "sub-q2-3",
+          "label": "Identify key trends",
+          "position": 3,
+          "state": "doing"
+        },
+        {
+          "id": "sub-q2-4",
+          "label": "Generate visualizations",
+          "position": 4,
+          "state": "todo"
+        },
+        {
+          "id": "sub-q2-5",
+          "label": "Write summary",
+          "position": 5,
+          "state": "todo"
+        }
       ],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-1",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T09:10:00Z"
+        },
+        {
+          "id": "tev-2",
+          "eventType": "claimed",
+          "actor": "agent:agent-data-analyst",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T09:15:00Z"
+        },
+        {
+          "id": "tev-3",
+          "eventType": "progress",
+          "actor": "agent:agent-data-analyst",
+          "payload": {
+            "progress": 65
+          },
+          "createdAt": "2026-07-12T09:20:00Z"
+        }
+      ]
     },
     {
       "id": "task-collect-competitor",
@@ -38,13 +90,55 @@
       "createdAt": "2026-07-12T09:20:00Z",
       "completedAt": null,
       "subtasks": [
-        { "id": "sub-cc-1", "label": "List top 5 competitors", "position": 1, "state": "done" },
-        { "id": "sub-cc-2", "label": "Scrape pricing pages", "position": 2, "state": "doing" },
-        { "id": "sub-cc-3", "label": "Normalize into dataset", "position": 3, "state": "todo" }
+        {
+          "id": "sub-cc-1",
+          "label": "List top 5 competitors",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-cc-2",
+          "label": "Scrape pricing pages",
+          "position": 2,
+          "state": "doing"
+        },
+        {
+          "id": "sub-cc-3",
+          "label": "Normalize into dataset",
+          "position": 3,
+          "state": "todo"
+        }
       ],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-4",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T09:20:00Z"
+        },
+        {
+          "id": "tev-5",
+          "eventType": "claimed",
+          "actor": "agent:agent-research",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T09:25:00Z"
+        },
+        {
+          "id": "tev-6",
+          "eventType": "progress",
+          "actor": "agent:agent-research",
+          "payload": {
+            "progress": 40
+          },
+          "createdAt": "2026-07-12T09:30:00Z"
+        }
+      ]
     },
     {
       "id": "task-validate-dataset",
@@ -60,9 +154,53 @@
       "createdAt": "2026-07-11T14:00:00Z",
       "completedAt": "2026-07-11T16:30:00Z",
       "subtasks": [],
-      "artifact": { "kind": "report", "content": "Dataset passes 14/14 integrity checks. 3 duplicate rows removed." },
+      "artifact": {
+        "kind": "report",
+        "content": "Dataset passes 14/14 integrity checks. 3 duplicate rows removed."
+      },
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-7",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-11T14:00:00Z"
+        },
+        {
+          "id": "tev-8",
+          "eventType": "claimed",
+          "actor": "agent:agent-data-analyst",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-11T14:05:00Z"
+        },
+        {
+          "id": "tev-9",
+          "eventType": "progress",
+          "actor": "agent:agent-data-analyst",
+          "payload": {
+            "progress": 100
+          },
+          "createdAt": "2026-07-11T14:15:00Z"
+        },
+        {
+          "id": "tev-10",
+          "eventType": "completed",
+          "actor": "agent:agent-data-analyst",
+          "payload": null,
+          "createdAt": "2026-07-11T14:20:00Z"
+        },
+        {
+          "id": "tev-11",
+          "eventType": "approved",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-11T16:30:00Z"
+        }
+      ]
     },
     {
       "id": "task-draft-q2-report",
@@ -80,7 +218,16 @@
       "subtasks": [],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-12",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T09:25:00Z"
+        }
+      ]
     },
     {
       "id": "task-market-trends",
@@ -96,13 +243,55 @@
       "createdAt": "2026-07-12T10:05:00Z",
       "completedAt": null,
       "subtasks": [
-        { "id": "sub-mt-1", "label": "Collect industry sources", "position": 1, "state": "done" },
-        { "id": "sub-mt-2", "label": "Extract trend signals", "position": 2, "state": "doing" },
-        { "id": "sub-mt-3", "label": "Write trend summary", "position": 3, "state": "todo" }
+        {
+          "id": "sub-mt-1",
+          "label": "Collect industry sources",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-mt-2",
+          "label": "Extract trend signals",
+          "position": 2,
+          "state": "doing"
+        },
+        {
+          "id": "sub-mt-3",
+          "label": "Write trend summary",
+          "position": 3,
+          "state": "todo"
+        }
       ],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-13",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T10:05:00Z"
+        },
+        {
+          "id": "tev-14",
+          "eventType": "claimed",
+          "actor": "agent:agent-research",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T10:10:00Z"
+        },
+        {
+          "id": "tev-15",
+          "eventType": "progress",
+          "actor": "agent:agent-research",
+          "payload": {
+            "progress": 65
+          },
+          "createdAt": "2026-07-12T10:15:00Z"
+        }
+      ]
     },
     {
       "id": "task-reply-emails",
@@ -118,13 +307,55 @@
       "createdAt": "2026-07-12T09:35:00Z",
       "completedAt": null,
       "subtasks": [
-        { "id": "sub-re-1", "label": "Classify by intent", "position": 1, "state": "done" },
-        { "id": "sub-re-2", "label": "Draft replies", "position": 2, "state": "doing" },
-        { "id": "sub-re-3", "label": "Queue for review", "position": 3, "state": "todo" }
+        {
+          "id": "sub-re-1",
+          "label": "Classify by intent",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-re-2",
+          "label": "Draft replies",
+          "position": 2,
+          "state": "doing"
+        },
+        {
+          "id": "sub-re-3",
+          "label": "Queue for review",
+          "position": 3,
+          "state": "todo"
+        }
       ],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-16",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T09:35:00Z"
+        },
+        {
+          "id": "tev-17",
+          "eventType": "claimed",
+          "actor": "agent:agent-email",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T09:40:00Z"
+        },
+        {
+          "id": "tev-18",
+          "eventType": "progress",
+          "actor": "agent:agent-email",
+          "payload": {
+            "progress": 40
+          },
+          "createdAt": "2026-07-12T09:45:00Z"
+        }
+      ]
     },
     {
       "id": "task-build-api",
@@ -140,14 +371,61 @@
       "createdAt": "2026-07-12T09:12:00Z",
       "completedAt": null,
       "subtasks": [
-        { "id": "sub-api-1", "label": "Define contract", "position": 1, "state": "done" },
-        { "id": "sub-api-2", "label": "Implement handler", "position": 2, "state": "doing" },
-        { "id": "sub-api-3", "label": "Add tests", "position": 3, "state": "todo" },
-        { "id": "sub-api-4", "label": "Wire docs", "position": 4, "state": "todo" }
+        {
+          "id": "sub-api-1",
+          "label": "Define contract",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-api-2",
+          "label": "Implement handler",
+          "position": 2,
+          "state": "doing"
+        },
+        {
+          "id": "sub-api-3",
+          "label": "Add tests",
+          "position": 3,
+          "state": "todo"
+        },
+        {
+          "id": "sub-api-4",
+          "label": "Wire docs",
+          "position": 4,
+          "state": "todo"
+        }
       ],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-19",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T09:12:00Z"
+        },
+        {
+          "id": "tev-20",
+          "eventType": "claimed",
+          "actor": "agent:agent-coder",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T09:17:00Z"
+        },
+        {
+          "id": "tev-21",
+          "eventType": "progress",
+          "actor": "agent:agent-coder",
+          "payload": {
+            "progress": 30
+          },
+          "createdAt": "2026-07-12T09:22:00Z"
+        }
+      ]
     },
     {
       "id": "task-generate-report",
@@ -165,7 +443,16 @@
       "subtasks": [],
       "artifact": null,
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-22",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T10:00:00Z"
+        }
+      ]
     },
     {
       "id": "task-onboarding-doc",
@@ -181,12 +468,59 @@
       "createdAt": "2026-07-11T13:00:00Z",
       "completedAt": "2026-07-12T09:50:00Z",
       "subtasks": [
-        { "id": "sub-ob-1", "label": "Diff July policy changes", "position": 1, "state": "done" },
-        { "id": "sub-ob-2", "label": "Rewrite affected sections", "position": 2, "state": "done" }
+        {
+          "id": "sub-ob-1",
+          "label": "Diff July policy changes",
+          "position": 1,
+          "state": "done"
+        },
+        {
+          "id": "sub-ob-2",
+          "label": "Rewrite affected sections",
+          "position": 2,
+          "state": "done"
+        }
       ],
-      "artifact": { "kind": "text", "content": "Updated onboarding doc v2.3 — sections 4 (benefits) and 7 (remote policy) rewritten for July changes." },
+      "artifact": {
+        "kind": "text",
+        "content": "Updated onboarding doc v2.3 \u2014 sections 4 (benefits) and 7 (remote policy) rewritten for July changes."
+      },
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-23",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-11T13:00:00Z"
+        },
+        {
+          "id": "tev-24",
+          "eventType": "claimed",
+          "actor": "agent:agent-hr",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-11T13:05:00Z"
+        },
+        {
+          "id": "tev-25",
+          "eventType": "progress",
+          "actor": "agent:agent-hr",
+          "payload": {
+            "progress": 80
+          },
+          "createdAt": "2026-07-11T13:15:00Z"
+        },
+        {
+          "id": "tev-26",
+          "eventType": "completed",
+          "actor": "agent:agent-hr",
+          "payload": null,
+          "createdAt": "2026-07-12T09:50:00Z"
+        }
+      ]
     },
     {
       "id": "task-api-tests",
@@ -202,9 +536,46 @@
       "createdAt": "2026-07-11T15:00:00Z",
       "completedAt": "2026-07-12T08:40:00Z",
       "subtasks": [],
-      "artifact": { "kind": "diff", "content": "+ 12 integration tests (pagination, auth, empty-page). All green in CI." },
+      "artifact": {
+        "kind": "diff",
+        "content": "+ 12 integration tests (pagination, auth, empty-page). All green in CI."
+      },
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-27",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-11T15:00:00Z"
+        },
+        {
+          "id": "tev-28",
+          "eventType": "claimed",
+          "actor": "agent:agent-coder",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-11T15:05:00Z"
+        },
+        {
+          "id": "tev-29",
+          "eventType": "progress",
+          "actor": "agent:agent-coder",
+          "payload": {
+            "progress": 80
+          },
+          "createdAt": "2026-07-11T15:15:00Z"
+        },
+        {
+          "id": "tev-30",
+          "eventType": "completed",
+          "actor": "agent:agent-coder",
+          "payload": null,
+          "createdAt": "2026-07-12T08:40:00Z"
+        }
+      ]
     },
     {
       "id": "task-vendor-access",
@@ -222,7 +593,34 @@
       "subtasks": [],
       "artifact": null,
       "flagReason": "Vendor portal requires credentials I don't have. Need a human to grant access or send these three manually.",
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-31",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T08:30:00Z"
+        },
+        {
+          "id": "tev-32",
+          "eventType": "claimed",
+          "actor": "agent:agent-email",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-12T08:35:00Z"
+        },
+        {
+          "id": "tev-33",
+          "eventType": "flagged",
+          "actor": "system",
+          "payload": {
+            "reason": "Vendor portal requires credentials I don't have. Need a human to grant access or send these three manually."
+          },
+          "createdAt": "2026-07-12T08:38:00Z"
+        }
+      ]
     },
     {
       "id": "task-industry-report",
@@ -238,9 +636,53 @@
       "createdAt": "2026-07-10T09:00:00Z",
       "completedAt": "2026-07-12T10:21:00Z",
       "subtasks": [],
-      "artifact": { "kind": "report", "content": "24-page industry landscape report with 38 cited sources." },
+      "artifact": {
+        "kind": "report",
+        "content": "24-page industry landscape report with 38 cited sources."
+      },
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-34",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-10T09:00:00Z"
+        },
+        {
+          "id": "tev-35",
+          "eventType": "claimed",
+          "actor": "agent:agent-research",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-10T09:05:00Z"
+        },
+        {
+          "id": "tev-36",
+          "eventType": "progress",
+          "actor": "agent:agent-research",
+          "payload": {
+            "progress": 100
+          },
+          "createdAt": "2026-07-10T09:15:00Z"
+        },
+        {
+          "id": "tev-37",
+          "eventType": "completed",
+          "actor": "agent:agent-research",
+          "payload": null,
+          "createdAt": "2026-07-10T09:20:00Z"
+        },
+        {
+          "id": "tev-38",
+          "eventType": "approved",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-12T10:21:00Z"
+        }
+      ]
     },
     {
       "id": "task-inbox-cleanup",
@@ -256,9 +698,53 @@
       "createdAt": "2026-07-09T09:00:00Z",
       "completedAt": "2026-07-10T11:00:00Z",
       "subtasks": [],
-      "artifact": { "kind": "text", "content": "Archived 212 stale threads; 9 flagged as still-active and kept." },
+      "artifact": {
+        "kind": "text",
+        "content": "Archived 212 stale threads; 9 flagged as still-active and kept."
+      },
       "flagReason": null,
-      "feedback": null
+      "feedback": null,
+      "events": [
+        {
+          "id": "tev-39",
+          "eventType": "created",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-09T09:00:00Z"
+        },
+        {
+          "id": "tev-40",
+          "eventType": "claimed",
+          "actor": "agent:agent-email",
+          "payload": {
+            "attempt": 1
+          },
+          "createdAt": "2026-07-09T09:05:00Z"
+        },
+        {
+          "id": "tev-41",
+          "eventType": "progress",
+          "actor": "agent:agent-email",
+          "payload": {
+            "progress": 100
+          },
+          "createdAt": "2026-07-09T09:15:00Z"
+        },
+        {
+          "id": "tev-42",
+          "eventType": "completed",
+          "actor": "agent:agent-email",
+          "payload": null,
+          "createdAt": "2026-07-09T09:20:00Z"
+        },
+        {
+          "id": "tev-43",
+          "eventType": "approved",
+          "actor": "user:demo-user",
+          "payload": null,
+          "createdAt": "2026-07-10T11:00:00Z"
+        }
+      ]
     }
   ]
 }

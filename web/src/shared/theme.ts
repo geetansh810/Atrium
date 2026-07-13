@@ -30,7 +30,19 @@ export const theme = {
       in_focus: "#4FA8E0",
       flagged: "#E0574C",
       offline: "#5C687F",
+      blocked: "#E0574C",
     },
+
+    node: {
+      pending: "#5C687F",
+      running: "#4FA8E0",
+      completed: "#3ECF8E",
+      failed: "#E0574C",
+    },
+
+    surface1: "#131A2B",
+    surface2: "#1A2233",
+    surface3: "#212A40",
 
     botBubble: "#1A2233",
 

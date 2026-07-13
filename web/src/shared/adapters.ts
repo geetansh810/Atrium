@@ -1,8 +1,15 @@
 // Maps core-api DTOs (shared/api.ts) onto the app's mock-shaped types
 // (shared/types.ts) so every dashboard component keeps reading the same
 // props whether the data came from mocks or the real API.
-import type { AgentResponse, ArtifactResponse, BudgetResponse, SubtaskResponse, TaskResponse } from "./api";
-import type { Agent, AgentStatus, Artifact, Budget, Subtask, Task, TaskStatus } from "./types";
+import type {
+  AgentResponse,
+  ArtifactResponse,
+  BudgetResponse,
+  SubtaskResponse,
+  TaskEventResponse,
+  TaskResponse,
+} from "./api";
+import type { Agent, AgentStatus, Artifact, Budget, Subtask, Task, TaskEvent, TaskStatus } from "./types";
 
 export function adaptAgent(dto: AgentResponse): Agent {
   return {
@@ -36,9 +43,13 @@ export function adaptArtifact(dto: ArtifactResponse): Artifact {
   return { kind: dto.kind as Artifact["kind"], content: dto.content };
 }
 
+export function adaptTaskEvent(dto: TaskEventResponse): TaskEvent {
+  return { id: dto.id, eventType: dto.eventType, actor: dto.actor, payload: dto.payload, createdAt: dto.createdAt };
+}
+
 // Base task fields available from the list endpoint. subtasks/artifact/
-// flagReason/feedback are filled in by useEnrichedTasks (queries.ts) from
-// the per-task detail + events calls — the list response doesn't carry them.
+// flagReason/feedback/events are filled in by useEnrichedTasks (queries.ts)
+// from the per-task detail + events calls — the list response doesn't carry them.
 export function adaptTaskBase(dto: TaskResponse): Task {
   return {
     id: dto.id,
@@ -57,6 +68,7 @@ export function adaptTaskBase(dto: TaskResponse): Task {
     artifact: null,
     flagReason: null,
     feedback: null,
+    events: [],
   };
 }
 

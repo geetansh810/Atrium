@@ -1,0 +1,21 @@
+.empty-state {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-state-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.empty-state-description {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.empty-state-action {
+  margin-top: 12px;
+}

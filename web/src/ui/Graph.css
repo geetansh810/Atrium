@@ -1,0 +1,50 @@
+.graph {
+  display: block;
+  overflow: visible;
+}
+
+.graph-edge {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.graph-node rect {
+  fill: var(--surface-3);
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.graph-node-clickable {
+  cursor: pointer;
+}
+
+.graph-node-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-body);
+}
+
+.graph-node-sublabel {
+  font-size: 9.5px;
+  fill: var(--text-faint);
+  font-family: var(--font-body);
+}
+
+.graph-node-pending rect {
+  stroke: var(--node-pending);
+}
+
+.graph-node-running rect {
+  stroke: var(--node-running);
+  filter: drop-shadow(0 0 4px var(--glow-running));
+}
+
+.graph-node-completed rect {
+  stroke: var(--node-completed);
+}
+
+.graph-node-failed rect {
+  stroke: var(--node-failed);
+}

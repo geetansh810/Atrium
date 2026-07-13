@@ -4,7 +4,7 @@
 // shapes via shared/adapters.ts so components never see a raw API response.
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import { adaptAgent, adaptArtifact, adaptBudget, adaptSubtask, adaptTaskBase } from "./adapters";
+import { adaptAgent, adaptArtifact, adaptBudget, adaptSubtask, adaptTaskBase, adaptTaskEvent } from "./adapters";
 import type { Task } from "./types";
 
 const POLL_MS = 4000;
@@ -72,6 +72,7 @@ export function useEnrichedTasks(companyId: string): { tasks: Task[]; isLoading:
       artifact: detail?.latestArtifact ? adaptArtifact(detail.latestArtifact) : null,
       flagReason: (flagged?.payload?.reason as string | undefined) ?? null,
       feedback: (rejected?.payload?.feedback as string | undefined) ?? null,
+      events: events.map(adaptTaskEvent),
     };
   });
 

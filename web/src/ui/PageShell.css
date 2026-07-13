@@ -1,0 +1,41 @@
+.page-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.page-shell-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-shell-head h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.page-shell-head p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.page-shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.page-shell-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

@@ -22,6 +22,20 @@
   --status-in-focus: #4fa8e0;
   --status-flagged: #e0574c;
   --status-offline: #5c687f;
+  /* Additive only — office reads --status-* by name at boot (OfficeCanvas.tsx),
+     so new tokens are safe, renames are not. */
+  --status-blocked: #e0574c;
+
+  /* Workflow node semantics (mini graph on Mission Control, MF-2; full DAG MF-5) */
+  --node-pending: #5c687f;
+  --node-running: #4fa8e0;
+  --glow-running: rgba(79, 168, 224, 0.45);
+  --node-completed: #3ecf8e;
+  --node-failed: #e0574c;
+
+  --surface-1: #131a2b;
+  --surface-2: #1a2233;
+  --surface-3: #212a40;
 
   --avatar-1: #3d6fe0;
   --avatar-2: #17b3a3;

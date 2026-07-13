@@ -60,6 +60,16 @@ export interface Artifact {
   content: string;
 }
 
+// Mirrors GET /tasks/{id}/events (task_events row) — powers the task timeline,
+// the Live Activity Feed, and workflow node states (MF-2).
+export interface TaskEvent {
+  id: string;
+  eventType: string;
+  actor: string;
+  payload: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   parentTaskId: string | null;
@@ -77,6 +87,7 @@ export interface Task {
   artifact: Artifact | null;
   flagReason: string | null;
   feedback: string | null;
+  events: TaskEvent[];
 }
 
 // Pre-rendered from task_events + presence events (Agent Profile activity feed)

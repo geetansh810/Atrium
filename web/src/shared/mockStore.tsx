@@ -19,6 +19,7 @@ import type {
   Channel,
   ChatMessage,
   Task,
+  TaskEvent,
 } from "./types";
 
 export { escalationCount };
@@ -40,6 +41,10 @@ const initialState: AppState = {
 
 function withEvent(activity: ActivityEvent[], agentId: string, text: string): ActivityEvent[] {
   return [{ id: makeId("ev"), agentId, text, createdAt: nowIso() }, ...activity];
+}
+
+function appendTaskEvent(events: TaskEvent[], eventType: string, actor: string, payload: Record<string, unknown> | null = null): TaskEvent[] {
+  return [...events, { id: makeId("tev"), eventType, actor, payload, createdAt: nowIso() }];
 }
 
 function reducer(state: AppState, action: Action): AppState {
@@ -95,6 +100,7 @@ function reducer(state: AppState, action: Action): AppState {
         artifact: null,
         flagReason: null,
         feedback: null,
+        events: [{ id: makeId("tev"), eventType: "created", actor: "user:demo-user", payload: null, createdAt: nowIso() }],
       };
       return {
         ...state,
@@ -139,6 +145,9 @@ function reducer(state: AppState, action: Action): AppState {
           artifact: movesToReview
             ? { kind: "text" as const, content: "Checklist complete — output ready for review." }
             : task.artifact,
+          events: movesToReview
+            ? appendTaskEvent(task.events, "completed", task.assignedAgentId ? `agent:${task.assignedAgentId}` : "system")
+            : task.events,
         };
       });
       return {
@@ -160,7 +169,14 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         tasks: state.tasks.map((t) =>
           t.id === task.id
-            ? { ...t, status: "approved", progress: 100, completedAt: nowIso(), feedback: null }
+            ? {
+                ...t,
+                status: "approved",
+                progress: 100,
+                completedAt: nowIso(),
+                feedback: null,
+                events: appendTaskEvent(t.events, "approved", "user:demo-user"),
+              }
             : t,
         ),
         activity: task.assignedAgentId
@@ -177,7 +193,14 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         tasks: state.tasks.map((t) =>
           t.id === task.id
-            ? { ...t, status: "in_progress", flagReason: null, feedback: action.feedback, completedAt: null }
+            ? {
+                ...t,
+                status: "in_progress",
+                flagReason: null,
+                feedback: action.feedback,
+                completedAt: null,
+                events: appendTaskEvent(t.events, "rejected", "user:demo-user", { feedback: action.feedback }),
+              }
             : t,
         ),
         activity: task.assignedAgentId
