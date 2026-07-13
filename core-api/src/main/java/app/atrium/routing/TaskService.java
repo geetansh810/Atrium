@@ -1,5 +1,6 @@
 package app.atrium.routing;
 
+import app.atrium.common.ConflictException;
 import app.atrium.common.FieldValidationException;
 import app.atrium.common.KeysetCursors;
 import app.atrium.common.NotFoundException;
@@ -8,16 +9,20 @@ import app.atrium.registry.AgentDirectory;
 import app.atrium.routing.api.TaskDtos.CreateTaskRequest;
 import app.atrium.routing.api.TaskDtos.SubtaskCreate;
 import app.atrium.routing.api.TaskDtos.TaskListQuery;
+import app.atrium.routing.domain.Artifact;
+import app.atrium.routing.domain.ArtifactRepository;
 import app.atrium.routing.domain.Subtask;
 import app.atrium.routing.domain.SubtaskRepository;
 import app.atrium.routing.domain.Task;
 import app.atrium.routing.domain.TaskEvent;
 import app.atrium.routing.domain.TaskEventRepository;
 import app.atrium.routing.domain.TaskRepository;
+import app.atrium.routing.domain.TaskStateGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -44,28 +49,33 @@ public class TaskService {
     private final TaskRepository tasks;
     private final SubtaskRepository subtasks;
     private final TaskEventRepository taskEvents;
+    private final ArtifactRepository artifacts;
     private final AgentDirectory agentDirectory;
     private final TaskEventRecorder recorder;
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
+    private final Clock clock;
 
     public TaskService(TaskRepository tasks, SubtaskRepository subtasks,
-                       TaskEventRepository taskEvents, AgentDirectory agentDirectory,
-                       TaskEventRecorder recorder, ObjectMapper objectMapper,
-                       EntityManager entityManager) {
+                       TaskEventRepository taskEvents, ArtifactRepository artifacts,
+                       AgentDirectory agentDirectory, TaskEventRecorder recorder,
+                       ObjectMapper objectMapper, EntityManager entityManager, Clock clock) {
         this.tasks = tasks;
         this.subtasks = subtasks;
         this.taskEvents = taskEvents;
+        this.artifacts = artifacts;
         this.agentDirectory = agentDirectory;
         this.recorder = recorder;
         this.objectMapper = objectMapper;
         this.entityManager = entityManager;
+        this.clock = clock;
     }
 
     /** One page of tasks plus the subtasks of the page's members. */
     public record TaskPage(List<Task> tasks, String nextCursor) {}
 
-    public record TaskDetail(Task task, List<Subtask> subtasks) {}
+    /** latestArtifact is null until complete() writes one (M0.5b). */
+    public record TaskDetail(Task task, List<Subtask> subtasks, Artifact latestArtifact) {}
 
     public record EventPage(List<TaskEvent> events, String nextCursor) {}
 
@@ -113,7 +123,7 @@ public class TaskService {
         }
         recorder.record(task, "created", actor(), payload);
 
-        return new TaskDetail(task, created);
+        return new TaskDetail(task, created, null);
     }
 
     @Transactional(readOnly = true)
@@ -169,7 +179,79 @@ public class TaskService {
     public TaskDetail get(UUID companyId, UUID taskId) {
         Task task = tasks.findByIdAndCompanyId(taskId, companyId)
                 .orElseThrow(() -> NotFoundException.of("Task", taskId));
-        return new TaskDetail(task, subtasks.findByTaskScoped(taskId, companyId));
+        Artifact latest = artifacts.findFirstByTaskIdAndCompanyIdOrderByCreatedAtDesc(taskId, companyId)
+                .orElse(null);
+        return new TaskDetail(task, subtasks.findByTaskScoped(taskId, companyId), latest);
+    }
+
+    /**
+     * Worker progress update (04 §Tasks: POST progress) — claimed→in_progress on
+     * first report. Called directly by LlmLoopRuntime (M0.5b); never touch
+     * task.status outside TaskStateGuard.
+     */
+    @Transactional
+    public Task progress(UUID companyId, UUID taskId, UUID agentId, Integer progressPct,
+                         Integer etaMinutes, String note) {
+        Task task = requireAssigned(companyId, taskId, agentId);
+        if ("claimed".equals(task.getStatus())) {
+            TaskStateGuard.transition(task, "in_progress");
+        } else if (!"in_progress".equals(task.getStatus())) {
+            throw new ConflictException("Task " + taskId + " is '" + task.getStatus()
+                    + "' — cannot report progress");
+        }
+        if (progressPct != null || etaMinutes != null) {
+            task.updateProgress(progressPct != null ? progressPct : task.getProgress(), etaMinutes);
+        }
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        if (progressPct != null) payload.put("progress", progressPct);
+        if (note != null) payload.put("note", note);
+        recorder.record(task, "progress", "agent:" + agentId, payload);
+        return task;
+    }
+
+    /**
+     * Loop step 7 success path (13 §3.2): artifact + pending_review. The ONLY
+     * place artifacts are written — execution never touches the repository.
+     */
+    @Transactional
+    public Task complete(UUID companyId, UUID taskId, UUID agentId, String artifactKind,
+                         String artifactContent) {
+        Task task = requireAssigned(companyId, taskId, agentId);
+        Artifact artifact = artifacts.save(new Artifact(companyId, taskId, artifactKind, artifactContent));
+        TaskStateGuard.transition(task, "pending_review");
+        task.updateProgress(100, null);
+        task.markCompleted(Instant.now(clock));
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("artifactId", artifact.getId().toString());
+        payload.put("artifactKind", artifactKind);
+        recorder.record(task, "completed", "agent:" + agentId, payload);
+        return task;
+    }
+
+    /**
+     * Loop step 7 failure path: provider/runner errors flag, never crash
+     * (05 §execution). {@code reason} is the 13 §1.3 taxonomy's flag reason.
+     */
+    @Transactional
+    public Task flag(UUID companyId, UUID taskId, UUID agentId, String reason) {
+        Task task = requireAssigned(companyId, taskId, agentId);
+        TaskStateGuard.transition(task, "flagged");
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("reason", reason);
+        recorder.record(task, "flagged", "agent:" + agentId, payload);
+        return task;
+    }
+
+    private Task requireAssigned(UUID companyId, UUID taskId, UUID agentId) {
+        Task task = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+        if (!agentId.equals(task.getAssignedAgentId())) {
+            throw new ConflictException("Task " + taskId + " is not assigned to agent:" + agentId);
+        }
+        return task;
     }
 
     @Transactional(readOnly = true)

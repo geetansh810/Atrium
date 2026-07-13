@@ -74,7 +74,9 @@ public class TaskController {
     private TaskDetailResponse toDetailResponse(TaskService.TaskDetail detail) {
         return new TaskDetailResponse(TaskResponse.from(detail.task()),
                 detail.subtasks().stream().map(SubtaskResponse::from).toList(),
-                null /* artifacts land at M0.5b */);
+                detail.latestArtifact() != null
+                        ? app.atrium.routing.api.TaskDtos.ArtifactResponse.from(detail.latestArtifact())
+                        : null);
     }
 
     private void requireTenantMatch(UUID pathCompanyId) {

@@ -1,6 +1,8 @@
 package app.atrium.routing;
 
 import app.atrium.routing.domain.Task;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -23,4 +25,13 @@ public interface WorkBroker {
 
     /** Heartbeat: extend the lease 10 minutes. 409 unless the agent holds the task. */
     Task renewLease(UUID companyId, UUID taskId, UUID agentId);
+
+    /**
+     * The runner's claim-next (M0.5b, 03 §claim note): skill-ordered variant of
+     * the canonical claim query — same SET list, status/paused guards and
+     * {@code FOR UPDATE SKIP LOCKED}, but the inner SELECT matches any of the
+     * agent's skill tags instead of one named task. Empty = nothing queued for
+     * this agent right now (not an error — the loop just continues).
+     */
+    Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags);
 }

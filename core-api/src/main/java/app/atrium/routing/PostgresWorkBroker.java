@@ -10,11 +10,15 @@ import app.atrium.routing.domain.TaskRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
+import java.sql.Array;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +44,27 @@ public class PostgresWorkBroker implements WorkBroker {
                 AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.id=? AND a.paused)
               FOR UPDATE SKIP LOCKED
             )
+            """;
+
+    /**
+     * The runner's claim-next (M0.5b, 03 §claim note): skill-ordered variant —
+     * WHERE swaps the named-task lookup for skill-set membership, everything
+     * else (SET list, status/paused guards, FOR UPDATE SKIP LOCKED) is
+     * verbatim. RETURNING id since we don't know which task we'll get.
+     */
+    private static final String CLAIM_NEXT_SQL = """
+            UPDATE tasks SET status='claimed', assigned_agent_id=?,
+              claimed_at=now(), lease_expires_at=now() + interval '10 minutes',
+              attempt = attempt + 1
+            WHERE id = (
+              SELECT id FROM tasks
+              WHERE company_id=? AND required_skill = ANY(?) AND status='queued'
+                AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.id=? AND a.paused)
+              ORDER BY priority, created_at
+              FOR UPDATE SKIP LOCKED
+              LIMIT 1
+            )
+            RETURNING id
             """;
 
     private final TaskRepository tasks;
@@ -122,5 +147,39 @@ public class PostgresWorkBroker implements WorkBroker {
         }
         task.renewLease(Instant.now(clock).plus(LEASE));
         return task;    // heartbeat, not a state change: no task_event (03 invariant 1 untouched)
+    }
+
+    @Override
+    @Transactional
+    public Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags) {
+        if (skillTags.isEmpty()) {
+            return Optional.empty();
+        }
+        Agent agent = agentDirectory.findById(companyId, agentId)
+                .orElseThrow(() -> NotFoundException.of("Agent", agentId));
+        if (agent.isPaused() || !budgetGuard.canSpend(companyId, agentId)) {
+            return Optional.empty();   // parked, not an error — the loop just skips this tick
+        }
+
+        Array skillArray = jdbc.execute((ConnectionCallback<Array>) con ->
+                con.createArrayOf("text", skillTags.toArray()));
+        List<UUID> claimedIds = jdbc.query(CLAIM_NEXT_SQL,
+                (rs, rowNum) -> (UUID) rs.getObject("id"),
+                agentId, companyId, skillArray, agentId);
+        if (claimedIds.isEmpty()) {
+            return Optional.empty();
+        }
+
+        UUID taskId = claimedIds.get(0);
+        Task task = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> new IllegalStateException("Just-claimed task vanished: " + taskId));
+        entityManager.refresh(task);    // pick up the JDBC-side claim before recording
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("agentId", agentId.toString());
+        payload.put("attempt", task.getAttempt());
+        payload.put("leaseExpiresAt", task.getLeaseExpiresAt().toString());
+        recorder.record(task, "claimed", "agent:" + agentId, payload);
+        return Optional.of(task);
     }
 }

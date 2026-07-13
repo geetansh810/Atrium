@@ -128,6 +128,19 @@ public class Task {
         this.leaseExpiresAt = null;
     }
 
+    /** Worker progress update (04 §Tasks: POST progress). etaMinutes null = unchanged. */
+    public void updateProgress(int progress, Integer etaMinutes) {
+        this.progress = progress;
+        if (etaMinutes != null) {
+            this.etaMinutes = etaMinutes;
+        }
+    }
+
+    /** Stamped on transition to pending_review (M0.5b complete()). */
+    public void markCompleted(Instant completedAt) {
+        this.completedAt = completedAt;
+    }
+
     /**
      * Deliberately package-private: status moves only through
      * {@link app.atrium.routing.TaskStateGuard}-checked service code.

@@ -1,7 +1,7 @@
 # 08 — Conventions & Standards
 
 ## Code style
-- **Java:** 17, Spring Boot 3.x, Maven. Constructor injection only. Records for DTOs. No Lombok in domain entities (explicitness beats brevity for LLM sessions). Package-by-module (registry/routing/execution/accountability), never package-by-layer.
+- **Java:** 21 (LTS — 12 §8/13 §3.2 run the agent runner on virtual threads, a Java 21 feature; amended from 17 at M0.5b), Spring Boot 3.x, Maven. Constructor injection only. Records for DTOs. No Lombok in domain entities (explicitness beats brevity for LLM sessions). Package-by-module (registry/routing/execution/accountability), never package-by-layer.
 - **TypeScript:** strict mode, no `any`. React function components + hooks only. State: Redux Toolkit in the office slice (inherited from SkyOffice), React Query for dashboard API data. Types imported from `shared-types/` — never redeclared.
 - **SQL:** Flyway only (`V<N>__description.sql`), never edit an applied migration, never `ddl-auto`.
 - **Naming:** DB snake_case; Java camelCase; API JSON camelCase; events dot.case (`agent.status_changed`).

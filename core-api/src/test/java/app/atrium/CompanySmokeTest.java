@@ -32,9 +32,12 @@ class CompanySmokeTest extends IntegrationTestBase {
 
     @Test
     void insertsAndReadsCompany() {
+        // Testcontainers reuse (IntegrationTestBase) persists data across mvn runs —
+        // a fixed slug would collide with a prior run's row.
+        String slug = "acme-robotics-" + UUID.randomUUID().toString().substring(0, 8);
         UUID id = jdbc.queryForObject(
-                "INSERT INTO companies (name, slug) VALUES ('Acme Robotics', 'acme-robotics') RETURNING id",
-                UUID.class);
+                "INSERT INTO companies (name, slug) VALUES ('Acme Robotics', ?) RETURNING id",
+                UUID.class, slug);
         assertThat(id).isNotNull();
 
         String name = jdbc.queryForObject(

@@ -28,13 +28,16 @@ public class AgentService {
     private final AgentRepository agents;
     private final RoleDefinitionRepository roleDefinitions;
     private final RuntimeRegistry runtimeRegistry;
+    private final AgentLifecycleService lifecycle;
     private final ObjectMapper objectMapper;
 
     public AgentService(AgentRepository agents, RoleDefinitionRepository roleDefinitions,
-                        RuntimeRegistry runtimeRegistry, ObjectMapper objectMapper) {
+                        RuntimeRegistry runtimeRegistry, AgentLifecycleService lifecycle,
+                        ObjectMapper objectMapper) {
         this.agents = agents;
         this.roleDefinitions = roleDefinitions;
         this.runtimeRegistry = runtimeRegistry;
+        this.lifecycle = lifecycle;
         this.objectMapper = objectMapper;
     }
 
@@ -56,7 +59,9 @@ public class AgentService {
                 roleDefinition.getId(), request.roleTitle(), request.skillTags(),
                 request.modelProvider(), request.modelName(), request.managerAgentId(),
                 request.about(), runtimeType, runtimeConfig);
-        return agents.save(agent);
+        agent = agents.save(agent);
+        lifecycle.start(agent);
+        return agent;
     }
 
     @Transactional
@@ -96,9 +101,13 @@ public class AgentService {
         if (request.modelProvider() != null) agent.setModelProvider(request.modelProvider());
         if (request.modelName() != null) agent.setModelName(request.modelName());
         if (request.about() != null) agent.setAbout(request.about());
-        if (request.paused() != null) {
-            // Runtime start/stop side effects arrive with AgentLifecycleService (M0.5b)
+        if (request.paused() != null && request.paused() != agent.isPaused()) {
             agent.setPaused(request.paused());
+            if (request.paused()) {
+                lifecycle.stop(agent);
+            } else {
+                lifecycle.start(agent);
+            }
         }
         return agent;
     }

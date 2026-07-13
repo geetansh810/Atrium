@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
  * pre-dispatch gate (12 §9, M0.5b) turns into a config_incomplete flag.
  */
 @Component
-public class AnthropicClient implements LlmProvider {
+public class AnthropicClient implements LlmProvider, ProviderReadiness {
 
     private final ObjectMapper objectMapper;
 
@@ -65,6 +65,12 @@ public class AnthropicClient implements LlmProvider {
     @Override
     public String id() {
         return "anthropic";
+    }
+
+    /** Pre-dispatch gate hook (12 §9) — false means never dispatch, flag/park instead. */
+    @Override
+    public boolean isReady() {
+        return sdk != null;
     }
 
     @Override

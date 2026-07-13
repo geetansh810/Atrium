@@ -83,8 +83,13 @@ public final class TaskDtos {
             List<SubtaskResponse> subtasks,
             ArtifactResponse latestArtifact) {}
 
-    /** Shape reserved by 04; artifacts are written from M0.5b — null until then. */
-    public record ArtifactResponse(UUID id, String kind, String content, Instant createdAt) {}
+    public record ArtifactResponse(UUID id, String kind, String content, Instant createdAt) {
+
+        public static ArtifactResponse from(app.atrium.routing.domain.Artifact artifact) {
+            return new ArtifactResponse(artifact.getId(), artifact.getKind(),
+                    artifact.getContent(), artifact.getCreatedAt());
+        }
+    }
 
     public record TaskEventResponse(
             UUID id,
