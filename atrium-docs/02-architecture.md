@@ -28,7 +28,7 @@ Three services, one monorepo. **core-api owns all business truth.** office-realt
 ```
 atrium/
 ├── docs/                      # this documentation package
-├── core-api/                  # Java 17 / Spring Boot 3.x, Maven
+├── core-api/                  # Java 21 / Spring Boot 3.x, Maven
 │   └── src/main/java/app/atrium/
 │       ├── registry/          # companies, agents, role templates
 │       ├── routing/           # tasks, queues, claim/lease, subtasks

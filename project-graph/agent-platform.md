@@ -2,7 +2,7 @@
 
 **What:** the Rev-C backend design making three axes pluggable without schema breaks: any LLM (provider SPI + `model_catalog`), any agent type (`AgentRuntime` SPI, `agents.runtime_type/runtime_config`), any depth (skills + memories + knowledge + learning pipeline in the new `agentmind` module, plus the `eventbus` outbox backbone).
 
-**State: OUTBOX WRITER LIVE** (2026-07-13, M0.3). `eventbus/` DomainEvent + Topics + OutboxEvent entity + OutboxWriter (`MANDATORY` propagation — same-tx is structural). Relay/cursors = M0.75; SPIs/agentmind still spec-only.
+**State: LLM + RUNTIME SPI LIVE** (2026-07-13, M0.3–M0.5b). `eventbus/` DomainEvent + Topics + OutboxEvent entity + OutboxWriter (`MANDATORY` propagation — same-tx is structural; relay/cursors still M0.75). 13 §1 LLM provider SPI is built (`LlmProvider`/`LlmClient`/`LlmRouter`/`AnthropicClient`, M0.5a) and 13 §3 AgentRuntime SPI has its first real implementation (`LlmLoopRuntime`, M0.5b — replaces the M0.2 placeholder). Still spec-only: `agentmind` (14 §§1–5: skills, memory, knowledge, learning pipeline — M-SK1 onward).
 
 **The docs (load per task):**
 - `atrium-docs/12-backend-architecture.md` — modules, outbox/topic backbone, gateways, scalability path. Wins over 02 on conflict.

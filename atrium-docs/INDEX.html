@@ -165,7 +165,7 @@
           <text x="565" y="196" font-family="IBM Plex Mono" font-size="10" fill="#55606B">WebSocket (Colyseus)</text>
 
           <rect x="120" y="228" width="370" height="118" rx="4" fill="#F8F9F7" stroke="#1B2430" stroke-width="1.3"/>
-          <text x="305" y="250" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="500" fill="#1B2430">core-api (Spring Boot · Java 17)</text>
+          <text x="305" y="250" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="500" fill="#1B2430">core-api (Spring Boot · Java 21)</text>
           <text x="305" y="268" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#8A94A0">SOURCE OF TRUTH</text>
           <rect x="138" y="280" width="80" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="178" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#55606B">registry</text>
           <rect x="226" y="280" width="80" height="26" fill="#E3E8E5" stroke="#C7D0CC"/><text x="266" y="297" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#55606B">routing</text>
@@ -270,7 +270,7 @@
     <section class="sheet" id="stack">
       <div class="sheet-head"><span class="sheetno">05</span><h2>Tech stack</h2></div>
       <div class="grid grid-3">
-        <div class="card"><span class="eyebrow">Backend core</span><h3>Java 17 · Spring Boot 3.x</h3><p>Maven, Flyway, springdoc-openapi, Testcontainers, bucket4j (M3.5).</p></div>
+        <div class="card"><span class="eyebrow">Backend core</span><h3>Java 21 · Spring Boot 3.x</h3><p>Maven, Flyway, springdoc-openapi, Testcontainers, bucket4j (M3.5).</p></div>
         <div class="card"><span class="eyebrow">Data</span><h3>PostgreSQL 16 · Redis 7</h3><p>Postgres: truth + queue + RLS. Redis: cache + pub/sub event bus.</p></div>
         <div class="card"><span class="eyebrow">Realtime office</span><h3>Colyseus · Phaser 3 (SkyOffice fork)</h3><p>TypeScript strict; PeerJS/webcam stripped; agent avatars added.</p></div>
         <div class="card"><span class="eyebrow">Frontend</span><h3>React · Vite · React Query</h3><p>Redux Toolkit only inside the office slice (inherited). theme.ts tokens.</p></div>

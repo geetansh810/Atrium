@@ -54,7 +54,7 @@ Agents have roles, skills, budgets (token "payroll"), a manager hierarchy, and a
 in a live 2D pixel-art virtual office (forked from SkyOffice, MIT).
 
 ARCHITECTURE (3 services in one monorepo):
-1. core-api      — Java 17 / Spring Boot. Source of truth. Modules: registry (companies,
+1. core-api      — Java 21 / Spring Boot. Source of truth. Modules: registry (companies,
                    agents), routing (tasks, skill queues, claim/lease), execution (LLM
                    provider abstraction, agent runner), accountability (budgets, approvals,
                    append-only task_events audit log). Postgres + Redis.
@@ -76,7 +76,7 @@ HARD RULES:
 - Secrets never appear in prompts, logs, or LLM-visible context.
 - Office view renders real state from core-api. No separate "office state" store.
 
-CONVENTIONS: Java 17, Spring Boot 3.x, Flyway migrations, TypeScript strict mode,
+CONVENTIONS: Java 21 (LTS — virtual threads for the agent runner, 12 §8/13 §3.2), Spring Boot 3.x, Flyway migrations, TypeScript strict mode,
 React function components + hooks, REST returns problem+json errors, all IDs are UUIDs,
 timestamps are TIMESTAMPTZ/ISO-8601 UTC.
 ```
