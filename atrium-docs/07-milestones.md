@@ -126,15 +126,16 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 
 | ID | Milestone | Phase | Status |
 |---|---|---|---|
-| M0.0 | OSS evaluation spike | 0 | ☐ |
-| M0.1 | Repo scaffold & data model | 0 | ☐ |
-| M0.2 | Registry module | 0 | ☐ |
-| M0.3 | Task creation & skill routing | 0 | ☐ |
-| M0.4 | Claim loop & lease | 0 | ☐ |
-| M0.5 | Execution: first real agent | 0 | ☐ |
-| M0.6 | Approval gate & audit | 0 | ☐ |
-| M0.7 | Budget enforcement | 0 | ☐ |
-| M0.8 | Minimal task board | 0 | ☐ |
+| M0.0 | OSS evaluation spike | 0 | ✅ (Paperclip half; SkyOffice half via session-3 vendor work) |
+| M0.1 | Repo scaffold & data model | 0 | ✅ |
+| M0.2 | Registry module | 0 | ✅ |
+| M0.3 | Task creation & skill routing | 0 | ✅ |
+| M0.4 | Claim loop & lease | 0 | ✅ |
+| M0.5 | Execution: first real agent | 0 | ✅ (split M0.5a/b per doc 17) |
+| M0.6 | Approval gate & audit | 0 | ✅ |
+| M0.7 | Budget enforcement | 0 | ✅ |
+| M0.75 | Outbox relay & realtimebridge (NEW, doc 17) | 0 | ☐ |
+| M0.8 | Minimal task board | 0 | ☐ (frontend half built early, sessions 2–3; backend swap pending) |
 | M1.1 | Business role via registry | 1 | ☐ |
 | M1.2 | Real pilot run | 1 | ☐ |
 | M1.3 | Feedback fixes | 1 | ☐ |
