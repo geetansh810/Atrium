@@ -1,9 +1,11 @@
 // React mount for the forked SkyOffice canvas. Everything flows one way:
-// store state -> bridge -> Phaser (office = projection); the only signal
-// coming back is "an avatar was clicked", which opens the profile panel.
+// store state -> bridge -> Phaser (office = projection). Clicking an avatar
+// is the only signal coming back, and it's the caller's job to handle it
+// (OfficePage wires it to navigation) — this component is presentation-only.
 import { useEffect, useRef } from "react";
 import type Phaser from "phaser";
 import { createOfficeGame } from "./createGame";
+import { Event, phaserEvents } from "./events";
 import { officeBridge } from "./bridge";
 import type { AgentPresence } from "./bridge";
 import { resolveSeats } from "./officeLayout";
@@ -47,9 +49,13 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 export function OfficeCanvas() {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const containerRef = useRef<HTMLDivElement>(null);
-  const firstRoomRender = useRef(true);
+  // Read at GAME_READY time, not at the effect's mount-time closure, so a
+  // remount on a non-default room (e.g. leaving /office and coming back)
+  // still pans the fresh scene to the room the user was actually in.
+  const activeRoomRef = useRef(state.ui.activeRoom);
+  activeRoomRef.current = state.ui.activeRoom;
 
   useEffect(() => {
     const container = containerRef.current!;
@@ -95,19 +101,21 @@ export function OfficeCanvas() {
     officeBridge.syncAgents(buildPresence(state.agents));
   }, [state.agents]);
 
+  // The scene subscribes to FOCUS_ROOM before it emits GAME_READY (see
+  // scenes/Game.ts create()), so this always lands on a live listener —
+  // including right after a remount, when the game didn't exist yet at the
+  // moment React ran the effect below.
   useEffect(() => {
-    if (firstRoomRender.current) {
-      firstRoomRender.current = false;
-      return;
-    }
-    officeBridge.focusRoom(state.ui.activeRoom);
-  }, [state.ui.activeRoom]);
+    const onReady = () => officeBridge.focusRoom(activeRoomRef.current);
+    phaserEvents.on(Event.GAME_READY, onReady);
+    return () => {
+      phaserEvents.off(Event.GAME_READY, onReady);
+    };
+  }, []);
 
   useEffect(() => {
-    return officeBridge.onAgentClicked((agentId) => {
-      dispatch({ type: "openPanel", panel: "profile", agentId });
-    });
-  }, [dispatch]);
+    officeBridge.focusRoom(state.ui.activeRoom);
+  }, [state.ui.activeRoom]);
 
   return <div className="office-canvas" ref={containerRef} />;
 }

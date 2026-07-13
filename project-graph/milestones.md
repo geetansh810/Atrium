@@ -22,6 +22,9 @@
 
 **Rev C (2026-07-12):** backend sequence now lives in `atrium-docs/17-backend-execution-plan.md` ([[agent-platform]]) — amends M0.1/M0.2/M0.4, splits M0.5a/b, redefines M0.8 (mock→API swap), adds MB-0, M0.75 and the M-SK/CTX/MEM/LN/KN/AR agent-depth series before/around Phase 1. M0.0's Paperclip half ✅ (findings in `atrium-docs/notes/`).
 
-**Likely next:** M-SK1 (skills registry, new `agentmind` module) per doc 17.
+**Rev D — Frontend redesign (2026-07-14, deviated from doc order again, user-initiated):** a second parallel series, "MF-1…MF-6", supersedes the office-canvas-first dashboard with a Linear/Notion/Datadog-style AI Operating System. Not in `atrium-docs/` — the full plan (context, architecture, milestone cards, risks) lives at `/Users/geetanshagrawal/.claude/plans/multi-agent-employee-platform-redesign-fluttering-crescent.md`. Runs interleaved with the M-SK/CTX/MEM series above (no file overlap: MF touches `web/src/{shell,pages,ui,shared/nav.ts}`; backend milestones touch `core-api/`). SkyOffice is kept fully functional throughout, demoted to one optional `/office` route.
+- ✅ MF-1 (2026-07-14, session 7) — [[web-dashboard]]: `react-router` added, new `shell/`+`pages/`+`ui/` structure, old `dashboard/{DashboardLayout,Sidebar,TopBar,RightRail,BotBar}.tsx` deleted, every pre-existing panel kept reachable via a temporary "Classic Panels" bridge. Office demoted to `/office`, two surgical `OfficeCanvas.tsx` fixes (agent-click extraction, room-remount fix), zero behavior change otherwise. Found+fixed a real click-through bug (overlay scoping) via browser testing. Verified live against the real API + in mock mode; `make check` clean.
+
+**Likely next:** MF-2 (Mission Control + shared primitives + `Task.events` contract extension) — see CLAUDE.md "Likely next" for the full card. M-SK1 (skills registry, new `agentmind` module, per doc 17) remains available as the next backend-track milestone whenever that track resumes.
 
 Links: [[_Atrium]] · [[core-api]] · [[web-dashboard]] · [[web-office]] · [[office-realtime]]

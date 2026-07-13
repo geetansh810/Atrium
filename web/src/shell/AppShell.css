@@ -1,21 +1,22 @@
-.dashboard {
+.app-shell {
   display: flex;
   height: 100vh;
   width: 100%;
   overflow: hidden;
 }
 
-.dashboard-center {
+.app-shell-main-col {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-.dashboard-office {
-  position: relative;
+.app-shell-content {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }

@@ -6,7 +6,7 @@ import { currentUser } from "../../shared/mockData";
 import { StatusDot } from "../../shared/StatusDot";
 import { useApp } from "../../shared/store";
 import type { AppState } from "../../shared/store";
-import { PanelShell } from "./PanelShell";
+import { Drawer } from "../../ui/Drawer";
 
 function senderName(sender: string, state: AppState): string {
   if (sender === "bot") return "Atrium Bot";
@@ -67,7 +67,13 @@ export function ChatPanel() {
   const dms = state.channels.filter((c) => c.kind === "dm");
 
   return (
-    <PanelShell title="Chat" subtitle={channel.kind === "channel" ? `# ${channel.name}` : channel.name} width={760} noPad>
+    <Drawer
+      title="Chat"
+      subtitle={channel.kind === "channel" ? `# ${channel.name}` : channel.name}
+      width={760}
+      noPad
+      onClose={() => dispatch({ type: "closePanel" })}
+    >
       <div className="chat-grid">
         <nav className="chat-nav">
           <div className="section-title" style={{ padding: "0 8px" }}>Channels</div>
@@ -139,6 +145,6 @@ export function ChatPanel() {
           </div>
         </div>
       </div>
-    </PanelShell>
+    </Drawer>
   );
 }
