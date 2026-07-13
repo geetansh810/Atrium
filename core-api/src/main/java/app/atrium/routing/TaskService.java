@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -45,6 +46,7 @@ public class TaskService {
     private static final Set<String> STATUSES = Set.of("queued", "claimed", "in_progress",
             "flagged", "pending_review", "approved", "rejected", "cancelled");
     private static final Set<String> VIEWS = Set.of("my", "assigned", "completed");
+    private static final Set<String> TERMINAL_STATUSES = Set.of("approved", "cancelled");
 
     private final TaskRepository tasks;
     private final SubtaskRepository subtasks;
@@ -243,6 +245,66 @@ public class TaskService {
         payload.put("reason", reason);
         recorder.record(task, "flagged", "agent:" + agentId, payload);
         return task;
+    }
+
+    /**
+     * Human/supervisor ship gate (04 §Tasks, 03 invariant 5): blocked while any
+     * child task or checklist subtask is still open. The only way status
+     * reaches 'approved' — pending_review is a hard gate until this runs.
+     */
+    @Transactional
+    public Task approve(UUID companyId, UUID taskId) {
+        Task task = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+        if (tasks.existsByParentTaskIdAndCompanyIdAndStatusNotIn(taskId, companyId, TERMINAL_STATUSES)) {
+            throw new ConflictException("Task " + taskId + " has open child tasks — approve those first");
+        }
+        if (subtasks.existsOpenScoped(taskId, companyId)) {
+            throw new ConflictException("Task " + taskId + " has open subtasks — complete those first");
+        }
+        TaskStateGuard.transition(task, "approved");
+        recorder.record(task, "approved", actor(), null);
+        return task;
+    }
+
+    /**
+     * Sends work back for rework (04 §Tasks: reject {@code {feedback}}).
+     * Persists the real 'rejected' status with the feedback in the audit
+     * trail, then requeues in the same transaction so the next claim
+     * increments {@code attempt} — a fresh {@code taskId:attempt} idempotency
+     * key for the redo, same as any other re-claim (M0.4). LlmLoopRuntime
+     * reads the feedback back via {@link #latestRejectionFeedback} and feeds
+     * it to PromptAssembler on the next attempt.
+     */
+    @Transactional
+    public Task reject(UUID companyId, UUID taskId, String feedback) {
+        Task task = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+        UUID previousAgentId = task.getAssignedAgentId();
+
+        TaskStateGuard.transition(task, "rejected");
+        ObjectNode rejectedPayload = objectMapper.createObjectNode();
+        rejectedPayload.put("feedback", feedback);
+        recorder.record(task, "rejected", actor(), rejectedPayload);
+
+        TaskStateGuard.transition(task, "queued");
+        task.clearAssignment();
+        ObjectNode requeuedPayload = objectMapper.createObjectNode();
+        if (previousAgentId != null) {
+            requeuedPayload.put("previousAgentId", previousAgentId.toString());
+        }
+        recorder.record(task, "requeued", "system", requeuedPayload);
+        return task;
+    }
+
+    /** Feeds the loop's next-attempt prompt (M0.6) — empty until a task is ever rejected. */
+    @Transactional(readOnly = true)
+    public Optional<String> latestRejectionFeedback(UUID companyId, UUID taskId) {
+        return taskEvents.findFirstByTaskIdAndCompanyIdAndEventTypeOrderByCreatedAtDesc(
+                        taskId, companyId, "rejected")
+                .map(TaskEvent::getPayload)
+                .filter(payload -> payload != null && payload.hasNonNull("feedback"))
+                .map(payload -> payload.get("feedback").asText());
     }
 
     private Task requireAssigned(UUID companyId, UUID taskId, UUID agentId) {

@@ -211,7 +211,11 @@ public class LlmLoopRuntime implements AgentRuntime {
 
         try {
             // Steps 2–4: bundle (null — no ContextAssembler yet), prompt, LLM call.
-            AssembledPrompt prompt = PromptAssembler.build(roleDef, task, null, null);
+            // Feedback (M0.6): a rejected task is requeued and re-claimed like any
+            // other work, so the most recent rejection's feedback (if any) rides
+            // along into this attempt's prompt.
+            String feedback = taskService.latestRejectionFeedback(companyId, task.getId()).orElse(null);
+            AssembledPrompt prompt = PromptAssembler.build(roleDef, task, feedback, null);
             LlmRequest request = new LlmRequest(agent.getModelProvider(), agent.getModelName(),
                     prompt.systemPrompt(), prompt.messages(), List.of(), DEFAULT_MAX_OUTPUT_TOKENS,
                     null, null);

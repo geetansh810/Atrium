@@ -29,6 +29,9 @@ public final class TaskDtos {
 
     public record SubtaskCreate(@NotBlank String label) {}
 
+    /** Body of POST /tasks/{id}/reject (04 §Tasks). */
+    public record RejectRequest(@NotBlank String feedback) {}
+
     /** Query params of GET /companies/{id}/tasks (04 §Tasks + rule 3). */
     public record TaskListQuery(
             String status,

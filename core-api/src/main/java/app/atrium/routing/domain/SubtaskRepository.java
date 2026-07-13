@@ -16,4 +16,12 @@ public interface SubtaskRepository extends JpaRepository<Subtask, UUID> {
             ORDER BY s.position
             """)
     List<Subtask> findByTaskScoped(@Param("taskId") UUID taskId, @Param("companyId") UUID companyId);
+
+    /** Approve gate (03 invariant 5): true if any checklist row under the task isn't 'done'. */
+    @Query("""
+            SELECT COUNT(s) > 0 FROM Subtask s
+            WHERE s.taskId = :taskId AND s.state <> 'done'
+              AND EXISTS (SELECT 1 FROM Task t WHERE t.id = s.taskId AND t.companyId = :companyId)
+            """)
+    boolean existsOpenScoped(@Param("taskId") UUID taskId, @Param("companyId") UUID companyId);
 }

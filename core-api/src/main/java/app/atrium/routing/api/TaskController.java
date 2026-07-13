@@ -5,6 +5,7 @@ import app.atrium.common.PageEnvelope;
 import app.atrium.common.TenantContext;
 import app.atrium.routing.TaskService;
 import app.atrium.routing.api.TaskDtos.CreateTaskRequest;
+import app.atrium.routing.api.TaskDtos.RejectRequest;
 import app.atrium.routing.api.TaskDtos.SubtaskResponse;
 import app.atrium.routing.api.TaskDtos.TaskDetailResponse;
 import app.atrium.routing.api.TaskDtos.TaskEventResponse;
@@ -59,6 +60,16 @@ public class TaskController {
     @GetMapping("/tasks/{id}")
     public TaskDetailResponse get(@PathVariable UUID id) {
         return toDetailResponse(taskService.get(TenantContext.requireCompanyId(), id));
+    }
+
+    @PostMapping("/tasks/{id}/approve")
+    public TaskResponse approve(@PathVariable UUID id) {
+        return TaskResponse.from(taskService.approve(TenantContext.requireCompanyId(), id));
+    }
+
+    @PostMapping("/tasks/{id}/reject")
+    public TaskResponse reject(@PathVariable UUID id, @Valid @RequestBody RejectRequest request) {
+        return TaskResponse.from(taskService.reject(TenantContext.requireCompanyId(), id, request.feedback()));
     }
 
     @GetMapping("/tasks/{id}/events")

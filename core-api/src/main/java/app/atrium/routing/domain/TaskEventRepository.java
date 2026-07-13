@@ -1,6 +1,7 @@
 package app.atrium.routing.domain;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 public interface TaskEventRepository extends JpaRepository<TaskEvent, UUID> {
 
     List<TaskEvent> findByTaskIdAndCompanyIdOrderByCreatedAtAscIdAsc(UUID taskId, UUID companyId);
+
+    /** Most recent rejection, if any — feeds M0.6's next-attempt feedback (05 §execution). */
+    Optional<TaskEvent> findFirstByTaskIdAndCompanyIdAndEventTypeOrderByCreatedAtDesc(
+            UUID taskId, UUID companyId, String eventType);
 
     /** Keyset page: events strictly after the (createdAt, id) cursor position, oldest first. */
     @Query("""

@@ -1,6 +1,8 @@
 package app.atrium.execution;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -251,5 +253,34 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
                 taskId);
         assertThat(allUsage).extracting(row -> row.get("idempotency_key"))
                 .containsExactly(taskId + ":1", taskId + ":2");
+    }
+
+    // ── M0.6 Done-when: a rejected task's next attempt prompt contains the feedback ──
+
+    @Test
+    void rejectedTaskFeedbackReachesTheNextAttemptPrompt() {
+        String company = createCompany("m06-feedback");
+        String agentId = hireAgentAndStopAutoLoop(company, "coding");
+        String taskId = createTask(company, "Write a haiku generator", "coding");
+        stubAnthropicSuccess("def haiku(): pass");
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+        awaitStatus(company, taskId, "pending_review", 10);
+
+        ResponseEntity<String> rejectResponse = rest.postForEntity(
+                "/api/v1/tasks/" + taskId + "/reject",
+                new HttpEntity<>(Map.of("feedback", "Add type hints to every function"),
+                        headers(company)), String.class);
+        assertThat(rejectResponse.getStatusCode().value()).as(rejectResponse.getBody()).isEqualTo(200);
+        awaitStatus(company, taskId, "queued", 10);
+
+        stubAnthropicSuccess("def haiku() -> str: return ''");
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+        awaitStatus(company, taskId, "pending_review", 10);
+
+        assertThat(getTask(company, taskId).get("attempt").asInt()).isEqualTo(2);
+        // exactly one of the two calls (the retry) carried the feedback
+        wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
+                .withRequestBody(containing("Add type hints to every function")));
     }
 }
