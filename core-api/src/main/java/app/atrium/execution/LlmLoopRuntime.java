@@ -1,5 +1,7 @@
 package app.atrium.execution;
 
+import app.atrium.agentmind.ContextAssembler;
+import app.atrium.agentmind.ContextBundle;
 import app.atrium.execution.spi.LlmClient;
 import app.atrium.execution.spi.LlmException;
 import app.atrium.execution.spi.LlmProvider;
@@ -17,6 +19,9 @@ import app.atrium.routing.TaskService;
 import app.atrium.routing.WorkBroker;
 import app.atrium.routing.domain.Task;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -40,10 +45,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * skill-matched work. Replaces the M0.2 {@code LlmLoopRuntimeDescriptor}
  * placeholder now that there's a real loop to run.
  *
- * <p>Deliberately deferred to M-CTX1/tooling milestones: no tool-calling loop
+ * <p>Deliberately deferred to future tooling milestones: no tool-calling loop
  * (empty tools list — nothing here can hallucinate a tool_use), no periodic
- * lease renewal for long calls (single blocking completion per attempt),
- * no ContextAssembler (bundle is always null).
+ * lease renewal for long calls (single blocking completion per attempt).
+ * Context assembly landed at M-CTX1: {@link app.atrium.agentmind.ContextAssembler}.
  */
 @Component
 public class LlmLoopRuntime implements AgentRuntime {
@@ -60,25 +65,30 @@ public class LlmLoopRuntime implements AgentRuntime {
     private final AgentDirectory agentDirectory;
     private final RoleDefinitionLookup roleDefinitions;
     private final TaskService taskService;
+    private final ContextAssembler contextAssembler;
     private final LlmClient llmClient;
     private final LlmCostCalculator costCalculator;
     private final UsageRecorder usageRecorder;
+    private final ObjectMapper objectMapper;
     private final TransactionTemplate txTemplate;
     private final Map<String, LlmProvider> providersById;
     private final Map<UUID, RunningAgent> running = new ConcurrentHashMap<>();
 
     public LlmLoopRuntime(WorkBroker workBroker, AgentDirectory agentDirectory,
                           RoleDefinitionLookup roleDefinitions, TaskService taskService,
-                          LlmClient llmClient, LlmCostCalculator costCalculator,
-                          UsageRecorder usageRecorder, List<LlmProvider> providers,
+                          ContextAssembler contextAssembler, LlmClient llmClient,
+                          LlmCostCalculator costCalculator, UsageRecorder usageRecorder,
+                          ObjectMapper objectMapper, List<LlmProvider> providers,
                           PlatformTransactionManager transactionManager) {
         this.workBroker = workBroker;
         this.agentDirectory = agentDirectory;
         this.roleDefinitions = roleDefinitions;
         this.taskService = taskService;
+        this.contextAssembler = contextAssembler;
         this.llmClient = llmClient;
         this.costCalculator = costCalculator;
         this.usageRecorder = usageRecorder;
+        this.objectMapper = objectMapper;
         this.txTemplate = new TransactionTemplate(transactionManager);
         this.providersById = providers.stream()
                 .collect(Collectors.toUnmodifiableMap(LlmProvider::id, Function.identity()));
@@ -188,12 +198,25 @@ public class LlmLoopRuntime implements AgentRuntime {
             return;
         }
 
-        // Step 1: claim next task for any of the agent's skills.
-        Optional<Task> claimed = workBroker.claimNext(companyId, agentId, agent.getSkillTags());
+        // Step 1: claim next task for any of the agent's skills. The context bundle
+        // (step 2) is assembled INSIDE the claim's enricher hook so its provenance
+        // ids land in this same claimed event's payload, same-tx (03 invariant 1) —
+        // captured into bundleHolder so step 2/3 below reuse it instead of
+        // re-assembling (assembly is a pure, local-DB-only read either way).
+        ContextBundle[] bundleHolder = new ContextBundle[1];
+        Optional<Task> claimed = workBroker.claimNext(companyId, agentId, agent.getSkillTags(), claimedTask -> {
+            ContextBundle bundle = contextAssembler.assemble(agent, claimedTask);
+            bundleHolder[0] = bundle;
+            ObjectNode extra = objectMapper.createObjectNode();
+            ArrayNode provenance = extra.putArray("contextProvenance");
+            bundle.provenanceIds().forEach(id -> provenance.add(id.toString()));
+            return extra;
+        });
         if (claimed.isEmpty()) {
             return;
         }
         Task task = claimed.get();
+        ContextBundle bundle = bundleHolder[0];
 
         RuntimeConfig config = RuntimeConfig.parse(agent.getRuntimeConfig());
         if (task.getAttempt() > config.maxAttemptsPerTask()) {
@@ -210,12 +233,12 @@ public class LlmLoopRuntime implements AgentRuntime {
         taskService.progress(companyId, task.getId(), agentId, null, null, null);
 
         try {
-            // Steps 2–4: bundle (null — no ContextAssembler yet), prompt, LLM call.
-            // Feedback (M0.6): a rejected task is requeued and re-claimed like any
-            // other work, so the most recent rejection's feedback (if any) rides
+            // Steps 2–4: bundle (assembled above, alongside the claim), prompt, LLM
+            // call. Feedback (M0.6): a rejected task is requeued and re-claimed like
+            // any other work, so the most recent rejection's feedback (if any) rides
             // along into this attempt's prompt.
             String feedback = taskService.latestRejectionFeedback(companyId, task.getId()).orElse(null);
-            AssembledPrompt prompt = PromptAssembler.build(roleDef, task, feedback, null);
+            AssembledPrompt prompt = PromptAssembler.build(roleDef, task, feedback, bundle);
             LlmRequest request = new LlmRequest(agent.getModelProvider(), agent.getModelName(),
                     prompt.systemPrompt(), prompt.messages(), List.of(), DEFAULT_MAX_OUTPUT_TOKENS,
                     null, null);

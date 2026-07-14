@@ -283,4 +283,32 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("Add type hints to every function")));
     }
+
+    // ── M-CTX1 Done-when: claimed event carries skill provenance; prompt has "## Your skills" ──
+
+    @Test
+    void claimedEventCarriesSkillProvenanceAndThePromptContainsTheSkillsSection() {
+        // every "coder"-hired agent gets the same 2 seeded skills, so other tests in
+        // this class produce matching request bodies too — reset the log so this
+        // test's verify() only counts its own call.
+        wiremock.resetRequests();
+        String company = createCompany("m-ctx1");
+        String agentId = hireAgentAndStopAutoLoop(company, "coding"); // "coder" template -> 2 seeded skills
+        String taskId = createTask(company, "Write a function that reverses a string", "coding");
+        stubAnthropicSuccess("def reverse_string(s):\\n    return s[::-1]");
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+        awaitStatus(company, taskId, "pending_review", 10);
+
+        // the SAME "claimed" task_event carries the skill ids that were assembled into the prompt
+        List<String> provenanceIds = jdbc.queryForList(
+                "SELECT jsonb_array_elements_text(payload->'contextProvenance') FROM task_events "
+                        + "WHERE task_id = ?::uuid AND event_type = 'claimed'", String.class, taskId);
+        assertThat(provenanceIds).hasSize(2);
+
+        // and the actual LLM request carried the "## Your skills" section built from those skills
+        wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
+                .withRequestBody(containing("## Your skills"))
+                .withRequestBody(containing("Code review checklist")));
+    }
 }

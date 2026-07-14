@@ -1,9 +1,12 @@
 package app.atrium.routing;
 
 import app.atrium.routing.domain.Task;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import org.springframework.lang.Nullable;
 
 /**
  * The claim/lease surface of routing (05 §routing) — v1 impl is Postgres
@@ -32,6 +35,18 @@ public interface WorkBroker {
      * {@code FOR UPDATE SKIP LOCKED}, but the inner SELECT matches any of the
      * agent's skill tags instead of one named task. Empty = nothing queued for
      * this agent right now (not an error — the loop just continues).
+     *
+     * @param claimedPayloadEnricher optional hook run on the just-claimed task,
+     *        INSIDE the same transaction as the claim and its {@code claimed}
+     *        audit event (03 invariant 1 — state change and event must be
+     *        same-tx) — its returned fields are merged into that event's
+     *        payload. Kept as a plain JDK {@link Function} rather than a named
+     *        interface so routing never has to import the caller's types
+     *        (M-CTX1: execution passes a lambda that assembles context and
+     *        returns {@code {contextProvenance: [...]}}). Local-DB-only work,
+     *        please — this runs before any LLM call and holds the claim's
+     *        row lock a little longer.
      */
-    Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags);
+    Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags,
+                              @Nullable Function<Task, ObjectNode> claimedPayloadEnricher);
 }

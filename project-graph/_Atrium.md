@@ -7,14 +7,14 @@ Multi-tenant SaaS: companies hire AI agents as employees — roles, skills, hier
 ## Services
 - [[web-dashboard]] — React dashboard, redesigned into an "AI Operating System" (MF-1–6 ALL DONE: router + new shell + primitives + real Mission Control + Tasks kanban/drawer/review inbox + Employees/profile/Organization + Projects/Knowledge/Workflow/Reports + Notifications/Cmd+K/Settings + contract cleanup — zero legacy panels remain). ON REAL API, mocks still available behind `VITE_USE_MOCKS=1`
 - [[web-office]] — SkyOffice Phaser client fork, BUILT mock-driven since session 3, mounted at `/office` (one optional route since MF-1, not the primary UI)
-- [[core-api]] — Spring Boot source of truth (M0.1–M0.8 + M-SK1 done: scaffold, migrations, registry, routing + outbox + claim/lease, LLM provider SPI + Anthropic, agent runtime loop, approve/reject + rejection-feedback rework, real budget caps + soft-alert + auto-pause, outbox→Redis relay for office/dashboard, CORS enabled for the browser dashboard, skills registry live)
+- [[core-api]] — Spring Boot source of truth (M0.1–M0.8 + M-SK1 + M-CTX1 done: scaffold, migrations, registry, routing + outbox + claim/lease, LLM provider SPI + Anthropic, agent runtime loop, approve/reject + rejection-feedback rework, real budget caps + soft-alert + auto-pause, outbox→Redis relay for office/dashboard, CORS enabled for the browser dashboard, skills registry live, skills-into-prompts ContextAssembler live)
 - [[office-realtime]] — Colyseus presence server (NOT STARTED, fork only)
 
 ## core-api modules
 [[registry]] · [[routing]] · [[execution]] · [[accountability]] · [[realtimebridge]] · [[agentmind]]
 
 ## Cross-cutting
-- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (RELAY LIVE at M0.75; skills registry LIVE at M-SK1; memory/knowledge/learning still spec'd only, docs 12–17)
+- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (RELAY LIVE at M0.75; skills registry LIVE at M-SK1; skills-into-prompts ContextAssembler LIVE at M-CTX1; memory/knowledge/learning still spec'd only, docs 12–17)
 - [[data-model]] — Postgres schema, the contract everything mirrors
 - [[realtime-events]] — Redis pub/sub bridge, core-api → office
 - [[milestones]] — 26-milestone plan + what's actually done

@@ -18,8 +18,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -151,7 +153,8 @@ public class PostgresWorkBroker implements WorkBroker {
 
     @Override
     @Transactional
-    public Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags) {
+    public Optional<Task> claimNext(UUID companyId, UUID agentId, List<String> skillTags,
+                                    @Nullable Function<Task, ObjectNode> claimedPayloadEnricher) {
         if (skillTags.isEmpty()) {
             return Optional.empty();
         }
@@ -179,6 +182,12 @@ public class PostgresWorkBroker implements WorkBroker {
         payload.put("agentId", agentId.toString());
         payload.put("attempt", task.getAttempt());
         payload.put("leaseExpiresAt", task.getLeaseExpiresAt().toString());
+        if (claimedPayloadEnricher != null) {
+            ObjectNode extra = claimedPayloadEnricher.apply(task);
+            if (extra != null) {
+                payload.setAll(extra);
+            }
+        }
         recorder.record(task, "claimed", "agent:" + agentId, payload);
         return Optional.of(task);
     }
