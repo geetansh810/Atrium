@@ -21,4 +21,10 @@ public class JpaModelCatalogLookup implements ModelCatalogLookup {
         return catalog.findByProviderAndModelName(provider, modelName)
                 .filter(ModelCatalogEntry::isEnabled);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ModelCatalogEntry> findByProviderAndTier(String provider, String tier) {
+        return catalog.findFirstByProviderAndTierAndEnabledTrue(provider, tier);
+    }
 }

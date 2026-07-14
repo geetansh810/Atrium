@@ -54,6 +54,10 @@ atrium:
   memory:
     ttl-days: ${ATRIUM_MEMORY_TTL_DAYS:90}          # 14 §2: lesson/summary memories unused this long get archived
     archive-cron: "0 30 3 * * *"                    # MemoryTtlArchiver: nightly at 3:30am
+  learning:
+    model-tier: ${ATRIUM_LEARNING_MODEL_TIER:fast}  # 14 §5: extraction uses the agent's own provider, fast tier
+    poll-interval-ms: 5000                          # LearningPipeline poll cadence (12 §3 durable consumer)
+    batch-size: 5                                   # kept small: each event's LLM call runs inside the batch's shared tx
 
 ---
 spring:

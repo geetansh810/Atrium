@@ -11,4 +11,7 @@ public interface ModelCatalogRepository extends JpaRepository<ModelCatalogEntry,
     List<ModelCatalogEntry> findByEnabledTrueOrderByProviderAscModelNameAsc();
 
     Optional<ModelCatalogEntry> findByProviderAndModelName(String provider, String modelName);
+
+    /** M-LN1: pick a cheap model for the same provider an agent already uses (14 §5). */
+    Optional<ModelCatalogEntry> findFirstByProviderAndTierAndEnabledTrue(String provider, String tier);
 }

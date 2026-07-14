@@ -138,6 +138,21 @@ public class SkillService {
         roleDefinitionSkills.save(new RoleDefinitionSkill(roleDefinition.getId(), skill.getId(), nextPosition));
     }
 
+    /**
+     * Review-approve "convert to draft skill" action (14 §5, 16 §3) — a
+     * recurring lesson promoted into a company-scoped, {@code
+     * trust_level='agent_proposed'} skill. Never auto-promoted to {@code
+     * platform}/{@code company} trust — {@link SkillContextAssembler} only
+     * ever includes {@code platform}/{@code company} skills in a prompt (14
+     * §1), so this stays inert until a human separately re-authors/promotes
+     * it, same as any other {@code agent_proposed} row.
+     */
+    @Transactional
+    public Skill createDraftFromMemory(UUID companyId, String key, String name, String bodyMd) {
+        return skills.save(new Skill(companyId, key, 1, name, "Promoted from a reviewed memory.", bodyMd,
+                "procedure", List.of(), "agent_proposed", "promoted_memory", actor()));
+    }
+
     /** GET /agents/{id}/mind's skills part (16 §1) — memory/knowledge parts are zeroed until M-MEM1/M-KN1. */
     @Transactional(readOnly = true)
     public List<AgentSkillView> mind(UUID companyId, UUID agentId) {

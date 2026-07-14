@@ -4,6 +4,7 @@ import app.atrium.common.NotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,6 +12,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -53,6 +55,8 @@ public class PgVectorMemoryStore implements MemoryStore {
     private static final double USE_COUNT_WEIGHT = 0.10;
     private static final double RECENCY_HALF_LIFE_DAYS = 30.0;
     private static final double SCORE_THRESHOLD = 0.30;
+    /** 14 §5 dedup bar — much higher than recall's relevance threshold above. */
+    private static final double DUPLICATE_SIMILARITY_THRESHOLD = 0.92;
     static final Set<String> SCOPES = Set.of("agent", "role", "company", "task");
 
     private final JdbcTemplate jdbc;
@@ -152,6 +156,72 @@ public class PgVectorMemoryStore implements MemoryStore {
         if (rows == 0) {
             throw NotFoundException.of("Memory", memoryId);
         }
+    }
+
+    @Override
+    @Transactional
+    public Optional<DuplicateMatch> findDuplicate(UUID companyId, String scope, UUID agentId, String roleKey,
+                                                  String kind, String content) {
+        if (!embeddingClient.isReady()) {
+            return Optional.empty();
+        }
+        float[] embedding;
+        try {
+            embedding = embeddingClient.embed(content);
+        } catch (RuntimeException e) {
+            log.warn("Dedup probe skipped for company {} — embedding call failed", companyId, e);
+            return Optional.empty();
+        }
+        String vectorLiteral = toVectorLiteral(embedding);
+        List<DuplicateMatch> rows = jdbc.query("""
+                SELECT id, 1 - (embedding <=> CAST(? AS vector)) AS similarity
+                FROM memories
+                WHERE company_id = ? AND scope = ? AND kind = ? AND status IN ('active', 'pending_review')
+                  AND embedding IS NOT NULL
+                  AND agent_id IS NOT DISTINCT FROM ? AND role_key IS NOT DISTINCT FROM ?
+                ORDER BY embedding <=> CAST(? AS vector)
+                LIMIT 1
+                """,
+                (rs, rowNum) -> new DuplicateMatch((UUID) rs.getObject("id"), rs.getDouble("similarity")),
+                vectorLiteral, companyId, scope, kind, agentId, roleKey, vectorLiteral);
+        return rows.stream().filter(m -> m.similarity() >= DUPLICATE_SIMILARITY_THRESHOLD).findFirst();
+    }
+
+    @Override
+    @Transactional
+    public void bumpImportance(UUID companyId, UUID memoryId) {
+        jdbc.update("UPDATE memories SET importance = LEAST(importance + 1, 5) WHERE id = ? AND company_id = ?",
+                memoryId, companyId);
+    }
+
+    @Override
+    @Transactional
+    public void promoteScope(UUID companyId, UUID memoryId, String newScope, UUID agentId, String roleKey) {
+        if (!SCOPES.contains(newScope)) {
+            throw new IllegalArgumentException("Unknown memory scope '" + newScope + "'");
+        }
+        int rows = jdbc.update(
+                "UPDATE memories SET scope = ?, agent_id = ?, role_key = ? WHERE id = ? AND company_id = ?",
+                newScope, agentId, roleKey, memoryId, companyId);
+        if (rows == 0) {
+            throw NotFoundException.of("Memory", memoryId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void stampReviewed(UUID companyId, UUID memoryId, String reviewedBy) {
+        String provenanceJson = jdbc.queryForObject(
+                "SELECT provenance::text FROM memories WHERE id = ? AND company_id = ?",
+                String.class, memoryId, companyId);
+        if (provenanceJson == null) {
+            throw NotFoundException.of("Memory", memoryId);
+        }
+        ObjectNode provenance = (ObjectNode) readJson(provenanceJson);
+        provenance.put("reviewedBy", reviewedBy);
+        provenance.put("reviewedAt", Instant.now().toString());
+        jdbc.update("UPDATE memories SET provenance = CAST(? AS jsonb) WHERE id = ? AND company_id = ?",
+                writeJson(provenance), memoryId, companyId);
     }
 
     private void bumpUseCount(List<MemoryHit> hits) {

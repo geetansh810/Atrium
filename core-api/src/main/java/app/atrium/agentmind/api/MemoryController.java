@@ -3,11 +3,13 @@ package app.atrium.agentmind.api;
 import app.atrium.agentmind.MemoryService;
 import app.atrium.agentmind.api.MemoryDtos.MemoryBrowseQuery;
 import app.atrium.agentmind.api.MemoryDtos.MemoryResponse;
+import app.atrium.agentmind.api.MemoryDtos.ReviewMemoryRequest;
 import app.atrium.agentmind.api.MemoryDtos.SeedMemoryRequest;
 import app.atrium.common.NotFoundException;
 import app.atrium.common.PageEnvelope;
 import app.atrium.common.TenantContext;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Memory browse/seed/forget (16 §3) — review-queue + review actions are M-LN1. */
+/** Memory browse/seed/forget/review-queue/review (16 §3). */
 @RestController
 public class MemoryController {
 
@@ -55,6 +57,18 @@ public class MemoryController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forget(@PathVariable UUID id) {
         memoryService.forget(TenantContext.requireCompanyId(), id);
+    }
+
+    @GetMapping("/api/v1/companies/{id}/memories/review-queue")
+    public PageEnvelope<MemoryResponse> reviewQueue(@PathVariable UUID id) {
+        requireTenantMatch(id);
+        List<MemoryResponse> data = memoryService.reviewQueue(id).stream().map(MemoryResponse::from).toList();
+        return new PageEnvelope<>(data, null);
+    }
+
+    @PostMapping("/api/v1/memories/{id}/review")
+    public MemoryResponse review(@PathVariable UUID id, @Valid @RequestBody ReviewMemoryRequest request) {
+        return MemoryResponse.from(memoryService.review(TenantContext.requireCompanyId(), id, request));
     }
 
     private void requireTenantMatch(UUID pathCompanyId) {

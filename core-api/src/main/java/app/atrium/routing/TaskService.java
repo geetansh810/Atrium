@@ -228,6 +228,7 @@ public class TaskService {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("artifactId", artifact.getId().toString());
         payload.put("artifactKind", artifactKind);
+        payload.put("agentId", agentId.toString());
         recorder.record(task, "completed", "agent:" + agentId, payload);
         return task;
     }
@@ -263,7 +264,11 @@ public class TaskService {
             throw new ConflictException("Task " + taskId + " has open subtasks — complete those first");
         }
         TaskStateGuard.transition(task, "approved");
-        recorder.record(task, "approved", actor(), null);
+        ObjectNode payload = objectMapper.createObjectNode();
+        if (task.getAssignedAgentId() != null) {
+            payload.put("agentId", task.getAssignedAgentId().toString());
+        }
+        recorder.record(task, "approved", actor(), payload);
         return task;
     }
 
@@ -285,6 +290,9 @@ public class TaskService {
         TaskStateGuard.transition(task, "rejected");
         ObjectNode rejectedPayload = objectMapper.createObjectNode();
         rejectedPayload.put("feedback", feedback);
+        if (previousAgentId != null) {
+            rejectedPayload.put("agentId", previousAgentId.toString());
+        }
         recorder.record(task, "rejected", actor(), rejectedPayload);
 
         TaskStateGuard.transition(task, "queued");

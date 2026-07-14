@@ -1,5 +1,6 @@
 package app.atrium.agentmind.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,4 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MemoryRepository extends JpaRepository<Memory, UUID> {
 
     Optional<Memory> findByIdAndCompanyId(UUID id, UUID companyId);
+
+    /** Review queue (16 §3): pending_review items, oldest first. */
+    List<Memory> findByCompanyIdAndStatusOrderByCreatedAtAsc(UUID companyId, String status);
 }

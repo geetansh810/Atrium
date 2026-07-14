@@ -28,6 +28,19 @@ public final class MemoryDtos {
             @NotBlank String kind,
             @NotBlank String content) {}
 
+    /**
+     * 16 §3: {action:'approve'|'reject', promoteScope?:'role'|'company',
+     * asSkill?:{key,name}} — POST /memories/{id}/review. promoteScope and
+     * asSkill only apply on approve; both are independent optional add-ons
+     * (a promoted memory can also become a draft skill in the same call).
+     */
+    public record ReviewMemoryRequest(
+            @NotBlank String action,
+            @Nullable String promoteScope,
+            @Nullable AsSkillRequest asSkill) {}
+
+    public record AsSkillRequest(@NotBlank String key, @NotBlank String name) {}
+
     public record MemoryResponse(
             UUID id, UUID companyId, String scope, @Nullable UUID agentId, @Nullable String roleKey,
             @Nullable UUID taskId, String kind, String content, short importance, String status,

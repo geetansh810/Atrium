@@ -33,7 +33,7 @@ core-api/src/main/java/app/atrium/
 ```
 
 Boundary rules (unchanged + additions):
-- Cross-module calls only via service interfaces; no circular imports. Dependency direction: `routing → registry`, `routing → accountability (BudgetGuard)`, `execution → routing (TaskService)`, `execution → agentmind (ContextAssembler)`, `agentmind → registry`, `eventbus ← everyone (write-only)`, `realtimebridge → eventbus (read-only)`.
+- Cross-module calls only via service interfaces; no circular imports. Dependency direction: `routing → registry`, `routing → accountability (BudgetGuard)`, `execution → routing (TaskService)`, `execution → agentmind (ContextAssembler)`, `agentmind → registry`, `agentmind → accountability (UsageLedger, M-LN1: LearningPipeline meters extraction calls)`, `agentmind → execution.spi (LlmClient only — never app.atrium.execution itself)`, `eventbus ← everyone (write-only)`, `realtimebridge → eventbus (read-only)`.
 - `agentmind` never writes task state. `eventbus` has no business logic. `if (skill == …)` anywhere in routing remains a bug by definition.
 
 ## 3. Event backbone: transactional outbox (the "mesh" sized for v1)

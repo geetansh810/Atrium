@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import app.atrium.IntegrationTestBase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
@@ -34,6 +36,12 @@ class MemoryApiTest extends IntegrationTestBase {
 
     @Autowired
     ObjectMapper json;
+
+    @Autowired
+    JdbcTemplate jdbc;
+
+    @Autowired
+    MemoryStore memoryStore;
 
     @MockitoBean
     EmbeddingClient embeddingClient;
@@ -147,5 +155,83 @@ class MemoryApiTest extends IntegrationTestBase {
                 "scope", "agent", "agentId", UUID.randomUUID().toString(), "kind", "fact",
                 "content", "unknown agent"));
         assertThat(unknownAgent.getStatusCode().value()).isEqualTo(404);
+    }
+
+    // ── M-LN1: review-queue + review action ──────────────────────────────────
+
+    private UUID seedPendingReview(String companyId, String scope, String kind, String content) {
+        ObjectNode provenance = json.createObjectNode();
+        provenance.put("extractedBy", "pipeline");
+        return memoryStore.ingest(new MemoryWrite(UUID.fromString(companyId), scope, null, null, null,
+                kind, content, (short) 1, "pending_review", provenance, null));
+    }
+
+    @Test
+    void reviewQueueShowsPendingItemsAndApproveActivatesAndRemovesThem() {
+        String company = createCompany("mem-review");
+        UUID memoryId = seedPendingReview(company, "company", "fact", "our brand name is X-Corp");
+
+        JsonNode queue = parse(rest.exchange("/api/v1/companies/" + company + "/memories/review-queue",
+                HttpMethod.GET, new HttpEntity<>(headers(company)), String.class).getBody()).get("data");
+        assertThat(queue.findValuesAsText("id")).contains(memoryId.toString());
+
+        ResponseEntity<String> reviewed = rest.postForEntity("/api/v1/memories/" + memoryId + "/review",
+                new HttpEntity<>(Map.of("action", "approve"), headers(company)), String.class);
+        assertThat(reviewed.getStatusCode().value()).as(reviewed.getBody()).isEqualTo(200);
+        JsonNode body = parse(reviewed.getBody());
+        assertThat(body.get("status").asText()).isEqualTo("active");
+        assertThat(body.get("provenance").get("reviewedBy").asText()).isNotBlank();
+
+        JsonNode queueAfter = parse(rest.exchange("/api/v1/companies/" + company + "/memories/review-queue",
+                HttpMethod.GET, new HttpEntity<>(headers(company)), String.class).getBody()).get("data");
+        assertThat(queueAfter.findValuesAsText("id")).doesNotContain(memoryId.toString());
+    }
+
+    @Test
+    void rejectedMemoryNeverAppearsInRecall() {
+        // A non-zero vector everywhere — a zero vector's cosine similarity is
+        // undefined (same precedent as LlmLoopRuntimeTest), and the column is
+        // vector(1536) so the stub must match that dimension exactly.
+        float[] sameVectorEverywhere = new float[1536];
+        sameVectorEverywhere[0] = 1f;
+        when(embeddingClient.embed(anyString())).thenReturn(sameVectorEverywhere);
+
+        String company = createCompany("mem-reject");
+        UUID memoryId = seedPendingReview(company, "company", "preference", "never rejected content");
+        UUID companyId = UUID.fromString(company);
+
+        // pending_review is already excluded from recall by construction (15 §5 invariant:
+        // only status='active' is ever recalled) — the real thing worth guarding here is
+        // that rejecting it doesn't accidentally leave it recallable.
+        List<MemoryHit> beforeReject = memoryStore.recall(
+                new RecallQuery(companyId, UUID.randomUUID(), null, "never rejected content", 10, null));
+        assertThat(beforeReject).extracting(h -> h.memory().id()).doesNotContain(memoryId);
+
+        ResponseEntity<String> reviewed = rest.postForEntity("/api/v1/memories/" + memoryId + "/review",
+                new HttpEntity<>(Map.of("action", "reject"), headers(company)), String.class);
+        assertThat(reviewed.getStatusCode().value()).as(reviewed.getBody()).isEqualTo(200);
+        assertThat(parse(reviewed.getBody()).get("status").asText()).isEqualTo("rejected");
+
+        List<MemoryHit> afterReject = memoryStore.recall(
+                new RecallQuery(companyId, UUID.randomUUID(), null, "never rejected content", 10, null));
+        assertThat(afterReject).extracting(h -> h.memory().id()).doesNotContain(memoryId);
+    }
+
+    @Test
+    void approvingWithPromoteScopeAndAsSkillAppliesBoth() {
+        String company = createCompany("mem-promote");
+        UUID memoryId = seedPendingReview(company, "company", "lesson", "always write tests first");
+
+        ResponseEntity<String> reviewed = rest.postForEntity("/api/v1/memories/" + memoryId + "/review",
+                new HttpEntity<>(Map.of("action", "approve", "promoteScope", "company",
+                        "asSkill", Map.of("key", "tdd-first", "name", "Write tests first")),
+                        headers(company)), String.class);
+        assertThat(reviewed.getStatusCode().value()).as(reviewed.getBody()).isEqualTo(200);
+        assertThat(parse(reviewed.getBody()).get("status").asText()).isEqualTo("active");
+
+        Integer draftSkillCount = jdbc.queryForObject(
+                "SELECT count(*) FROM skills WHERE company_id = ?::uuid AND key = 'tdd-first' "
+                        + "AND trust_level = 'agent_proposed'", Integer.class, company);
+        assertThat(draftSkillCount).isEqualTo(1);
     }
 }

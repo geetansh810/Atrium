@@ -141,8 +141,8 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M0.8 | Minimal task board (REDEFINED, doc 17: mock→API swap) | 0 | ✅ |
 | M-SK1 | Skills registry (NEW, doc 17) | depth | ✅ |
 | M-CTX1 | ContextAssembler v1: skills into prompts (NEW, doc 17) | depth | ✅ |
-| M-MEM1 | Memory store + recall (NEW, doc 17) | depth | ☐ |
-| M-LN1 | Learning pipeline + review governance (NEW, doc 17) | depth | ☐ |
+| M-MEM1 | Memory store + recall (NEW, doc 17) | depth | ✅ |
+| M-LN1 | Learning pipeline + review governance (NEW, doc 17) | depth | ✅ |
 | M1.1 | Business role via registry | 1 | ☐ |
 | M1.2 | Real pilot run | 1 | ☐ |
 | M1.3 | Feedback fixes | 1 | ☐ |

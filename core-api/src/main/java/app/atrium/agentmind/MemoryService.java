@@ -1,14 +1,21 @@
 package app.atrium.agentmind;
 
 import app.atrium.agentmind.api.MemoryDtos.MemoryBrowseQuery;
+import app.atrium.agentmind.api.MemoryDtos.ReviewMemoryRequest;
 import app.atrium.agentmind.api.MemoryDtos.SeedMemoryRequest;
 import app.atrium.agentmind.domain.Memory;
 import app.atrium.agentmind.domain.MemoryRepository;
+import app.atrium.common.ConflictException;
 import app.atrium.common.FieldValidationException;
 import app.atrium.common.KeysetCursors;
 import app.atrium.common.NotFoundException;
 import app.atrium.common.TenantContext;
+import app.atrium.eventbus.OutboxWriter;
+import app.atrium.eventbus.Topics;
 import app.atrium.registry.AgentDirectory;
+import app.atrium.registry.RoleDefinitionLookup;
+import app.atrium.registry.domain.Agent;
+import app.atrium.registry.domain.RoleDefinition;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
@@ -18,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,14 +45,21 @@ public class MemoryService {
     private final MemoryRepository memories;
     private final MemoryStore memoryStore;
     private final AgentDirectory agentDirectory;
+    private final RoleDefinitionLookup roleDefinitions;
+    private final SkillService skillService;
+    private final OutboxWriter outboxWriter;
     private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
 
     public MemoryService(MemoryRepository memories, MemoryStore memoryStore, AgentDirectory agentDirectory,
-                         EntityManager entityManager, ObjectMapper objectMapper) {
+                         RoleDefinitionLookup roleDefinitions, SkillService skillService,
+                         OutboxWriter outboxWriter, EntityManager entityManager, ObjectMapper objectMapper) {
         this.memories = memories;
         this.memoryStore = memoryStore;
         this.agentDirectory = agentDirectory;
+        this.roleDefinitions = roleDefinitions;
+        this.skillService = skillService;
+        this.outboxWriter = outboxWriter;
         this.entityManager = entityManager;
         this.objectMapper = objectMapper;
     }
@@ -152,6 +167,88 @@ public class MemoryService {
         memories.findByIdAndCompanyId(memoryId, companyId)
                 .orElseThrow(() -> NotFoundException.of("Memory", memoryId));
         memoryStore.forget(companyId, memoryId);
+    }
+
+    /** GET /companies/{id}/memories/review-queue (16 §3) — pending_review items, oldest first. */
+    @Transactional(readOnly = true)
+    public List<MemoryView> reviewQueue(UUID companyId) {
+        return memories.findByCompanyIdAndStatusOrderByCreatedAtAsc(companyId, "pending_review").stream()
+                .map(MemoryView::from)
+                .toList();
+    }
+
+    /**
+     * POST /memories/{id}/review (16 §3, 14 §5) — approve/reject a pending
+     * item, optionally widening its scope ({@code promoteScope}) and/or
+     * spinning off a draft skill ({@code asSkill}); both are independent
+     * add-ons available only alongside {@code action:'approve'}.
+     */
+    @Transactional
+    public MemoryView review(UUID companyId, UUID memoryId, ReviewMemoryRequest request) {
+        Memory memory = memories.findByIdAndCompanyId(memoryId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Memory", memoryId));
+        if (!"pending_review".equals(memory.getStatus())) {
+            throw new ConflictException("Memory " + memoryId + " is '" + memory.getStatus()
+                    + "' — not awaiting review");
+        }
+
+        switch (request.action()) {
+            case "approve" -> approveReviewed(companyId, memory, request);
+            case "reject" -> memoryStore.setStatus(companyId, memoryId, "rejected");
+            default -> throw new FieldValidationException(Map.of("action", "must be 'approve' or 'reject'"));
+        }
+
+        String reviewer = TenantContext.userId().map(id -> "user:" + id).orElse("system");
+        memoryStore.stampReviewed(companyId, memoryId, reviewer);
+        // memoryStore's writes above are all raw JDBC (PgVectorMemoryStore's whole-class
+        // convention) — Hibernate's first-level cache still holds the `memory` entity as it
+        // was BEFORE those writes (loaded via JPA a few lines up), so a plain findById here
+        // would silently return that stale snapshot instead of hitting the DB again. Refresh
+        // the SAME managed instance instead of re-querying.
+        entityManager.refresh(memory);
+        return MemoryView.from(memory);
+    }
+
+    private void approveReviewed(UUID companyId, Memory memory, ReviewMemoryRequest request) {
+        if (request.promoteScope() != null) {
+            String toScope = validateScope(request.promoteScope());
+            String fromScope = memory.getScope();
+            String roleKey = "role".equals(toScope) ? roleKeyForPromotion(companyId, memory) : null;
+            UUID agentId = "agent".equals(toScope) ? memory.getAgentId() : null;
+            memoryStore.promoteScope(companyId, memory.getId(), toScope, agentId, roleKey);
+            publishPromoted(companyId, memory.getId(), memory.getAgentId(), fromScope, toScope);
+        }
+        memoryStore.setStatus(companyId, memory.getId(), "active");
+        if (request.asSkill() != null) {
+            skillService.createDraftFromMemory(companyId, request.asSkill().key(),
+                    request.asSkill().name(), memory.getContent());
+        }
+    }
+
+    /** Promoting an agent-scope memory to role scope needs that agent's role key. */
+    @Nullable
+    private String roleKeyForPromotion(UUID companyId, Memory memory) {
+        if (memory.getRoleKey() != null) {
+            return memory.getRoleKey();
+        }
+        if (memory.getAgentId() == null) {
+            return null;
+        }
+        Agent agent = agentDirectory.findById(companyId, memory.getAgentId()).orElse(null);
+        if (agent == null) {
+            return null;
+        }
+        RoleDefinition roleDef = roleDefinitions.findById(agent.getRoleDefinitionId()).orElse(null);
+        return roleDef != null ? roleDef.getKey() : null;
+    }
+
+    private void publishPromoted(UUID companyId, UUID memoryId, @Nullable UUID sourceAgentId,
+                                 String fromScope, String toScope) {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("memoryId", memoryId.toString());
+        payload.put("fromScope", fromScope);
+        payload.put("toScope", toScope);
+        outboxWriter.append(companyId, Topics.memory(companyId, sourceAgentId), "memory.promoted", payload);
     }
 
     private String validateScope(String scope) {

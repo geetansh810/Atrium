@@ -39,6 +39,8 @@ Review-queue actions append `task_events`-style audit rows? No — memories are 
 
 ## 4. New event payloads (extends 04 §WebSocket / topic taxonomy 12 §4)
 
+**M-LN1 addition:** `task.completed`/`task.rejected`/`task.approved` payloads (04, unchanged shape otherwise) now also carry `agentId` — the agent who did the work being reviewed. Additive only (no existing field renamed/removed). Needed because `LearningPipeline` (a durable outbox consumer, 12 §3) processes these asynchronously, by which point `tasks.assigned_agent_id` may already be cleared (e.g. `reject()` clears it in the same transaction that writes the `rejected` event) — the payload is the only reliable place left to find "whose work is this."
+
 ```
 budget.threshold          {agentId?, period, spentTokens, capTokens, pct}     # once per period at alert_pct
 budget.exceeded           {agentId?, period}                                  # claim refused + auto-pause

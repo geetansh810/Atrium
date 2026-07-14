@@ -13,3 +13,11 @@ atrium:
     # context that instance belongs to). app.atrium.realtimebridge.OutboxRelayTest
     # overrides this back down via its own @TestPropertySource.
     interval-ms: 3600000
+  learning:
+    # Same reasoning as relay above, plus: LearningPipeline makes a REAL LLM
+    # call per handled event, so an always-on instance in every shared
+    # context would also mean real (or WireMock-contending) network calls
+    # during unrelated tests. app.atrium.agentmind.LearningPipelineTest calls
+    # pollOnce() directly (EventCursorWorkerTest's own precedent) rather than
+    # overriding this back down.
+    poll-interval-ms: 3600000

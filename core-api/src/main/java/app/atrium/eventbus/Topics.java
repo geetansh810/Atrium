@@ -32,4 +32,9 @@ public final class Topics {
     public static String budget(UUID companyId, UUID agentId) {
         return PREFIX + companyId + "/budget/" + (agentId != null ? agentId : "company");
     }
+
+    /** {@code atrium/v1/{companyId}/memory/{agentId|company}} (12 §4, M-LN1) — same fallback idiom as {@link #budget}. */
+    public static String memory(UUID companyId, UUID agentId) {
+        return PREFIX + companyId + "/memory/" + (agentId != null ? agentId : "company");
+    }
 }
