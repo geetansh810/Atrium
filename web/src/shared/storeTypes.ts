@@ -15,7 +15,7 @@ import type {
   Task,
 } from "./types";
 
-export type PanelKey = "analytics" | "chat" | "announcements" | "flow";
+export type PanelKey = "chat" | "announcements";
 
 export interface UiState {
   activePanel: PanelKey | null;

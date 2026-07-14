@@ -178,3 +178,40 @@ export interface CurrentUser {
   id: string;
   displayName: string;
 }
+
+// --- MF-5: net-new mock-only domains (shared/domains/*.ts) — no backend
+// equivalent exists yet, so these are never gated by VITE_USE_MOCKS. Real
+// task ids may still be referenced from them (see Project.taskLinks usage
+// in shared/domains/projects.ts), but the domains themselves stay fixture-only
+// until their own backend milestone lands.
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed";
+
+// no backend yet — domain hook only
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  ownerAgentId: string | null;
+  budgetCapTokens: number | null;
+  createdAt: string;
+}
+
+// no backend yet — domain hook only
+export interface KnowledgeDoc {
+  id: string;
+  title: string;
+  excerpt: string;
+  body: string;
+  tags: string[];
+  updatedAt: string;
+}
+
+// no backend yet — domain hook only
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+}

@@ -1,0 +1,41 @@
+{
+  "projects": [
+    {
+      "id": "project-q2-report",
+      "name": "Q2 Business Report",
+      "description": "Competitor research, dataset validation, and drafting the quarterly report for leadership.",
+      "status": "active",
+      "ownerAgentId": "agent-research",
+      "budgetCapTokens": 500000,
+      "createdAt": "2026-06-01T09:00:00.000Z"
+    },
+    {
+      "id": "project-api-platform",
+      "name": "API Platform Hardening",
+      "description": "Ship the new endpoint and backfill test coverage before the next release.",
+      "status": "active",
+      "ownerAgentId": "agent-coder",
+      "budgetCapTokens": 300000,
+      "createdAt": "2026-06-10T09:00:00.000Z"
+    },
+    {
+      "id": "project-vendor-onboarding",
+      "name": "Vendor Onboarding",
+      "description": "Get the new vendor access provisioned and the onboarding doc refreshed before they start.",
+      "status": "planning",
+      "ownerAgentId": "agent-hr",
+      "budgetCapTokens": null,
+      "createdAt": "2026-06-20T09:00:00.000Z"
+    }
+  ],
+  "taskLinks": {
+    "project-q2-report": [
+      "task-analyze-q2",
+      "task-collect-competitor",
+      "task-validate-dataset",
+      "task-draft-q2-report"
+    ],
+    "project-api-platform": ["task-build-api", "task-api-tests"],
+    "project-vendor-onboarding": ["task-vendor-access", "task-onboarding-doc"]
+  }
+}

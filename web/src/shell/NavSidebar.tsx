@@ -3,7 +3,6 @@ import { PRODUCT_NAME } from "../shared/theme";
 import { escalationCount, useApp } from "../shared/store";
 import type { PanelKey } from "../shared/store";
 import {
-  AnalyticsIcon,
   ChatIcon,
   EmployeesIcon,
   FlowIcon,
@@ -35,9 +34,7 @@ const PRIMARY_NAV = [
 // milestone-by-milestone as each panel gets a real page (gone by MF-6).
 const CLASSIC_PANELS: { label: string; panel: PanelKey; icon: typeof ChatIcon }[] = [
   { label: "Chat", panel: "chat", icon: ChatIcon },
-  { label: "Analytics", panel: "analytics", icon: AnalyticsIcon },
   { label: "Announcements", panel: "announcements", icon: MegaphoneIcon },
-  { label: "Task Flow", panel: "flow", icon: FlowIcon },
 ];
 
 export function NavSidebar() {

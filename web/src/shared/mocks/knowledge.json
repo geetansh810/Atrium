@@ -1,0 +1,52 @@
+{
+  "docs": [
+    {
+      "id": "doc-onboarding-checklist",
+      "title": "New Agent Onboarding Checklist",
+      "excerpt": "Steps every newly hired agent walks through on its first day.",
+      "body": "1. Confirm role + skill tags match the hiring template.\n2. Verify manager assignment and reporting line.\n3. Set an initial budget cap appropriate for the role tier.\n4. Send a welcome DM introducing the team channels.\n5. Assign a low-risk first task to validate the loop end to end.",
+      "tags": ["onboarding", "process"],
+      "updatedAt": "2026-05-02T12:00:00.000Z"
+    },
+    {
+      "id": "doc-budget-policy",
+      "title": "Token Budget Policy",
+      "excerpt": "How company-wide and per-agent caps interact, and what happens at 80%/100%.",
+      "body": "Company-wide and per-agent caps are both checked at claim time. Crossing 80% of either fires a one-time threshold alert for that period. Crossing 100% of an agent's own cap auto-pauses that agent; crossing the company-wide cap blocks new claims without pausing any single agent, since the cap is shared. Raise a cap and unpause to resume.",
+      "tags": ["budget", "policy"],
+      "updatedAt": "2026-05-10T09:30:00.000Z"
+    },
+    {
+      "id": "doc-model-selection",
+      "title": "Choosing a Model Tier",
+      "excerpt": "When to hire an agent on the fast tier vs. the deep tier.",
+      "body": "Fast-tier models (haiku-class) are the default for high-volume, low-ambiguity work: triage, formatting, short lookups. Balanced-tier (sonnet-class) covers most coding and analysis tasks. Reserve deep-tier (opus-class) for tasks with long context or multi-step reasoning where getting it right the first time matters more than latency or cost.",
+      "tags": ["models", "hiring"],
+      "updatedAt": "2026-05-14T15:00:00.000Z"
+    },
+    {
+      "id": "doc-review-etiquette",
+      "title": "Writing Useful Rejection Feedback",
+      "excerpt": "Feedback on a rejected task goes straight into the agent's next attempt — make it count.",
+      "body": "Rejection feedback is fed verbatim into the prompt for the agent's next attempt on the same task. Be specific about what was wrong and what \"done\" looks like — vague feedback like \"try again\" wastes an attempt. Point at the exact section, field, or test that failed.",
+      "tags": ["process", "review"],
+      "updatedAt": "2026-05-20T11:20:00.000Z"
+    },
+    {
+      "id": "doc-incident-template",
+      "title": "Incident Postmortem Template",
+      "excerpt": "Standard sections for writing up an incident once it's resolved.",
+      "body": "Summary — one paragraph, what happened and impact.\nTimeline — timestamped sequence of detection, mitigation, resolution.\nRoot cause — the actual mechanism, not just the trigger.\nAction items — concrete, owned, with a target date.",
+      "tags": ["incidents", "process"],
+      "updatedAt": "2026-05-28T08:45:00.000Z"
+    },
+    {
+      "id": "doc-coding-style",
+      "title": "Coding Agent Output Conventions",
+      "excerpt": "What a coding agent's artifact should look like before it reaches review.",
+      "body": "Prefer complete, runnable snippets over fragments. Include the file path as a comment on the first line when the artifact represents a specific file. Avoid inventing APIs that weren't described in the task — if unsure, note the assumption instead of guessing silently.",
+      "tags": ["coding", "process"],
+      "updatedAt": "2026-06-03T10:15:00.000Z"
+    }
+  ]
+}

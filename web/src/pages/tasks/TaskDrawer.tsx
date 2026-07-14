@@ -1,36 +1,18 @@
 import { useState } from "react";
 import { formatTimeAgo, PRIORITY_LABEL } from "../../shared/format";
+import { TASK_EVENT_LABEL, taskEventTone } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
 import { Drawer } from "../../ui/Drawer";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { StatusPill, taskStatusTone } from "../../ui/StatusPill";
-import type { PillTone } from "../../ui/StatusPill";
 import { Timeline } from "../../ui/Timeline";
 import type { TimelineItem } from "../../ui/Timeline";
 import { EmptyState } from "../../ui/EmptyState";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { ConversationThread } from "../../ui/ConversationThread";
 import "./TaskDrawer.css";
-
-const EVENT_LABEL: Record<string, string> = {
-  created: "Created",
-  claimed: "Claimed",
-  progress: "Started work",
-  completed: "Completed — sent for review",
-  approved: "Approved",
-  rejected: "Sent back with feedback",
-  requeued: "Requeued",
-  flagged: "Flagged for a human",
-};
-
-function eventTone(eventType: string): PillTone {
-  if (eventType === "approved" || eventType === "completed") return "success";
-  if (eventType === "rejected" || eventType === "flagged") return "danger";
-  if (eventType === "claimed" || eventType === "progress" || eventType === "requeued") return "running";
-  return "neutral";
-}
 
 interface TaskDrawerProps {
   taskId: string;
@@ -74,9 +56,9 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((e) => ({
       id: e.id,
-      label: EVENT_LABEL[e.eventType] ?? e.eventType,
+      label: TASK_EVENT_LABEL[e.eventType] ?? e.eventType,
       timestamp: formatTimeAgo(e.createdAt),
-      tone: eventTone(e.eventType),
+      tone: taskEventTone(e.eventType),
     }));
 
   const tabs: TabItem[] = [

@@ -1,0 +1,22 @@
+{
+  "templates": [
+    {
+      "id": "wf-research-report",
+      "name": "Research → Report",
+      "description": "Collect source data, validate it, then draft a report for human review.",
+      "steps": ["Collect source data", "Validate dataset", "Draft report", "Human review"]
+    },
+    {
+      "id": "wf-build-ship",
+      "name": "Build → Test → Ship",
+      "description": "Standard coding pipeline from implementation to human approval.",
+      "steps": ["Implement change", "Write/verify tests", "Human review", "Approve"]
+    },
+    {
+      "id": "wf-vendor-onboarding",
+      "name": "Vendor Onboarding",
+      "description": "Provision access and refresh documentation for a new vendor.",
+      "steps": ["Provision access", "Update onboarding doc", "Human review"]
+    }
+  ]
+}

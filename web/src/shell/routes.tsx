@@ -7,6 +7,7 @@ import { EmployeesPage } from "../pages/employees/EmployeesPage";
 import { EmployeeProfile } from "../pages/employees/EmployeeProfile";
 import { OrganizationPage } from "../pages/organization/OrganizationPage";
 import { ProjectsPage } from "../pages/projects/ProjectsPage";
+import { ProjectDetail } from "../pages/projects/ProjectDetail";
 import { KnowledgePage } from "../pages/knowledge/KnowledgePage";
 import { ReportsPage } from "../pages/reports/ReportsPage";
 import { OfficePage } from "../pages/office/OfficePage";
@@ -25,6 +26,7 @@ export function AppRoutes() {
       <Route path="/employees/:id" element={<EmployeeProfile />} />
       <Route path="/organization" element={<OrganizationPage />} />
       <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/projects/:id" element={<ProjectDetail />} />
       <Route path="/knowledge" element={<KnowledgePage />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/office" element={<OfficePage />} />

@@ -106,6 +106,29 @@ export function kanbanColumns(tasks: Task[]): Record<string, Task[]> {
   return columns;
 }
 
+export type TaskEventTone = "neutral" | "info" | "running" | "success" | "warning" | "danger";
+
+// Human labels + tones for Task.events entries — shared by the task detail
+// timeline (TaskDrawer), the project timeline (ProjectDetail, MF-5), and
+// anywhere else task events render as a list.
+export const TASK_EVENT_LABEL: Record<string, string> = {
+  created: "Created",
+  claimed: "Claimed",
+  progress: "Started work",
+  completed: "Completed — sent for review",
+  approved: "Approved",
+  rejected: "Sent back with feedback",
+  requeued: "Requeued",
+  flagged: "Flagged for a human",
+};
+
+export function taskEventTone(eventType: string): TaskEventTone {
+  if (eventType === "approved" || eventType === "completed") return "success";
+  if (eventType === "rejected" || eventType === "flagged") return "danger";
+  if (eventType === "claimed" || eventType === "progress" || eventType === "requeued") return "running";
+  return "neutral";
+}
+
 export interface OrgNode {
   agent: Agent;
   children: OrgNode[];

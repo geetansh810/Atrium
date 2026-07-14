@@ -106,3 +106,81 @@
 .org-payroll {
   padding-top: 4px;
 }
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.budget-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.budget-name {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-bar {
+  flex: 1;
+}
+
+.budget-nums {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.budget-cap-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 0;
+}
+
+.budget-cap-btn:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.budget-cap-input {
+  width: 80px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.budget-cap-input:focus {
+  border-color: var(--accent);
+}
+
+.cost-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cost-row:last-child {
+  border-bottom: none;
+}

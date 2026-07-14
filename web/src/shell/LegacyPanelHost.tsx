@@ -1,14 +1,10 @@
 import { useApp } from "../shared/store";
-import { AnalyticsPanel } from "../dashboard/panels/AnalyticsPanel";
 import { AnnouncementsPanel } from "../dashboard/panels/AnnouncementsPanel";
 import { ChatPanel } from "../dashboard/panels/ChatPanel";
-import { TaskFlowPanel } from "../dashboard/panels/TaskFlowPanel";
 
 const PANELS = {
-  analytics: AnalyticsPanel,
   chat: ChatPanel,
   announcements: AnnouncementsPanel,
-  flow: TaskFlowPanel,
 } as const;
 
 // Temporary bridge (deleted in MF-6): every panel not yet ported to a routed
