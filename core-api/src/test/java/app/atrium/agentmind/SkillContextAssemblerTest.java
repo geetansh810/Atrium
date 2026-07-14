@@ -1,6 +1,9 @@
 package app.atrium.agentmind;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
 import app.atrium.agentmind.domain.AgentSkill;
@@ -13,9 +16,11 @@ import app.atrium.routing.domain.Task;
 import app.atrium.routing.domain.TaskRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -24,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * M-CTX1 unit-level Done-when: fits-all, item-granular truncation, name+description
@@ -55,6 +61,45 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
 
     @Autowired
     AgentSkillRepository agentSkillRepository;
+
+    @Autowired
+    MemoryStore memoryStore;
+
+    /**
+     * Real HTTP calls are never made in this class — every embed() call
+     * returns a deterministic basis vector so cosine similarity is exactly
+     * controlled per test rather than depending on a live embeddings provider.
+     * Gives this test class its own Spring context (a mocked bean = a
+     * different context-cache key), same precedent as {@code
+     * OutboxRelayTest}'s {@code @MockitoSpyBean}.
+     */
+    @MockitoBean
+    EmbeddingClient embeddingClient;
+
+    private static float[] basisVector(int dimIndex) {
+        float[] v = new float[1536];
+        v[dimIndex] = 1f;
+        return v;
+    }
+
+    /** Same vector everywhere by default -> cosine similarity 1.0 for any content vs. any query. */
+    private static final float[] SIMILAR_VECTOR = basisVector(0);
+    /** Orthogonal to SIMILAR_VECTOR -> cosine similarity 0.0. */
+    private static final float[] DISSIMILAR_VECTOR = basisVector(1);
+
+    @BeforeEach
+    void stubEmbeddings() {
+        when(embeddingClient.isReady()).thenReturn(true);
+        when(embeddingClient.embed(anyString())).thenReturn(SIMILAR_VECTOR);
+    }
+
+    private UUID seedMemory(String companyId, String scope, String agentId, String roleKey,
+                           String kind, String content, String status) {
+        ObjectNode provenance = json.createObjectNode().put("extractedBy", "user");
+        return memoryStore.ingest(new MemoryWrite(UUID.fromString(companyId), scope,
+                agentId != null ? UUID.fromString(agentId) : null, roleKey, null, kind, content,
+                (short) 1, status, provenance, null));
+    }
 
     // ── helpers ──────────────────────────────────────────────────────────
 
@@ -297,5 +342,116 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         ContextBundle second = contextAssembler.assemble(agentEntity, taskEntity);
 
         assertThat(first).isEqualTo(second);
+    }
+
+    // ── memories (M-MEM1): recall, scope/status isolation, truncation, ordering ──
+
+    @Test
+    void companyScopePreferenceIsRecalledIntoTheBundle() {
+        String company = createCompany("mem-recall");
+        String agentId = hireAgent(company, "coder", null);
+        String taskId = createTask(company, "coder");
+
+        UUID memoryId = seedMemory(company, "company", null, null, "preference",
+                "CEO prefers bullet lists", "active");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.memories()).extracting(h -> h.memory().content())
+                .contains("CEO prefers bullet lists");
+        assertThat(bundle.provenanceIds()).contains(memoryId);
+    }
+
+    @Test
+    void agentScopeMemoryIsIsolatedPerAgent() {
+        String company = createCompany("mem-agent-iso");
+        String agentA = hireAgent(company, "coder", null);
+        String agentB = hireAgent(company, "coder", null);
+        String taskForB = createTask(company, "coder");
+
+        seedMemory(company, "agent", agentA, null, "fact", "Agent A's private memory", "active");
+
+        ContextBundle bundleForB = contextAssembler.assemble(agent(company, agentB), task(company, taskForB));
+
+        assertThat(bundleForB.memories()).extracting(h -> h.memory().content())
+                .doesNotContain("Agent A's private memory");
+    }
+
+    @Test
+    void companyScopeMemoryIsIsolatedPerCompany() {
+        String companyA = createCompany("mem-co-a");
+        String companyB = createCompany("mem-co-b");
+        String agentInB = hireAgent(companyB, "coder", null);
+        String taskInB = createTask(companyB, "coder");
+
+        seedMemory(companyA, "company", null, null, "fact", "Company A's secret fact", "active");
+
+        ContextBundle bundleForB =
+                contextAssembler.assemble(agent(companyB, agentInB), task(companyB, taskInB));
+
+        assertThat(bundleForB.memories()).extracting(h -> h.memory().content())
+                .doesNotContain("Company A's secret fact");
+    }
+
+    @Test
+    void onlyActiveMemoriesAreRecalled() {
+        String company = createCompany("mem-status");
+        String agentId = hireAgent(company, "coder", null);
+        String taskId = createTask(company, "coder");
+
+        seedMemory(company, "company", null, null, "fact", "still pending review", "pending_review");
+        seedMemory(company, "company", null, null, "fact", "already archived", "archived");
+        seedMemory(company, "company", null, null, "fact", "rejected content", "rejected");
+        seedMemory(company, "company", null, null, "fact", "the active one", "active");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.memories()).extracting(h -> h.memory().content())
+                .containsExactly("the active one");
+    }
+
+    @Test
+    void belowThresholdMemoriesAreExcludedFromRecall() {
+        String company = createCompany("mem-threshold");
+        String agentId = hireAgent(company, "coder", null);
+        String taskId = createTask(company, "coder");
+        // query embeds to SIMILAR_VECTOR (task title "A task"); this memory embeds
+        // orthogonal -> similarity 0 -> composite score capped at 0.25, below the 0.30 threshold.
+        when(embeddingClient.embed(eq("unrelated content"))).thenReturn(DISSIMILAR_VECTOR);
+        seedMemory(company, "company", null, null, "fact", "unrelated content", "active");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.memories()).isEmpty();
+    }
+
+    @Test
+    void itemGranularTruncationDropsOversizedMemoriesAndKeepsSmallerOnes() {
+        String company = createCompany("mem-trunc");
+        // total budget 20 -> memories budget = (int)(20*0.35) = 7 tokens
+        String agentId = hireAgent(company, "coder", 20);
+        String taskId = createTask(company, "coder");
+
+        seedMemory(company, "company", null, null, "fact", "M".repeat(200), "active"); // way over 7 tokens
+        seedMemory(company, "company", null, null, "fact", "tiny", "active"); // 1 token, fits
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.memories()).extracting(h -> h.memory().content()).containsExactly("tiny");
+    }
+
+    @Test
+    void preferencesAndLessonsAreOrderedBeforeFacts() {
+        String company = createCompany("mem-order");
+        String agentId = hireAgent(company, "coder", null);
+        String taskId = createTask(company, "coder");
+
+        seedMemory(company, "company", null, null, "fact", "a plain fact", "active");
+        seedMemory(company, "company", null, null, "preference", "a strong preference", "active");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.memories()).extracting(h -> h.memory().content())
+                .containsExactly("a strong preference", "a plain fact");
     }
 }

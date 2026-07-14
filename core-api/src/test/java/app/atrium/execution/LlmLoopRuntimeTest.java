@@ -6,12 +6,18 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.agentmind.EmbeddingClient;
+import app.atrium.agentmind.MemoryStore;
+import app.atrium.agentmind.MemoryWrite;
 import app.atrium.registry.runtime.AgentHandle;
 import app.atrium.routing.WorkBroker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import java.util.List;
@@ -30,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -76,6 +83,13 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
 
     @Autowired
     PlatformTransactionManager txManager;
+
+    @Autowired
+    MemoryStore memoryStore;
+
+    /** No real embeddings provider in this test — every embed() call returns the same vector. */
+    @MockitoBean
+    EmbeddingClient embeddingClient;
 
     // ── helpers (same shapes as ClaimApiTest/RoutingApiTest) ─────────────────
 
@@ -310,5 +324,36 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("## Your skills"))
                 .withRequestBody(containing("Code review checklist")));
+    }
+
+    // ── M-MEM1 Done-when: a seeded company preference reaches the next task's prompt ──
+
+    @Test
+    void seededCompanyPreferenceReachesThePromptUnderWhatYouHaveLearnedHere() {
+        wiremock.resetRequests();
+        float[] sameVectorEverywhere = new float[1536];
+        sameVectorEverywhere[0] = 1f; // non-zero (a zero vector's cosine similarity is undefined)
+        when(embeddingClient.isReady()).thenReturn(true);
+        when(embeddingClient.embed(anyString())).thenReturn(sameVectorEverywhere); // same vector -> similarity 1.0
+        String company = createCompany("m-mem1");
+        String agentId = hireAgentAndStopAutoLoop(company, "coding");
+        String taskId = createTask(company, "Write a function that reverses a string", "coding");
+        stubAnthropicSuccess("def reverse_string(s):\\n    return s[::-1]");
+
+        ObjectNode provenance = json.createObjectNode().put("extractedBy", "user");
+        memoryStore.ingest(new MemoryWrite(UUID.fromString(company), "company", null, null, null,
+                "preference", "CEO prefers bullet lists", (short) 1, "active", provenance, null));
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+        awaitStatus(company, taskId, "pending_review", 10);
+
+        List<String> provenanceIds = jdbc.queryForList(
+                "SELECT jsonb_array_elements_text(payload->'contextProvenance') FROM task_events "
+                        + "WHERE task_id = ?::uuid AND event_type = 'claimed'", String.class, taskId);
+        assertThat(provenanceIds).hasSize(3); // 2 seeded skills + the 1 recalled memory
+
+        wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
+                .withRequestBody(containing("## What you have learned here"))
+                .withRequestBody(containing("CEO prefers bullet lists")));
     }
 }

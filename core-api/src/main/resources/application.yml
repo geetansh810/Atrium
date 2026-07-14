@@ -44,6 +44,16 @@ atrium:
     google:
       base-url: ${GOOGLE_BASE_URL:https://generativelanguage.googleapis.com}
       api-key: ${GOOGLE_API_KEY:}           # secret — never logged, never in prompts
+  embeddings:
+    provider: ${EMBEDDINGS_PROVIDER:openai}
+    model: ${EMBEDDINGS_MODEL:text-embedding-3-small}   # 1536-dim, matches memories/knowledge_chunks vector(1536)
+    timeout: ${ATRIUM_EMBEDDINGS_TIMEOUT:10s}
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}          # secret — never logged, never in prompts
+  memory:
+    ttl-days: ${ATRIUM_MEMORY_TTL_DAYS:90}          # 14 §2: lesson/summary memories unused this long get archived
+    archive-cron: "0 30 3 * * *"                    # MemoryTtlArchiver: nightly at 3:30am
 
 ---
 spring:

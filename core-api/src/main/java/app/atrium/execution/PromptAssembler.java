@@ -1,6 +1,7 @@
 package app.atrium.execution;
 
 import app.atrium.agentmind.ContextBundle;
+import app.atrium.agentmind.MemoryHit;
 import app.atrium.agentmind.SkillExcerpt;
 import app.atrium.execution.spi.LlmMessage;
 import app.atrium.registry.domain.RoleDefinition;
@@ -12,10 +13,9 @@ import org.springframework.lang.Nullable;
  * Pure function of its inputs (05 §execution rule) — sees only the role
  * definition, the task, optional rejection feedback, and the optional context
  * bundle. Secrets are structurally impossible: nothing else is in scope.
- * Layout per 14 §6; the "## What you have learned here" / "## Reference
- * material" sections are omitted (not just empty) since {@code bundle}'s
- * memories/knowledge lists are always empty until M-MEM1/M-KN1 give them
- * something to render.
+ * Layout per 14 §6. "## What you have learned here" renders as of M-MEM1
+ * (bundle.memories()); "## Reference material" stays omitted (not emitted-
+ * empty) since bundle.knowledge() is still always empty until M-KN1.
  */
 public final class PromptAssembler {
 
@@ -26,6 +26,11 @@ public final class PromptAssembler {
         StringBuilder system = new StringBuilder(roleDef.getSystemPrompt());
         if (bundle != null && !bundle.skills().isEmpty()) {
             system.append("\n\n## Your skills\n").append(renderSkills(bundle.skills()));
+        }
+        if (bundle != null && !bundle.memories().isEmpty()) {
+            system.append("\n\n## What you have learned here\n")
+                    .append("_Learned context — verify if critical._\n")
+                    .append(renderMemories(bundle.memories()));
         }
         if (roleDef.getOutputContract() != null && !roleDef.getOutputContract().isBlank()) {
             system.append("\n\n## Output contract\n").append(roleDef.getOutputContract());
@@ -51,6 +56,15 @@ public final class PromptAssembler {
             } else {
                 sb.append("### ").append(skill.name()).append('\n').append(skill.bodyMd()).append("\n\n");
             }
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private static String renderMemories(List<MemoryHit> memories) {
+        StringBuilder sb = new StringBuilder();
+        for (MemoryHit hit : memories) {
+            sb.append("- (").append(hit.memory().kind()).append(") ")
+                    .append(hit.memory().content()).append('\n');
         }
         return sb.toString().stripTrailing();
     }

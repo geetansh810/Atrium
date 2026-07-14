@@ -14,7 +14,7 @@ Multi-tenant SaaS: companies hire AI agents as employees — roles, skills, hier
 [[registry]] · [[routing]] · [[execution]] · [[accountability]] · [[realtimebridge]] · [[agentmind]]
 
 ## Cross-cutting
-- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (RELAY LIVE at M0.75; skills registry LIVE at M-SK1; skills-into-prompts ContextAssembler LIVE at M-CTX1; memory/knowledge/learning still spec'd only, docs 12–17)
+- [[agent-platform]] — Rev-C backend design: pluggable LLMs/runtimes, skills+memory+learning, outbox event backbone (RELAY LIVE at M0.75; skills registry LIVE at M-SK1; skills-into-prompts ContextAssembler LIVE at M-CTX1; memory store + recall LIVE at M-MEM1; knowledge/learning still spec'd only, docs 12–17)
 - [[data-model]] — Postgres schema, the contract everything mirrors
 - [[realtime-events]] — Redis pub/sub bridge, core-api → office
 - [[milestones]] — 26-milestone plan + what's actually done
