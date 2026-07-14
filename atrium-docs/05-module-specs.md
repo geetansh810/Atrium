@@ -10,13 +10,13 @@ Each module below is a self-contained unit an LLM session can build against. **W
 
 ## core-api / routing
 **Owns:** tasks, subtasks, queue semantics, claim/lease/reclaim, task flow graph, escalations.
-**Provides:** the canonical claim query (03-data-model.md — copy exactly), lease renewal, requeue job (@Scheduled every 60s).
+**Provides:** the canonical claim query (03-data-model.md — copy exactly), lease renewal, requeue job (@Scheduled every 60s). The runner's `claimNext` (skill-ordered variant) also accepts a plain-JDK `Function<Task,ObjectNode>` enricher hook (M-CTX1, 14 §6) so a caller in another module can merge extra fields into the `claimed` event's payload from inside routing's own claim transaction — without routing importing that caller's types.
 **Must:** company-scope every queue read; refuse approval while open children/subtasks exist; append a task_event inside the same transaction as every status change.
 **Must not:** call LLMs; know provider names; contain any role-specific branching (`if skill == "coder"` is a bug by definition).
 
 ## core-api / execution
 **Owns:** LlmClient abstraction + provider impls, agent runner (the worker loop), prompt assembly, artifact creation.
-**Worker loop:** for each active agent → claim → build prompt (role_definition.system_prompt + task + feedback-if-rejected) → call LlmClient → record usage (same tx, with idempotency_key `taskId:attempt`) → update progress/subtasks → complete or flag → repeat. Poll interval configurable (default 15s); lease renewed every 5min while working.
+**Worker loop:** for each active agent → claim (context bundle assembled inside the same claim transaction via agentmind's `ContextAssembler`, M-CTX1) → build prompt (role_definition.system_prompt + skills/memories/knowledge bundle + task + feedback-if-rejected) → call LlmClient → record usage (same tx, with idempotency_key `taskId:attempt`) → update progress/subtasks → complete or flag → repeat. Poll interval configurable (default 15s); lease renewed every 5min while working.
 **Must:** strip/never-include secrets in prompts; time-box calls; treat provider errors as flag-not-crash.
 **Must not:** write task status directly — always through routing's service interface.
 
@@ -26,8 +26,8 @@ Each module below is a self-contained unit an LLM session can build against. **W
 **Must not:** block reads when over budget — only new claims.
 
 ## core-api / agentmind (Rev C — full spec: 14)
-**Owns:** skills registry, MemoryStore SPI + pgvector impl, EmbeddingClient, LearningPipeline (durable outbox consumer), knowledge ingestion, review-queue governance.
-**Provides:** read-models consumed by execution's ContextAssembler (the ONLY doorway from stored knowledge into prompts).
+**Owns:** skills registry, ContextAssembler (M-CTX1 — the ONLY doorway from stored knowledge into prompts; lives here, not execution, since agentmind must never import execution types), MemoryStore SPI + pgvector impl, EmbeddingClient, LearningPipeline (durable outbox consumer), knowledge ingestion, review-queue governance.
+**Provides:** `ContextAssembler.assemble(agent, task)`, consumed by execution's `LlmLoopRuntime`/`PromptAssembler` (`execution → agentmind` is the allowed dependency direction, 12 §2).
 **Must:** company-scope everything; only `active` memories / `platform|company` skills reach prompts; every memory carries provenance; learning writes are governed per 14 §5.
 **Must not:** write task state; call providers except via LlmClient/EmbeddingClient; be imported by routing.
 

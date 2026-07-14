@@ -218,7 +218,11 @@ the inner SELECT swaps `required_skill=$skill … ORDER BY … LIMIT 1` for
 `id=$taskId`, keeping every other clause (status guard, paused guard,
 `FOR UPDATE SKIP LOCKED`, the SET list) verbatim. The skill-ordered form is the
 runner's claim-next (M0.5b). `BudgetGuard.canSpend` runs in the same service
-transaction as either form.
+transaction as either form. **M-CTX1:** the skill-ordered form also runs the
+`ContextAssembler` (14 §6) inside this same transaction, right after the claim
+and before its `task_events(claimed)` row is written, so `contextProvenance`
+lands in that row's payload — see 14 §6's M-CTX1 note for why (append-only
+`task_events`, no retrofit possible after the fact).
 
 **Lease reclaim job** (every minute): `UPDATE tasks SET status='queued', assigned_agent_id=NULL WHERE status IN ('claimed','in_progress') AND lease_expires_at < now()` + `task_events(requeued)`. Workers renew the lease while actively working. The `usage_records.idempotency_key` (`taskId:attemptNo`) guarantees a redelivered task can't double-bill.
 

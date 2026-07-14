@@ -20,9 +20,12 @@ core-api/src/main/java/app/atrium/
 ├── routing/          tasks, subtasks, queues, claim/lease/reclaim, task graph,
 │                     WorkBroker interface (Postgres impl v1)
 ├── execution/        LlmClient SPI + providers, AgentRuntime SPI + LlmLoopRuntime,
-│                     PromptAssembler (pure), ContextAssembler (reads skills/memory)
-├── agentmind/        skills registry, MemoryStore SPI + PgVectorMemoryStore,
-│                     EmbeddingClient, LearningPipeline, knowledge ingestion   ← NEW module
+│                     PromptAssembler (pure)
+├── agentmind/        skills registry, ContextAssembler (reads skills/memory —
+│                     lives here, not execution: agentmind must never import
+│                     execution types, only the reverse), MemoryStore SPI +
+│                     PgVectorMemoryStore, EmbeddingClient, LearningPipeline,
+│                     knowledge ingestion   ← NEW module
 ├── accountability/   budgets, BudgetGuard, UsageRecorder, approvals, task_events
 │                     read API, StatsRollup, Atrium Bot notices
 ├── eventbus/         DomainEvents, OutboxWriter, OutboxRelay, consumer cursors ← NEW module

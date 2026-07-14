@@ -82,12 +82,14 @@ Duplicate control: before insert, recall top-1 same-scope; similarity ≥0.92 �
 ## 6. ContextAssembler (the single doorway into prompts)
 
 ```java
-public interface ContextAssembler {   // app.atrium.execution — impl reads agentmind read-models
-    ContextBundle assemble(AgentSnapshot agent, TaskSnapshot task);
+public interface ContextAssembler {   // app.atrium.agentmind — M-CTX1 (see note below)
+    ContextBundle assemble(Agent agent, Task task);
 }
 public record ContextBundle(List<SkillExcerpt> skills, List<MemoryHit> memories,
                             List<KnowledgeHit> knowledge, List<UUID> provenanceIds, int tokenCount) {}
 ```
+
+**M-CTX1 note (supersedes this section's earlier sketch, kept for the next builder):** the interface + `ContextBundle`/`SkillExcerpt`/`MemoryHit`/`KnowledgeHit` all live in `app.atrium.agentmind`, not `app.atrium.execution` as first sketched here — agentmind must never import execution types (12 §2), and `execution → agentmind` is the allowed direction, so `PromptAssembler` (execution) imports `ContextBundle` from agentmind instead. `assemble()` takes the real `registry.domain.Agent`/`routing.domain.Task` entities, not separate `AgentSnapshot`/`TaskSnapshot` DTOs — no snapshot indirection existed elsewhere in the codebase (`PromptAssembler` already took entities directly), so none was introduced here either. `MemoryHit`/`KnowledgeHit` are empty placeholder records at M-CTX1 (skills only); M-MEM1/M-KN1 give them real fields.
 
 Deterministic assembly under a budget (`runtime_config.contextBudgetTokens`, default 4000, hard cap 30% of model context window from catalog):
 
@@ -95,6 +97,8 @@ Deterministic assembly under a budget (`runtime_config.contextBudgetTokens`, def
 2. **Memories** (≤35%): `recall(k=12, queryText = task.title+description)`, ordered score desc; preferences and lessons before facts.
 3. **Knowledge** (≤15%): top-3 chunks if score ≥0.35.
 4. Truncation is item-granular (drop whole items, never mid-item), so bundles are reproducible; `provenanceIds` land in `task_events(claimed).payload.contextProvenance` — every prompt is auditable ("why did the agent think that?").
+
+**M-CTX1 note — how provenance actually reaches the claimed event:** `task_events` is append-only (no setters, `payload` column `updatable=false`, 03 invariant 1), and `claimed` is written by `WorkBroker.claimNext` (routing) at claim time — before `assemble()` runs, and routing must not import agentmind/execution to call it early. `WorkBroker.claimNext` therefore takes an extra `@Nullable Function<Task, ObjectNode> claimedPayloadEnricher` parameter (plain JDK type — costs routing no cross-module import), invoked *inside* the claim's own transaction, right after the JDBC claim and before the `claimed` event is recorded. `LlmLoopRuntime` (execution) supplies a lambda that calls `contextAssembler.assemble(agent, task)` exactly once, keeps the resulting bundle for building the prompt a few lines later (no second `assemble()` call), and returns `{contextProvenance: [...]}` for the enricher to merge into that event's payload. Any future assembler step reusing this same claim path (M-MEM1's memories, M-KN1's knowledge) should extend the SAME lambda rather than adding a second enricher call — `claimed` gets exactly one write.
 
 `PromptAssembler.build(roleDef, task, feedback?, bundle?)` stays a pure function (05 rule). Normative prompt layout:
 
@@ -107,6 +111,8 @@ Deterministic assembly under a budget (`runtime_config.contextBudgetTokens`, def
           ## Reference material          ← bundle.knowledge
           ## Reviewer feedback (attempt N) ← feedback (rejection retry — unchanged M0.6 behavior)
 ```
+
+**M-CTX1 note:** only the `## Your skills` section is rendered so far — `## What you have learned here`/`## Reference material` are omitted outright (not emitted-empty) since `bundle.memories()`/`bundle.knowledge()` are structurally always empty until M-MEM1/M-KN1; rendering code for an always-empty list would be dead code. Add those two render branches when those milestones give the lists real content.
 
 Injection posture (08 §Security stands): task descriptions and learned content are untrusted; the system prompt instructs agents to treat quoted task/memory content as data, not instructions; `pending_review` remains the backstop for whatever slips through.
 

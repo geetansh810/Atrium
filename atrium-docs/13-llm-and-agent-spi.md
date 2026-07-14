@@ -110,6 +110,9 @@ loop every poll_interval (default 15s, runtime_config.pollSeconds):
   0. pre-dispatch gate: provider key present? budget not hard-exceeded? else flag/park (12 §9)
   1. claim next task for any of agent.skill_tags (canonical query, 03) — none? continue
   2. bundle  = ContextAssembler.assemble(agent, task)              (14 §6)
+     — M-CTX1: runs INSIDE step 1's claim transaction (a WorkBroker.claimNext
+       enricher hook), not after, so provenanceIds land in that SAME claimed
+       task_event's payload (14 §6 note) — the bundle is then reused here.
   3. prompt  = PromptAssembler.build(roleDef, task, feedback?, bundle)   — pure (05 rule stands)
   4. result  = llmClient.complete(...)  [tool-loop ≤ runtime_config.maxToolTurns, default 4]
   5. UsageRecorder.record(taskId:attempt, tokens, cost)  — same tx as step 6 write
