@@ -14,4 +14,12 @@ import java.util.UUID;
 public interface RoleDefinitionLookup {
 
     Optional<RoleDefinition> findById(UUID roleDefinitionId);
+
+    /**
+     * Company-scoped variant for callers taking a role-definition id as
+     * untrusted request input (agentmind's role-skill-attach endpoint,
+     * M-SK1) — visible means the company's own definition or a global
+     * template, same rule as {@code RoleDefinitionRepository.findByIdVisibleToCompany}.
+     */
+    Optional<RoleDefinition> findVisibleToCompany(UUID companyId, UUID roleDefinitionId);
 }

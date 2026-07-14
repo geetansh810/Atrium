@@ -29,15 +29,17 @@ public class AgentService {
     private final RoleDefinitionRepository roleDefinitions;
     private final RuntimeRegistry runtimeRegistry;
     private final AgentLifecycleService lifecycle;
+    private final RoleSkillAttachment roleSkillAttachment;
     private final ObjectMapper objectMapper;
 
     public AgentService(AgentRepository agents, RoleDefinitionRepository roleDefinitions,
                         RuntimeRegistry runtimeRegistry, AgentLifecycleService lifecycle,
-                        ObjectMapper objectMapper) {
+                        RoleSkillAttachment roleSkillAttachment, ObjectMapper objectMapper) {
         this.agents = agents;
         this.roleDefinitions = roleDefinitions;
         this.runtimeRegistry = runtimeRegistry;
         this.lifecycle = lifecycle;
+        this.roleSkillAttachment = roleSkillAttachment;
         this.objectMapper = objectMapper;
     }
 
@@ -60,6 +62,7 @@ public class AgentService {
                 request.modelProvider(), request.modelName(), request.managerAgentId(),
                 request.about(), runtimeType, runtimeConfig);
         agent = agents.save(agent);
+        roleSkillAttachment.attachTemplateSkills(companyId, agent.getId(), roleDefinition.getId());
         lifecycle.start(agent);
         return agent;
     }

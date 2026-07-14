@@ -21,4 +21,10 @@ public class JpaRoleDefinitionLookup implements RoleDefinitionLookup {
     public Optional<RoleDefinition> findById(UUID roleDefinitionId) {
         return roleDefinitions.findById(roleDefinitionId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<RoleDefinition> findVisibleToCompany(UUID companyId, UUID roleDefinitionId) {
+        return roleDefinitions.findByIdVisibleToCompany(roleDefinitionId, companyId);
+    }
 }
