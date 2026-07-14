@@ -1,5 +1,5 @@
 .employees-page {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 28px 24px;
   height: 100%;
@@ -21,13 +21,13 @@
 
 .employees-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
 }
 
 .employee-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   background: var(--panel);
   border: 1px solid var(--border-subtle);
@@ -40,6 +40,12 @@
 .employee-card:hover {
   border-color: var(--border);
   background: var(--panel-alt);
+}
+
+.employee-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .employee-card-info {
@@ -66,5 +72,46 @@
   gap: 6px;
   font-size: 11px;
   color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.employee-card-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.employee-card-skill {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.employee-card-skill-more {
+  font-size: 10px;
+  color: var(--text-faint);
+  padding: 2px 4px;
+}
+
+.employee-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.employee-card-model {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-card-workload {
   flex-shrink: 0;
 }

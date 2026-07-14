@@ -4,6 +4,7 @@ import { TasksPage } from "../pages/tasks/TasksPage";
 import { ReviewInbox } from "../pages/tasks/ReviewInbox";
 import { WorkflowPage } from "../pages/workflow/WorkflowPage";
 import { EmployeesPage } from "../pages/employees/EmployeesPage";
+import { EmployeeProfile } from "../pages/employees/EmployeeProfile";
 import { OrganizationPage } from "../pages/organization/OrganizationPage";
 import { ProjectsPage } from "../pages/projects/ProjectsPage";
 import { KnowledgePage } from "../pages/knowledge/KnowledgePage";
@@ -21,6 +22,7 @@ export function AppRoutes() {
       <Route path="/tasks/:id" element={<TasksPage />} />
       <Route path="/workflow" element={<WorkflowPage />} />
       <Route path="/employees" element={<EmployeesPage />} />
+      <Route path="/employees/:id" element={<EmployeeProfile />} />
       <Route path="/organization" element={<OrganizationPage />} />
       <Route path="/projects" element={<ProjectsPage />} />
       <Route path="/knowledge" element={<KnowledgePage />} />

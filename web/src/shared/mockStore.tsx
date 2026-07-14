@@ -226,6 +226,7 @@ function reducer(state: AppState, action: Action): AppState {
         currentActivity: "Just joined",
         about: action.input.about,
         joinedAt: nowIso(),
+        paused: false,
       };
       const dm: Channel = { id: makeId("dm"), name: agent.name, kind: "dm", agentId: agent.id };
       const budget: Budget = {
@@ -299,6 +300,17 @@ function reducer(state: AppState, action: Action): AppState {
         ),
         activity: withEvent(state.activity, agent.id, "Left the Focus Pod"),
         ui: { ...state.ui, activePanel: null, botNotice: `${agent.name} left the Focus Pod.` },
+      };
+    }
+
+    case "setAgentPaused": {
+      const agent = state.agents.find((a) => a.id === action.agentId);
+      if (!agent) return state;
+      return {
+        ...state,
+        agents: state.agents.map((a) => (a.id === agent.id ? { ...a, paused: action.paused } : a)),
+        activity: withEvent(state.activity, agent.id, action.paused ? "Paused" : "Resumed"),
+        ui: { ...state.ui, botNotice: `${agent.name} ${action.paused ? "paused" : "resumed"}.` },
       };
     }
 

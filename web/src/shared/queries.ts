@@ -165,8 +165,8 @@ export function useSetBudgetCapMutation(companyId: string) {
 export function usePatchAgentMutation(companyId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ agentId, status }: { agentId: string; status: string }) =>
-      api.patchAgent(companyId, agentId, { status }),
+    mutationFn: ({ agentId, status, paused }: { agentId: string; status?: string; paused?: boolean }) =>
+      api.patchAgent(companyId, agentId, { status, paused }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["roster", companyId] }),
   });
 }

@@ -277,6 +277,22 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      case "setAgentPaused": {
+        const agent = agents.find((a) => a.id === action.agentId);
+        patchAgentM.mutate(
+          { agentId: action.agentId, paused: action.paused },
+          {
+            onSuccess: () =>
+              localDispatch({
+                type: "setNotice",
+                text: `${agent?.name ?? "Agent"} ${action.paused ? "paused" : "resumed"}.`,
+              }),
+            onError: (err) => localDispatch({ type: "setNotice", text: describeApiError(err) }),
+          },
+        );
+        return;
+      }
+
       default:
         return;
     }

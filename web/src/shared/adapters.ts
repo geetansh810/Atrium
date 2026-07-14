@@ -32,6 +32,7 @@ export function adaptAgent(dto: AgentResponse): Agent {
     currentActivity: dto.currentActivity ?? "",
     about: dto.about,
     joinedAt: dto.joinedAt,
+    paused: dto.paused,
   };
 }
 

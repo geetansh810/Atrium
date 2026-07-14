@@ -5,7 +5,7 @@ Multi-tenant SaaS: companies hire AI agents as employees — roles, skills, hier
 **Rule for sessions:** open only the nodes your task touches. Each node says which `atrium-docs/` sections to load for full contracts.
 
 ## Services
-- [[web-dashboard]] — React dashboard, mid-redesign into an "AI Operating System" (MF-1–3 done: router + new shell + primitives + real Mission Control + Tasks kanban/drawer/review inbox; MF-4–6 pending). ON REAL API, mocks still available behind `VITE_USE_MOCKS=1`
+- [[web-dashboard]] — React dashboard, mid-redesign into an "AI Operating System" (MF-1–4 done: router + new shell + primitives + real Mission Control + Tasks kanban/drawer/review inbox + Employees/profile/Organization; MF-5–6 pending). ON REAL API, mocks still available behind `VITE_USE_MOCKS=1`
 - [[web-office]] — future SkyOffice Phaser client (NOT STARTED, fork only)
 - [[core-api]] — Spring Boot source of truth (M0.1–M0.8 done: scaffold, migrations, registry, routing + outbox + claim/lease, LLM provider SPI + Anthropic, agent runtime loop, approve/reject + rejection-feedback rework, real budget caps + soft-alert + auto-pause, outbox→Redis relay for office/dashboard, CORS enabled for the browser dashboard)
 - [[office-realtime]] — Colyseus presence server (NOT STARTED, fork only)

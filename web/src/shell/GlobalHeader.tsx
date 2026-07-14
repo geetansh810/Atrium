@@ -37,7 +37,12 @@ export function GlobalHeader() {
   const escalations = escalationCount(state.tasks);
   const onlineCount = state.agents.filter((a) => a.status !== "offline").length + 1;
   const title =
-    PAGE_TITLES[location.pathname] ?? (location.pathname.startsWith("/tasks/") ? "Tasks" : "Atrium");
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith("/tasks/")
+      ? "Tasks"
+      : location.pathname.startsWith("/employees/")
+        ? "Employees"
+        : "Atrium");
 
   return (
     <header className="global-header">

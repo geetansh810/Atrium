@@ -32,10 +32,7 @@ export function OfficePage() {
             <button
               key={label}
               className={`office-room-btn${state.ui.activeRoom === label ? " active" : ""}`}
-              onClick={() => {
-                dispatch({ type: "setRoom", room: label });
-                if (label === "Focus Pods") dispatch({ type: "openPanel", panel: "focus" });
-              }}
+              onClick={() => dispatch({ type: "setRoom", room: label })}
             >
               {label}
             </button>

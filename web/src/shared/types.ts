@@ -27,6 +27,7 @@ export interface Agent {
   currentActivity: string;
   about: string;
   joinedAt: string;
+  paused: boolean;
 }
 
 // From agent_stats_daily rollup — served by GET /agents/{id}/profile

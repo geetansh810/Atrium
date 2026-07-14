@@ -1,20 +1,14 @@
 import { useApp } from "../shared/store";
-import { AgentProfilePanel } from "../dashboard/panels/AgentProfilePanel";
 import { AnalyticsPanel } from "../dashboard/panels/AnalyticsPanel";
 import { AnnouncementsPanel } from "../dashboard/panels/AnnouncementsPanel";
-import { BudgetPanel } from "../dashboard/panels/BudgetPanel";
 import { ChatPanel } from "../dashboard/panels/ChatPanel";
-import { FocusPodPanel } from "../dashboard/panels/FocusPodPanel";
 import { TaskFlowPanel } from "../dashboard/panels/TaskFlowPanel";
 
 const PANELS = {
-  profile: AgentProfilePanel,
   analytics: AnalyticsPanel,
   chat: ChatPanel,
   announcements: AnnouncementsPanel,
-  budget: BudgetPanel,
   flow: TaskFlowPanel,
-  focus: FocusPodPanel,
 } as const;
 
 // Temporary bridge (deleted in MF-6): every panel not yet ported to a routed

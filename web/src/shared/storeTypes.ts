@@ -15,14 +15,7 @@ import type {
   Task,
 } from "./types";
 
-export type PanelKey =
-  | "profile"
-  | "analytics"
-  | "chat"
-  | "announcements"
-  | "flow"
-  | "budget"
-  | "focus";
+export type PanelKey = "analytics" | "chat" | "announcements" | "flow";
 
 export interface UiState {
   activePanel: PanelKey | null;
@@ -98,6 +91,7 @@ export type Action =
   | { type: "addAnnouncement"; title: string; body: string; category: AnnouncementCategory }
   | { type: "setBudgetCap"; budgetId: string; capTokens: number }
   | { type: "exitFocusPod"; agentId: string }
+  | { type: "setAgentPaused"; agentId: string; paused: boolean }
   | { type: "setNotice"; text: string }
   | { type: "dismissNotice" }
   | { type: "setInviteOpen"; open: boolean }

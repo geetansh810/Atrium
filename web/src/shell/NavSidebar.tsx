@@ -5,7 +5,6 @@ import type { PanelKey } from "../shared/store";
 import {
   AnalyticsIcon,
   ChatIcon,
-  CoinsIcon,
   EmployeesIcon,
   FlowIcon,
   KnowledgeIcon,
@@ -38,7 +37,6 @@ const CLASSIC_PANELS: { label: string; panel: PanelKey; icon: typeof ChatIcon }[
   { label: "Chat", panel: "chat", icon: ChatIcon },
   { label: "Analytics", panel: "analytics", icon: AnalyticsIcon },
   { label: "Announcements", panel: "announcements", icon: MegaphoneIcon },
-  { label: "Payroll", panel: "budget", icon: CoinsIcon },
   { label: "Task Flow", panel: "flow", icon: FlowIcon },
 ];
 
