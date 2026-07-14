@@ -124,21 +124,31 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 
 ## Master tracker
 
+> Kept in sync manually and only occasionally — for the actually-current status, prefer root `CLAUDE.md` ("Current state"/"Likely next") and `project-graph/milestones.md`, which are updated every session. This table was last refreshed 2026-07-14 (session 14, after M-CTX1).
+
 | ID | Milestone | Phase | Status |
 |---|---|---|---|
+| MB-0 | Git init & monorepo shape (NEW, doc 17) | 0 | ✅ |
 | M0.0 | OSS evaluation spike | 0 | ✅ (Paperclip half; SkyOffice half via session-3 vendor work) |
 | M0.1 | Repo scaffold & data model | 0 | ✅ |
 | M0.2 | Registry module | 0 | ✅ |
 | M0.3 | Task creation & skill routing | 0 | ✅ |
 | M0.4 | Claim loop & lease | 0 | ✅ |
-| M0.5 | Execution: first real agent | 0 | ✅ (split M0.5a/b per doc 17) |
+| M0.5 | Execution: first real agent | 0 | ✅ (split M0.5a/b per doc 17, both done) |
 | M0.6 | Approval gate & audit | 0 | ✅ |
 | M0.7 | Budget enforcement | 0 | ✅ |
-| M0.75 | Outbox relay & realtimebridge (NEW, doc 17) | 0 | ☐ |
-| M0.8 | Minimal task board | 0 | ☐ (frontend half built early, sessions 2–3; backend swap pending) |
+| M0.75 | Outbox relay & realtimebridge (NEW, doc 17) | 0 | ✅ |
+| M0.8 | Minimal task board (REDEFINED, doc 17: mock→API swap) | 0 | ✅ |
+| M-SK1 | Skills registry (NEW, doc 17) | depth | ✅ |
+| M-CTX1 | ContextAssembler v1: skills into prompts (NEW, doc 17) | depth | ✅ |
+| M-MEM1 | Memory store + recall (NEW, doc 17) | depth | ☐ |
+| M-LN1 | Learning pipeline + review governance (NEW, doc 17) | depth | ☐ |
 | M1.1 | Business role via registry | 1 | ☐ |
 | M1.2 | Real pilot run | 1 | ☐ |
 | M1.3 | Feedback fixes | 1 | ☐ |
+| M-KN1 | Knowledge ingestion (NEW, doc 17) | depth | ☐ |
+| M-AR1 | Runtime extensibility proof (NEW, doc 17) | depth | ☐ |
+| M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ☐ |
 | M2.1 | PM & Designer roles | 2 | ☐ |
 | M2.2 | Task dependencies & flow | 2 | ☐ |
 | M2.3 | Budget ledger + analytics | 2 | ☐ |
@@ -153,3 +163,5 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M3.4 | Onboarding & templates | 3 | ☐ |
 | M3.5 | Production hardening | 3 | ☐ |
 | M4.1–M4.3 | Compliance roles & docs | 4 | ☐ |
+
+**Frontend redesign series (MF-1…MF-6, not part of the 26 above — see `project-graph/milestones.md`): ✅ all complete.** Ran interleaved with the depth series (2026-07-14, sessions 7–12); supersedes the office-canvas-first dashboard with the routed Mission-Control-style shell. Not tracked in `atrium-docs/` — full plan lives at `/Users/geetanshagrawal/.claude/plans/multi-agent-employee-platform-redesign-fluttering-crescent.md`.
