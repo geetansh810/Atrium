@@ -3,11 +3,12 @@ import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../../shared/Avatar";
 import { PRIORITY_LABEL } from "../../shared/format";
 import { skillColor } from "../../shared/skillColor";
-import { kanbanColumns } from "../../shared/selectors";
+import { describeStalledSummary, findStalledTasks, kanbanColumns, summarizeStalledTasks } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { KanbanBoard } from "../../ui/Kanban";
 import type { KanbanColumnData } from "../../ui/Kanban";
+import { Banner } from "../../ui/Banner";
 import type { Task } from "../../shared/types";
 import { TaskDrawer } from "./TaskDrawer";
 import "./TasksPage.css";
@@ -34,6 +35,8 @@ export function TasksPage() {
   const visibleTasks = needsReworkOnly ? state.tasks.filter((t) => t.feedback) : state.tasks;
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
   const reworkCount = state.tasks.filter((t) => t.feedback).length;
+
+  const stalledSummary = summarizeStalledTasks(findStalledTasks(state.tasks, state.agents));
 
   const columns: KanbanColumnData<Task>[] = useMemo(() => {
     const byKey = kanbanColumns(visibleTasks);
@@ -71,6 +74,14 @@ export function TasksPage() {
           Needs rework ({reworkCount})
         </button>
       </header>
+
+      {stalledSummary.length > 0 && (
+        <Banner
+          tone={stalledSummary.some((s) => s.reason === "no-agent-with-skill") ? "danger" : "warning"}
+          title="Some tasks aren't moving"
+          description={stalledSummary.map(describeStalledSummary).join("\n")}
+        />
+      )}
 
       <div className="tasks-page-board">
         <KanbanBoard

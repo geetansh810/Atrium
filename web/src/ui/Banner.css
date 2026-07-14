@@ -1,0 +1,33 @@
+.banner {
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+  background: var(--surface-2);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.banner-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.banner-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 4px;
+  white-space: pre-line;
+}
+
+.banner-info {
+  border-left-color: var(--status-in-focus);
+}
+
+.banner-warning {
+  border-left-color: var(--status-away);
+}
+
+.banner-danger {
+  border-left-color: var(--status-flagged);
+}

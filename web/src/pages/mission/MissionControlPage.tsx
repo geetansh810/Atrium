@@ -5,7 +5,10 @@ import {
   companyBudgetBurn,
   companyPulse,
   computeKpis,
+  describeStalledSummary,
+  findStalledTasks,
   liveMissionTask,
+  summarizeStalledTasks,
   synthesizeFeed,
 } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
@@ -15,6 +18,7 @@ import { StatCard } from "../../ui/StatCard";
 import { StatusPill, taskStatusTone } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
 import { Feed } from "../../ui/Feed";
+import { Banner } from "../../ui/Banner";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { Graph } from "../../ui/Graph";
 import type { GraphEdge, GraphNode, GraphNodeStatus } from "../../ui/Graph";
@@ -64,12 +68,22 @@ export function MissionControlPage() {
   const graphLayers = rootNode ? (childNodes.length ? [[rootNode], childNodes] : [[rootNode]]) : [];
   const graphEdges: GraphEdge[] = rootNode ? graphChildren.map((t) => ({ from: rootNode.id, to: t.id })) : [];
 
+  const stalledSummary = summarizeStalledTasks(findStalledTasks(tasks, agents));
+
   return (
     <div className="mission-page">
       <header className="mission-head">
         <h1>Mission Control</h1>
         <p className="mission-pulse">{pulse}</p>
       </header>
+
+      {stalledSummary.length > 0 && (
+        <Banner
+          tone={stalledSummary.some((s) => s.reason === "no-agent-with-skill") ? "danger" : "warning"}
+          title="Some tasks aren't moving"
+          description={stalledSummary.map(describeStalledSummary).join("\n")}
+        />
+      )}
 
       <div className="mission-kpi-row">
         <StatCard label="Active Agents" value={`${kpis.activeAgents}/${kpis.totalAgents}`} />

@@ -129,6 +129,77 @@ export function taskEventTone(eventType: string): TaskEventTone {
   return "neutral";
 }
 
+// A queued task sitting this long with nobody claiming it is worth flagging —
+// the claim loop polls every ~15s, so anything past a couple minutes means
+// something structural is blocking it, not just normal latency.
+export const STALL_THRESHOLD_MINUTES = 2;
+
+export type StallReason = "no-agent-with-skill" | "all-agents-paused" | "idle";
+
+export interface StalledTask {
+  task: Task;
+  reason: StallReason;
+  queuedMinutes: number;
+}
+
+// Surfaces the exact "queued tasks aging while agents sit idle" trap: a task
+// with no assignee that's been queued past the threshold, bucketed by the
+// most specific explanation we can derive client-side (no agent covers the
+// skill at all; every agent that does is paused; otherwise a generic "idle"
+// bucket — most often an unconfigured LLM provider key on the backend, which
+// the frontend has no direct visibility into).
+export function findStalledTasks(tasks: Task[], agents: Agent[], now: Date = new Date()): StalledTask[] {
+  const stalled: StalledTask[] = [];
+  for (const task of tasks) {
+    if (task.status !== "queued") continue;
+    const queuedMinutes = (now.getTime() - new Date(task.createdAt).getTime()) / 60000;
+    if (queuedMinutes < STALL_THRESHOLD_MINUTES) continue;
+    const covering = agents.filter((a) => a.skillTags.includes(task.requiredSkill));
+    const reason: StallReason =
+      covering.length === 0 ? "no-agent-with-skill" : covering.every((a) => a.paused) ? "all-agents-paused" : "idle";
+    stalled.push({ task, reason, queuedMinutes: Math.floor(queuedMinutes) });
+  }
+  return stalled;
+}
+
+export interface StalledSummary {
+  reason: StallReason;
+  count: number;
+  skills: string[];
+}
+
+// Groups stalled tasks by reason (+ distinct required skills) so the UI shows
+// one banner with a few bullet points instead of one row per stuck task.
+export function summarizeStalledTasks(stalled: StalledTask[]): StalledSummary[] {
+  const byReason = new Map<StallReason, { count: number; skills: Set<string> }>();
+  for (const { task, reason } of stalled) {
+    const entry = byReason.get(reason) ?? { count: 0, skills: new Set<string>() };
+    entry.count += 1;
+    entry.skills.add(task.requiredSkill);
+    byReason.set(reason, entry);
+  }
+  return Array.from(byReason.entries()).map(([reason, { count, skills }]) => ({
+    reason,
+    count,
+    skills: Array.from(skills),
+  }));
+}
+
+// One line per summary bucket — the exact copy shown in the stalled-tasks
+// Banner on both Mission Control and Tasks, kept in one place so the two
+// don't drift.
+export function describeStalledSummary({ reason, count, skills }: StalledSummary): string {
+  const taskWord = count === 1 ? "task" : "tasks";
+  const skillList = skills.join(", ");
+  if (reason === "no-agent-with-skill") {
+    return `${count} ${taskWord} need a skill no agent has: ${skillList}.`;
+  }
+  if (reason === "all-agents-paused") {
+    return `${count} ${taskWord} queued, but every agent with "${skillList}" is paused.`;
+  }
+  return `${count} ${taskWord} (skill: ${skillList}) queued ${STALL_THRESHOLD_MINUTES}+ min with no agent claiming them — if those agents use a paid LLM provider, confirm its API key is configured in the backend.`;
+}
+
 export interface OrgNode {
   agent: Agent;
   children: OrgNode[];
