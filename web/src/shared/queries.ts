@@ -14,6 +14,22 @@ export function currentPeriod(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export function useCompany(companyId: string) {
+  return useQuery({
+    queryKey: ["company", companyId],
+    queryFn: () => api.getCompany(companyId),
+    enabled: !!companyId,
+  });
+}
+
+export function useModelCatalog(companyId: string) {
+  return useQuery({
+    queryKey: ["model-catalog", companyId],
+    queryFn: () => api.modelCatalog(companyId),
+    enabled: !!companyId,
+  });
+}
+
 export function useRoster(companyId: string) {
   return useQuery({
     queryKey: ["roster", companyId],

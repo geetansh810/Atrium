@@ -61,6 +61,31 @@
   background: var(--panel-alt);
 }
 
+.global-header-cmdk-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-alt);
+  color: var(--text-faint);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 7px;
+}
+
+.global-header-cmdk-hint:hover {
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.global-header-cmdk-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--surface-3);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
 .global-header-badge {
   position: absolute;
   top: 2px;

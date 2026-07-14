@@ -1,8 +1,8 @@
 // Every "open this thing" intent in the app goes through here instead of
-// components hand-building URLs or dispatching openPanel directly. Today
-// openChat is the only one still opening a legacy overlay panel — that's
-// deliberate: as each panel is replaced by a routed page (MF-3 tasks, MF-4
-// employees), only this file's implementation changes, not every call site.
+// components hand-building URLs or dispatching store actions directly.
+// openAgent/openTask are real routes; openChat toggles the global chat
+// drawer (AppShell-level, MF-6 — the last of the three to graduate off the
+// old panel-dispatch pattern).
 import { useNavigate } from "react-router";
 import { useApp } from "./store";
 
@@ -18,7 +18,7 @@ export function useAppNav() {
       navigate(`/tasks/${taskId}`);
     },
     openChat(channelId?: string) {
-      dispatch({ type: "openPanel", panel: "chat", channelId });
+      dispatch({ type: "setChatOpen", open: true, channelId });
     },
   };
 }

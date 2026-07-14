@@ -11,4 +11,4 @@ export const AppProvider = USE_MOCKS ? MockAppProvider : ApiAppProvider;
 export const useApp = USE_MOCKS ? useMockApp : useApiApp;
 
 export { escalationCount } from "./storeTypes";
-export type { Action, AppState, InviteAgentInput, NewTaskInput, PanelKey } from "./storeTypes";
+export type { Action, AppState, InviteAgentInput, NewTaskInput } from "./storeTypes";

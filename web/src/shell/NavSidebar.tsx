@@ -1,13 +1,10 @@
 import { NavLink } from "react-router";
 import { PRODUCT_NAME } from "../shared/theme";
 import { escalationCount, useApp } from "../shared/store";
-import type { PanelKey } from "../shared/store";
 import {
-  ChatIcon,
   EmployeesIcon,
   FlowIcon,
   KnowledgeIcon,
-  MegaphoneIcon,
   MissionControlIcon,
   OfficeIcon,
   OrganizationIcon,
@@ -29,16 +26,8 @@ const PRIMARY_NAV = [
   { to: "/office", label: "Office View", icon: OfficeIcon },
 ];
 
-// Every classic reference-2 panel, unchanged, so nothing goes unreachable
-// while its routed replacement is still a placeholder page. Retired
-// milestone-by-milestone as each panel gets a real page (gone by MF-6).
-const CLASSIC_PANELS: { label: string; panel: PanelKey; icon: typeof ChatIcon }[] = [
-  { label: "Chat", panel: "chat", icon: ChatIcon },
-  { label: "Announcements", panel: "announcements", icon: MegaphoneIcon },
-];
-
 export function NavSidebar() {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const escalations = escalationCount(state.tasks);
 
   return (
@@ -60,20 +49,6 @@ export function NavSidebar() {
             <span>{label}</span>
             {badge && escalations > 0 && <span className="nav-sidebar-count">{escalations}</span>}
           </NavLink>
-        ))}
-      </nav>
-
-      <div className="nav-sidebar-section-label">Classic Panels</div>
-      <nav className="nav-sidebar-nav">
-        {CLASSIC_PANELS.map(({ label, panel, icon: PanelIcon }) => (
-          <button
-            key={panel}
-            className={`nav-sidebar-item${state.ui.activePanel === panel ? " active" : ""}`}
-            onClick={() => dispatch({ type: "openPanel", panel })}
-          >
-            <PanelIcon />
-            <span>{label}</span>
-          </button>
         ))}
       </nav>
     </aside>

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { CloseIcon } from "../../shared/icons";
 import { useApp } from "../../shared/store";
 import type { ModelProvider } from "../../shared/types";
-import "./panels.css";
 
 // Hire flow per 01-product-spec §3.1: pick a role template or define custom
 // (role, skills, model, budget, manager).

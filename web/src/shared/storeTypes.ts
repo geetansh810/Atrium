@@ -15,27 +15,19 @@ import type {
   Task,
 } from "./types";
 
-export type PanelKey = "chat" | "announcements";
-
 export interface UiState {
-  activePanel: PanelKey | null;
-  selectedAgentId: string | null;
-  selectedTaskId: string | null;
+  chatOpen: boolean;
   activeChannelId: string;
   activeRoom: string;
-  railVisible: boolean;
   botNotice: string | null;
   inviteOpen: boolean;
   newTaskOpen: boolean;
 }
 
 export const initialUiState: UiState = {
-  activePanel: null,
-  selectedAgentId: null,
-  selectedTaskId: null,
+  chatOpen: false,
   activeChannelId: "ch-general",
   activeRoom: "Lobby",
-  railVisible: true,
   botNotice: null,
   inviteOpen: false,
   newTaskOpen: false,
@@ -77,10 +69,8 @@ export interface InviteAgentInput {
 }
 
 export type Action =
-  | { type: "openPanel"; panel: PanelKey; agentId?: string; taskId?: string; channelId?: string }
-  | { type: "closePanel" }
+  | { type: "setChatOpen"; open: boolean; channelId?: string }
   | { type: "setRoom"; room: string }
-  | { type: "toggleRail" }
   | { type: "setChannel"; channelId: string }
   | { type: "sendMessage"; channelId: string; sender: string; text: string }
   | { type: "createTask"; input: NewTaskInput }

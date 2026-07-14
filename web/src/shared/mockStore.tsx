@@ -24,7 +24,7 @@ import type {
 
 export { escalationCount };
 export type { Action, AppState };
-export type { PanelKey, NewTaskInput, InviteAgentInput } from "./storeTypes";
+export type { NewTaskInput, InviteAgentInput } from "./storeTypes";
 
 const initialState: AppState = {
   agents: mock.agents,
@@ -49,23 +49,17 @@ function appendTaskEvent(events: TaskEvent[], eventType: string, actor: string, 
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case "openPanel":
+    case "setChatOpen":
       return {
         ...state,
         ui: {
           ...state.ui,
-          activePanel: action.panel,
-          selectedAgentId: action.agentId ?? state.ui.selectedAgentId,
-          selectedTaskId: action.taskId ?? state.ui.selectedTaskId,
+          chatOpen: action.open,
           activeChannelId: action.channelId ?? state.ui.activeChannelId,
         },
       };
-    case "closePanel":
-      return { ...state, ui: { ...state.ui, activePanel: null } };
     case "setRoom":
       return { ...state, ui: { ...state.ui, activeRoom: action.room } };
-    case "toggleRail":
-      return { ...state, ui: { ...state.ui, railVisible: !state.ui.railVisible } };
     case "setChannel":
       return { ...state, ui: { ...state.ui, activeChannelId: action.channelId } };
 
@@ -299,7 +293,7 @@ function reducer(state: AppState, action: Action): AppState {
             : a,
         ),
         activity: withEvent(state.activity, agent.id, "Left the Focus Pod"),
-        ui: { ...state.ui, activePanel: null, botNotice: `${agent.name} left the Focus Pod.` },
+        ui: { ...state.ui, botNotice: `${agent.name} left the Focus Pod.` },
       };
     }
 

@@ -28,8 +28,8 @@ export { escalationCount };
 export type { Action, AppState };
 
 // The chat/announcements/activity slices have no backend yet — reuse a small
-// local reducer over the same seed shape so ChatPanel/AnnouncementsPanel keep
-// working unmodified. Agents/tasks/budgets never live here.
+// local reducer over the same seed shape so ChatPanel and the Notifications
+// composer keep working unmodified. Agents/tasks/budgets never live here.
 interface LocalState {
   channels: Channel[];
   messages: ChatMessage[];
@@ -50,10 +50,8 @@ type LocalAction = Extract<
   Action,
   {
     type:
-      | "openPanel"
-      | "closePanel"
+      | "setChatOpen"
       | "setRoom"
-      | "toggleRail"
       | "setChannel"
       | "sendMessage"
       | "addAnnouncement"
@@ -72,23 +70,17 @@ function makeId(prefix: string): string {
 
 function localReducer(state: LocalState, action: LocalAction): LocalState {
   switch (action.type) {
-    case "openPanel":
+    case "setChatOpen":
       return {
         ...state,
         ui: {
           ...state.ui,
-          activePanel: action.panel,
-          selectedAgentId: action.agentId ?? state.ui.selectedAgentId,
-          selectedTaskId: action.taskId ?? state.ui.selectedTaskId,
+          chatOpen: action.open,
           activeChannelId: action.channelId ?? state.ui.activeChannelId,
         },
       };
-    case "closePanel":
-      return { ...state, ui: { ...state.ui, activePanel: null } };
     case "setRoom":
       return { ...state, ui: { ...state.ui, activeRoom: action.room } };
-    case "toggleRail":
-      return { ...state, ui: { ...state.ui, railVisible: !state.ui.railVisible } };
     case "setChannel":
       return { ...state, ui: { ...state.ui, activeChannelId: action.channelId } };
     case "sendMessage":
@@ -179,10 +171,8 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
 
   function dispatch(action: Action) {
     switch (action.type) {
-      case "openPanel":
-      case "closePanel":
+      case "setChatOpen":
       case "setRoom":
-      case "toggleRail":
       case "setChannel":
       case "sendMessage":
       case "addAnnouncement":

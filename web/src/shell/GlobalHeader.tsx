@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { BellIcon, ChatIcon, PlusIcon, SettingsIcon } from "../shared/icons";
-import { escalationCount, useApp } from "../shared/store";
+import { BellIcon, ChatIcon, PlusIcon, SearchIcon, SettingsIcon } from "../shared/icons";
+import { useApp } from "../shared/store";
 import { useAppNav } from "../shared/nav";
+import { useNotifications } from "../shared/notifications";
+import { openCommandPalette } from "../ui/CommandPalette";
 import "./GlobalHeader.css";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -34,7 +36,7 @@ export function GlobalHeader() {
   const location = useLocation();
   const nav = useAppNav();
   const time = useClock();
-  const escalations = escalationCount(state.tasks);
+  const { unreadCount } = useNotifications();
   const onlineCount = state.agents.filter((a) => a.status !== "offline").length + 1;
   const title =
     PAGE_TITLES[location.pathname] ??
@@ -49,6 +51,12 @@ export function GlobalHeader() {
       <h1 className="global-header-title">{title}</h1>
 
       <div className="global-header-right">
+        <button className="global-header-cmdk-hint" onClick={openCommandPalette} aria-label="Open command palette">
+          <SearchIcon width={13} height={13} />
+          <span>Jump to…</span>
+          <kbd>⌘K</kbd>
+        </button>
+
         <span className="global-header-clock">{time}</span>
         <span className="global-header-online">
           <span className="global-header-online-dot" />
@@ -60,7 +68,7 @@ export function GlobalHeader() {
         </button>
         <Link className="global-header-icon-btn" to="/notifications" aria-label="Notifications">
           <BellIcon />
-          {escalations > 0 && <span className="global-header-badge">{escalations}</span>}
+          {unreadCount > 0 && <span className="global-header-badge">{unreadCount}</span>}
         </Link>
         <Link className="global-header-icon-btn" to="/settings" aria-label="Settings">
           <SettingsIcon />

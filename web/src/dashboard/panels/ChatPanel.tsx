@@ -4,6 +4,7 @@ import { useApp } from "../../shared/store";
 import type { AppState } from "../../shared/store";
 import { Drawer } from "../../ui/Drawer";
 import { ConversationThread } from "../../ui/ConversationThread";
+import "./ChatPanel.css";
 
 function botStatusReply(state: AppState): string {
   const inProgress = state.tasks.filter((t) => t.status === "in_progress").length;
@@ -46,7 +47,7 @@ export function ChatPanel() {
       subtitle={channel.kind === "channel" ? `# ${channel.name}` : channel.name}
       width={760}
       noPad
-      onClose={() => dispatch({ type: "closePanel" })}
+      onClose={() => dispatch({ type: "setChatOpen", open: false })}
     >
       <div className="chat-grid">
         <nav className="chat-nav">

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CloseIcon } from "../../shared/icons";
 import { useApp } from "../../shared/store";
-import "./panels.css";
 
 export function NewTaskModal() {
   const { state, dispatch } = useApp();

@@ -31,8 +31,9 @@ interface ConversationThreadProps {
 // The message-list + composer half of ChatPanel, extracted so any surface can
 // embed a single-channel conversation (first non-ChatPanel consumer:
 // TaskDrawer's Conversation tab, MF-3). Channel nav / multi-channel chrome
-// stays in ChatPanel — this only ever renders one channel's thread. Reuses
-// panels.css's .chat-msg*/.chat-input* classes (still global via PanelShell).
+// stays in ChatPanel — this only ever renders one channel's thread. Owns its
+// own .chat-msg*/.chat-input* classes in ConversationThread.css (MF-6 —
+// moved out of the now-deleted dashboard/panels/panels.css).
 export function ConversationThread({ channelId, placeholder = "Message…", onSend, fill = false }: ConversationThreadProps) {
   const { state, dispatch } = useApp();
   const [draft, setDraft] = useState("");
