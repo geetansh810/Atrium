@@ -1,11 +1,13 @@
 package app.atrium.agentmind;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.agentmind.api.KnowledgeDtos.IngestKnowledgeRequest;
 import app.atrium.agentmind.domain.AgentSkill;
 import app.atrium.agentmind.domain.AgentSkillRepository;
 import app.atrium.agentmind.domain.Skill;
@@ -65,6 +67,9 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
     @Autowired
     MemoryStore memoryStore;
 
+    @Autowired
+    KnowledgeService knowledgeService;
+
     /**
      * Real HTTP calls are never made in this class — every embed() call
      * returns a deterministic basis vector so cosine similarity is exactly
@@ -91,6 +96,41 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
     void stubEmbeddings() {
         when(embeddingClient.isReady()).thenReturn(true);
         when(embeddingClient.embed(anyString())).thenReturn(SIMILAR_VECTOR);
+        when(embeddingClient.embed(anyList())).thenAnswer(inv -> {
+            List<?> texts = inv.getArgument(0);
+            return texts.stream().map(t -> SIMILAR_VECTOR).toList();
+        });
+    }
+
+    private UUID createRole(String companyId, String key) {
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/role-definitions",
+                new HttpEntity<>(Map.of("key", key, "title", key, "systemPrompt", "You are a " + key + ".",
+                        "outputContract", "markdown"), headers(companyId)), String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        return UUID.fromString(parse(response.getBody()).get("id").asText());
+    }
+
+    private UUID ingestKnowledgeDoc(String companyId, String title, String content) {
+        return knowledgeService.ingest(UUID.fromString(companyId),
+                new IngestKnowledgeRequest(title, content, null)).getId();
+    }
+
+    private void attachKnowledgeToRole(String companyId, UUID roleDefinitionId, UUID docId) {
+        knowledgeService.attachToRole(UUID.fromString(companyId), roleDefinitionId, docId);
+    }
+
+    private String hireAgentWithCustomRole(String companyId, UUID roleDefinitionId, String skill) {
+        Map<String, Object> body = Map.of(
+                "name", "Agent-" + UUID.randomUUID().toString().substring(0, 6),
+                "roleDefinitionId", roleDefinitionId.toString(),
+                "roleTitle", "Title",
+                "skillTags", List.of(skill),
+                "modelProvider", "anthropic",
+                "modelName", "claude-sonnet-5");
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/companies/" + companyId + "/agents",
+                new HttpEntity<>(body, headers(companyId)), String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        return parse(response.getBody()).get("id").asText();
     }
 
     private UUID seedMemory(String companyId, String scope, String agentId, String roleKey,
@@ -453,5 +493,58 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
 
         assertThat(bundle.memories()).extracting(h -> h.memory().content())
                 .containsExactly("a strong preference", "a plain fact");
+    }
+
+    // ── knowledge (M-KN1): role attach respected, threshold, item-granular truncation ──
+
+    @Test
+    void attachedKnowledgeDocIsRecalledForItsOwnRoleOnly() {
+        String company = createCompany("kn-recall");
+        UUID roleId = createRole(company, "content-writer-" + UUID.randomUUID().toString().substring(0, 6));
+        UUID docId = ingestKnowledgeDoc(company, "Brand guide", "Our brand voice is friendly and concise.");
+        attachKnowledgeToRole(company, roleId, docId);
+        String agentId = hireAgentWithCustomRole(company, roleId, "content");
+        String taskId = createTask(company, "content");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.knowledge()).extracting(KnowledgeHit::content)
+                .containsExactly("Our brand voice is friendly and concise.");
+        assertThat(bundle.knowledge().get(0).docTitle()).isEqualTo("Brand guide");
+        assertThat(bundle.provenanceIds()).contains(bundle.knowledge().get(0).chunkId());
+    }
+
+    @Test
+    void unrelatedRoleNeverRecallsAnAttachedDoc() {
+        String company = createCompany("kn-unrelated");
+        UUID contentRoleId = createRole(company, "content-writer-" + UUID.randomUUID().toString().substring(0, 6));
+        UUID docId = ingestKnowledgeDoc(company, "Brand guide", "Our brand voice is friendly and concise.");
+        attachKnowledgeToRole(company, contentRoleId, docId);
+
+        // a different role's agent -> the doc was never attached to ITS role
+        String agentId = hireAgent(company, "coder", null);
+        String taskId = createTask(company, "coder");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.knowledge()).isEmpty();
+    }
+
+    @Test
+    void belowThresholdKnowledgeChunksAreExcludedFromRecall() {
+        String company = createCompany("kn-threshold");
+        UUID roleId = createRole(company, "content-writer-" + UUID.randomUUID().toString().substring(0, 6));
+        // query embeds to SIMILAR_VECTOR (task title "A task"); this doc's single chunk embeds
+        // orthogonal -> plain cosine similarity 0.0, below the 0.35 threshold.
+        when(embeddingClient.embed(eq(List.of("unrelated reference text"))))
+                .thenReturn(List.of(DISSIMILAR_VECTOR));
+        UUID docId = ingestKnowledgeDoc(company, "Unrelated doc", "unrelated reference text");
+        attachKnowledgeToRole(company, roleId, docId);
+        String agentId = hireAgentWithCustomRole(company, roleId, "content");
+        String taskId = createTask(company, "content");
+
+        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+
+        assertThat(bundle.knowledge()).isEmpty();
     }
 }

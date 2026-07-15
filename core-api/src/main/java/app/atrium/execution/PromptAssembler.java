@@ -1,6 +1,7 @@
 package app.atrium.execution;
 
 import app.atrium.agentmind.ContextBundle;
+import app.atrium.agentmind.KnowledgeHit;
 import app.atrium.agentmind.MemoryHit;
 import app.atrium.agentmind.SkillExcerpt;
 import app.atrium.execution.spi.LlmMessage;
@@ -13,9 +14,9 @@ import org.springframework.lang.Nullable;
  * Pure function of its inputs (05 §execution rule) — sees only the role
  * definition, the task, optional rejection feedback, and the optional context
  * bundle. Secrets are structurally impossible: nothing else is in scope.
- * Layout per 14 §6. "## What you have learned here" renders as of M-MEM1
- * (bundle.memories()); "## Reference material" stays omitted (not emitted-
- * empty) since bundle.knowledge() is still always empty until M-KN1.
+ * Layout per 14 §6, complete as of M-KN1: "## What you have learned here"
+ * (bundle.memories(), M-MEM1) and "## Reference material" (bundle.knowledge(),
+ * M-KN1) both render now that neither list is structurally always empty.
  */
 public final class PromptAssembler {
 
@@ -39,6 +40,9 @@ public final class PromptAssembler {
         StringBuilder user = new StringBuilder("## Your task\n").append(task.getTitle());
         if (task.getDescription() != null && !task.getDescription().isBlank()) {
             user.append('\n').append(task.getDescription());
+        }
+        if (bundle != null && !bundle.knowledge().isEmpty()) {
+            user.append("\n\n## Reference material\n").append(renderKnowledge(bundle.knowledge()));
         }
         if (feedback != null && !feedback.isBlank()) {
             user.append("\n\n## Reviewer feedback (attempt ").append(task.getAttempt()).append(")\n")
@@ -65,6 +69,14 @@ public final class PromptAssembler {
         for (MemoryHit hit : memories) {
             sb.append("- (").append(hit.memory().kind()).append(") ")
                     .append(hit.memory().content()).append('\n');
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private static String renderKnowledge(List<KnowledgeHit> knowledge) {
+        StringBuilder sb = new StringBuilder();
+        for (KnowledgeHit hit : knowledge) {
+            sb.append("- (").append(hit.docTitle()).append(") ").append(hit.content()).append('\n');
         }
         return sb.toString().stripTrailing();
     }

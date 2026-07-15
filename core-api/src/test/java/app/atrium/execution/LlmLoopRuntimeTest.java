@@ -6,6 +6,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -135,6 +136,51 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         String agentId = parse(response.getBody()).get("id").asText();
         runtime.stop(new AgentHandle(UUID.fromString(agentId), UUID.fromString(companyId)));
         return agentId;
+    }
+
+    /** Same as {@link #hireAgentAndStopAutoLoop} but hires against a custom, company-owned
+     *  role definition instead of the global "coder" template — needed for M-KN1's role-attach
+     *  Done-when, since knowledge can only ever be attached to a company-owned role. */
+    private String hireAgentWithCustomRole(String companyId, UUID roleDefinitionId, String skill) {
+        ResponseEntity<String> response = rest.postForEntity(
+                "/api/v1/companies/" + companyId + "/agents",
+                new HttpEntity<>(Map.of(
+                        "name", "ContentAgent",
+                        "roleDefinitionId", roleDefinitionId.toString(),
+                        "roleTitle", "Writer",
+                        "skillTags", List.of(skill),
+                        "modelProvider", "anthropic",
+                        "modelName", "claude-sonnet-5"), headers(companyId)),
+                String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        String agentId = parse(response.getBody()).get("id").asText();
+        runtime.stop(new AgentHandle(UUID.fromString(agentId), UUID.fromString(companyId)));
+        return agentId;
+    }
+
+    private UUID createCustomRole(String companyId, String key, String title) {
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/role-definitions",
+                new HttpEntity<>(Map.of(
+                        "key", key, "title", title,
+                        "systemPrompt", "You are a " + title + ".",
+                        "outputContract", "markdown"), headers(companyId)),
+                String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        return UUID.fromString(parse(response.getBody()).get("id").asText());
+    }
+
+    private UUID ingestKnowledgeDoc(String companyId, String title, String content) {
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/companies/" + companyId + "/knowledge",
+                new HttpEntity<>(Map.of("title", title, "content", content), headers(companyId)), String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        return UUID.fromString(parse(response.getBody()).get("id").asText());
+    }
+
+    private void attachKnowledgeToRole(String companyId, UUID roleDefinitionId, UUID docId) {
+        ResponseEntity<String> response = rest.postForEntity(
+                "/api/v1/role-definitions/" + roleDefinitionId + "/knowledge",
+                new HttpEntity<>(Map.of("docId", docId.toString()), headers(companyId)), String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(204);
     }
 
     private String createTask(String companyId, String title, String skill) {
@@ -355,5 +401,56 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("## What you have learned here"))
                 .withRequestBody(containing("CEO prefers bullet lists")));
+    }
+
+    // ── M-KN1 Done-when: an attached knowledge doc reaches only its role's prompt ──
+
+    @Test
+    void attachedKnowledgeDocReachesThePromptForItsRoleOnlyNotAnUnrelatedRole() {
+        wiremock.resetRequests();
+        float[] sameVectorEverywhere = new float[1536];
+        sameVectorEverywhere[0] = 1f; // non-zero (a zero vector's cosine similarity is undefined)
+        when(embeddingClient.isReady()).thenReturn(true);
+        when(embeddingClient.embed(anyString())).thenReturn(sameVectorEverywhere);
+        when(embeddingClient.embed(anyList())).thenAnswer(inv -> {
+            List<?> texts = inv.getArgument(0);
+            return texts.stream().map(t -> sameVectorEverywhere).toList();
+        });
+        String company = createCompany("m-kn1");
+
+        UUID contentRoleId = createCustomRole(company, "content-writer", "Content Writer");
+        UUID docId = ingestKnowledgeDoc(company, "Brand guide", "Our brand voice is friendly and concise.");
+        attachKnowledgeToRole(company, contentRoleId, docId);
+
+        String contentAgentId = hireAgentWithCustomRole(company, contentRoleId, "content");
+        String contentTaskId = createTask(company, "Write a welcome email", "content");
+        String coderAgentId = hireAgentAndStopAutoLoop(company, "coding");
+        String coderTaskId = createTask(company, "Write a function that reverses a string", "coding");
+
+        stubAnthropicSuccess("Hello and welcome!");
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(contentAgentId));
+        awaitStatus(company, contentTaskId, "pending_review", 10);
+
+        stubAnthropicSuccess("def reverse_string(s):\\n    return s[::-1]");
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(coderAgentId));
+        awaitStatus(company, coderTaskId, "pending_review", 10);
+
+        // the content-writer's claimed event carries the recalled chunk as provenance
+        List<String> contentProvenance = jdbc.queryForList(
+                "SELECT jsonb_array_elements_text(payload->'contextProvenance') FROM task_events "
+                        + "WHERE task_id = ?::uuid AND event_type = 'claimed'", String.class, contentTaskId);
+        assertThat(contentProvenance).hasSize(1);
+
+        // the coder's claimed event carries only its 2 seeded skills — the doc was never
+        // attached to its role (role attach is respected, not global)
+        List<String> coderProvenance = jdbc.queryForList(
+                "SELECT jsonb_array_elements_text(payload->'contextProvenance') FROM task_events "
+                        + "WHERE task_id = ?::uuid AND event_type = 'claimed'", String.class, coderTaskId);
+        assertThat(coderProvenance).hasSize(2);
+
+        wiremock.verify(2, postRequestedFor(urlEqualTo("/v1/messages")));
+        wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
+                .withRequestBody(containing("## Reference material"))
+                .withRequestBody(containing("Our brand voice is friendly and concise.")));
     }
 }

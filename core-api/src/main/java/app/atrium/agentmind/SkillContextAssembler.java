@@ -24,13 +24,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Skills + memories ContextAssembler (14 §6 steps 1–2) — knowledge stays empty
- * until M-KN1 adds a third step to {@link #assemble}. Only {@code platform}/
- * {@code company} trust-level skills may ever reach a prompt (14 §1, 15 §5
- * invariant 7); {@code agent_proposed} skills are filtered out here rather
- * than relying on callers to know that rule. Only {@code status='active'}
- * memories may ever be recalled — the same invariant, enforced inside {@link
- * PgVectorMemoryStore#recall}.
+ * Skills + memories + knowledge ContextAssembler (14 §6 steps 1–3, complete as
+ * of M-KN1). Only {@code platform}/{@code company} trust-level skills may ever
+ * reach a prompt (14 §1, 15 §5 invariant 7); {@code agent_proposed} skills are
+ * filtered out here rather than relying on callers to know that rule. Only
+ * {@code status='active'} memories may ever be recalled — the same invariant,
+ * enforced inside {@link PgVectorMemoryStore#recall}. Knowledge chunks are
+ * scoped to docs attached to the agent's own {@code roleDefinitionId} via
+ * {@code role_definition_knowledge} — an unrelated role never sees a doc that
+ * was never attached to it (14 §3, enforced inside {@link
+ * KnowledgeService#recall}).
  *
  * <p><b>Not read-only</b> (unlike M-CTX1's original skills-only version):
  * memory recall bumps {@code use_count}/{@code last_used_at} as a side effect
@@ -38,7 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code WorkBroker.claimNext}'s own read-write transaction (via the claimed-
  * event enricher hook) — see {@link PgVectorMemoryStore}'s class javadoc for
  * why the memory recall step also does a live embedding call inside that
- * transaction, a real deviation from M-CTX1's "local-DB-only" note.
+ * transaction, a real deviation from M-CTX1's "local-DB-only" note. Knowledge
+ * recall is a plain read (no use-count bump) but reuses the same enricher hook
+ * for its embedding call, for the identical reason.
  */
 @Service
 public class SkillContextAssembler implements ContextAssembler {
@@ -46,6 +51,7 @@ public class SkillContextAssembler implements ContextAssembler {
     private static final Set<String> PROMPTABLE_TRUST_LEVELS = Set.of("platform", "company");
     private static final double SKILLS_BUDGET_SHARE = 0.50;
     private static final double MEMORIES_BUDGET_SHARE = 0.35;
+    private static final double KNOWLEDGE_BUDGET_SHARE = 0.15;
     private static final int MEMORIES_RECALL_K = 12;
     private static final int DEFAULT_BUDGET_TOKENS = 4000;
     private static final double HARD_CAP_SHARE_OF_CONTEXT_WINDOW = 0.30;
@@ -60,17 +66,20 @@ public class SkillContextAssembler implements ContextAssembler {
     private final ModelCatalogLookup modelCatalog;
     private final RoleDefinitionLookup roleDefinitions;
     private final MemoryStore memoryStore;
+    private final KnowledgeService knowledgeService;
 
     public SkillContextAssembler(AgentSkillRepository agentSkills,
                                  RoleDefinitionSkillRepository roleDefinitionSkills,
                                  SkillRepository skills, ModelCatalogLookup modelCatalog,
-                                 RoleDefinitionLookup roleDefinitions, MemoryStore memoryStore) {
+                                 RoleDefinitionLookup roleDefinitions, MemoryStore memoryStore,
+                                 KnowledgeService knowledgeService) {
         this.agentSkills = agentSkills;
         this.roleDefinitionSkills = roleDefinitionSkills;
         this.skills = skills;
         this.modelCatalog = modelCatalog;
         this.roleDefinitions = roleDefinitions;
         this.memoryStore = memoryStore;
+        this.knowledgeService = knowledgeService;
     }
 
     @Override
@@ -108,21 +117,32 @@ public class SkillContextAssembler implements ContextAssembler {
             // else: dropped entirely; keep trying subsequent (possibly smaller) items.
         }
 
+        String queryText = queryText(task);
+
         int memoriesBudget = (int) (totalBudget * MEMORIES_BUDGET_SHARE);
-        List<MemoryHit> includedMemories = recallMemories(agent, task, memoriesBudget, provenance);
+        List<MemoryHit> includedMemories = recallMemories(agent, queryText, memoriesBudget, provenance);
         used += includedMemories.stream()
                 .mapToInt(h -> estimateTokens(null, null, h.memory().content()))
                 .sum();
 
-        return new ContextBundle(includedSkills, includedMemories, List.of(), provenance, used);
+        int knowledgeBudget = (int) (totalBudget * KNOWLEDGE_BUDGET_SHARE);
+        List<KnowledgeHit> includedKnowledge = recallKnowledge(agent, queryText, knowledgeBudget, provenance);
+        used += includedKnowledge.stream()
+                .mapToInt(h -> estimateTokens(null, null, h.content()))
+                .sum();
+
+        return new ContextBundle(includedSkills, includedMemories, includedKnowledge, provenance, used);
+    }
+
+    private static String queryText(Task task) {
+        return task.getDescription() != null && !task.getDescription().isBlank()
+                ? task.getTitle() + " " + task.getDescription() : task.getTitle();
     }
 
     /** 14 §6 step 2: recall(k=12), reorder preference/lesson first, item-granular truncation (no fallback line). */
-    private List<MemoryHit> recallMemories(Agent agent, Task task, int memoriesBudget, List<UUID> provenance) {
+    private List<MemoryHit> recallMemories(Agent agent, String queryText, int memoriesBudget, List<UUID> provenance) {
         String roleKey = roleDefinitions.findById(agent.getRoleDefinitionId())
                 .map(RoleDefinition::getKey).orElse(null);
-        String queryText = task.getDescription() != null && !task.getDescription().isBlank()
-                ? task.getTitle() + " " + task.getDescription() : task.getTitle();
         List<MemoryHit> hits = memoryStore.recall(
                 new RecallQuery(agent.getCompanyId(), agent.getId(), roleKey, queryText, MEMORIES_RECALL_K, null));
 
@@ -147,6 +167,27 @@ public class SkillContextAssembler implements ContextAssembler {
 
     private static int priorityRank(String kind) {
         return PRIORITY_MEMORY_KINDS.contains(kind) ? 0 : 1;
+    }
+
+    /** 14 §6 step 3: knowledgeService.recall already applies top-3/score>=0.35 and role
+     *  scoping; this only does the item-granular budget truncation (no fallback line). */
+    private List<KnowledgeHit> recallKnowledge(Agent agent, String queryText, int knowledgeBudget,
+                                               List<UUID> provenance) {
+        List<KnowledgeHit> hits = knowledgeService.recall(agent.getCompanyId(), agent.getRoleDefinitionId(),
+                queryText);
+
+        List<KnowledgeHit> included = new ArrayList<>();
+        int used = 0;
+        for (KnowledgeHit hit : hits) {
+            int tokens = estimateTokens(null, null, hit.content());
+            if (used + tokens <= knowledgeBudget) {
+                included.add(hit);
+                provenance.add(hit.chunkId());
+                used += tokens;
+            }
+            // else: dropped entirely; keep trying smaller items.
+        }
+        return included;
     }
 
     /** Role-attached ("hired") skills in the role's position order, then the
