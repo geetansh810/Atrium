@@ -73,7 +73,9 @@ CREATE TABLE task_decompositions (               -- exact-once child fan-out per
 );
 ```
 
-Sketch only, build at M2.2: `task_blockers(task_id, blocked_by_task_id)` for cross-tree dependencies (parent/child stays structural — Paperclip separation).
+**M2.2 build note:** `plan_artifact_id` is the parent task's own completion artifact (`TaskService#complete` already writes one) — not a separate "decomposition_plan" artifact kind. `TaskService#decompose` does a raw `INSERT ... ON CONFLICT (parent_task_id, plan_artifact_id) DO NOTHING`; `rows==0` means the fingerprint already existed (some earlier call processed this exact artifact) and the call becomes a no-op returning the existing `child_task_ids`, never a second fan-out. The one built-in tool this enables, `create_child_tasks` (execution.ChildTaskTool), is offered to a role only when its `role_definitions.allowed_tools` JSON array lists it — a data-driven gate, no role-key branching in routing/execution. It's single-shot: the model either returns text or one tool call per attempt, never a multi-turn back-and-forth (that would need the assistant's `tool_use` content block replayed into history, which `execution.spi.LlmMessage`'s plain-string content can't carry — deferred until a real multi-turn use case needs it).
+
+`task_blockers(task_id, blocked_by_task_id)` for cross-tree dependencies remains a sketch, NOT built at M2.2 — the milestone's Done-when only needed parent/child fan-out plus the approval gate (already covering open child tasks since M0.6) and the `/tasks/{id}/flow` graph, none of which need cross-tree blockers. Parent/child stays structural (Paperclip separation); build `task_blockers` only when a real cross-tree dependency use case shows up.
 
 ## 4. Agent platform tables
 

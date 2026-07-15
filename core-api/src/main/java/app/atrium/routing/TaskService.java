@@ -14,11 +14,14 @@ import app.atrium.routing.domain.ArtifactRepository;
 import app.atrium.routing.domain.Subtask;
 import app.atrium.routing.domain.SubtaskRepository;
 import app.atrium.routing.domain.Task;
+import app.atrium.routing.domain.TaskDecomposition;
+import app.atrium.routing.domain.TaskDecompositionRepository;
 import app.atrium.routing.domain.TaskEvent;
 import app.atrium.routing.domain.TaskEventRepository;
 import app.atrium.routing.domain.TaskRepository;
 import app.atrium.routing.domain.TaskStateGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -32,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,24 +56,30 @@ public class TaskService {
     private final SubtaskRepository subtasks;
     private final TaskEventRepository taskEvents;
     private final ArtifactRepository artifacts;
+    private final TaskDecompositionRepository decompositions;
     private final AgentDirectory agentDirectory;
     private final TaskEventRecorder recorder;
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
+    private final JdbcTemplate jdbc;
     private final Clock clock;
 
     public TaskService(TaskRepository tasks, SubtaskRepository subtasks,
                        TaskEventRepository taskEvents, ArtifactRepository artifacts,
+                       TaskDecompositionRepository decompositions,
                        AgentDirectory agentDirectory, TaskEventRecorder recorder,
-                       ObjectMapper objectMapper, EntityManager entityManager, Clock clock) {
+                       ObjectMapper objectMapper, EntityManager entityManager,
+                       JdbcTemplate jdbc, Clock clock) {
         this.tasks = tasks;
         this.subtasks = subtasks;
         this.taskEvents = taskEvents;
         this.artifacts = artifacts;
+        this.decompositions = decompositions;
         this.agentDirectory = agentDirectory;
         this.recorder = recorder;
         this.objectMapper = objectMapper;
         this.entityManager = entityManager;
+        this.jdbc = jdbc;
         this.clock = clock;
     }
 
@@ -81,8 +91,28 @@ public class TaskService {
 
     public record EventPage(List<TaskEvent> events, String nextCursor) {}
 
+    /** One item of a `create_child_tasks` tool call (M2.2, execution.LlmLoopRuntime). */
+    public record ChildTaskSpec(String title, String description, String requiredSkill, Integer priority) {}
+
+    /** {@code created}=false means the exact-once fingerprint already existed (16 §M2.2). */
+    public record DecompositionResult(List<UUID> childTaskIds, boolean created) {}
+
+    public record FlowNode(UUID taskId, String title, String status, String agent) {}
+
+    public record FlowEdge(UUID from, UUID to) {}
+
+    public record FlowGraph(List<FlowNode> nodes, List<FlowEdge> edges) {}
+
     @Transactional
     public TaskDetail create(UUID companyId, CreateTaskRequest request) {
+        return create(companyId, request, actor());
+    }
+
+    /** Same as {@link #create(UUID, CreateTaskRequest)} but with an explicit audit actor —
+     *  the agent-initiated child-task surface (M2.2) needs {@code agent:<id>}, never the
+     *  requesting human's own identity, which {@link #actor()} would otherwise pick up. */
+    @Transactional
+    public TaskDetail create(UUID companyId, CreateTaskRequest request, String actorOverride) {
         // Roles are data: the skill must exist on the roster, not in a switch (05 §routing).
         if (agentDirectory.findBySkill(companyId, request.requiredSkill()).isEmpty()) {
             throw new FieldValidationException(Map.of("requiredSkill",
@@ -123,7 +153,7 @@ public class TaskService {
         if (task.getParentTaskId() != null) {
             payload.put("parentTaskId", task.getParentTaskId().toString());
         }
-        recorder.record(task, "created", actor(), payload);
+        recorder.record(task, "created", actorOverride, payload);
 
         return new TaskDetail(task, created, null);
     }
@@ -231,6 +261,111 @@ public class TaskService {
         payload.put("agentId", agentId.toString());
         recorder.record(task, "completed", "agent:" + agentId, payload);
         return task;
+    }
+
+    /**
+     * M2.2's agent-initiated task-creation surface (12 §6, 15 §3): completes the
+     * task exactly like {@link #complete}, then fans the SAME completion artifact
+     * out into child tasks via {@link #decompose}. One transaction — a crash
+     * partway leaves neither half committed, so there's nothing for the
+     * exact-once fingerprint to protect against beyond what atomicity already
+     * gives; the fingerprint instead protects against this method being
+     * invoked a second time for an artifact that already decomposed once
+     * (e.g. a future replay), which atomicity alone would not catch.
+     */
+    @Transactional
+    public Task completeWithDecomposition(UUID companyId, UUID taskId, UUID agentId,
+                                          String artifactContent, List<ChildTaskSpec> children) {
+        Task task = complete(companyId, taskId, agentId, "text", artifactContent);
+        Artifact planArtifact = artifacts.findFirstByTaskIdAndCompanyIdOrderByCreatedAtDesc(taskId, companyId)
+                .orElseThrow(() -> new IllegalStateException("complete() did not persist an artifact"));
+        decompose(companyId, taskId, agentId, planArtifact.getId(), children);
+        return task;
+    }
+
+    /**
+     * Exact-once child fan-out (12 §6, 15 §3): {@code planArtifactId} is the
+     * fingerprint — a raw {@code INSERT ... ON CONFLICT DO NOTHING} on
+     * {@code (parent_task_id, plan_artifact_id)} decides, at the DB level,
+     * whether THIS call is the one that gets to create children. A conflict
+     * (rows==0) means some earlier call already processed this exact plan
+     * artifact; this call becomes a no-op that hands back the same
+     * {@code child_task_ids} instead of creating a second batch.
+     */
+    @Transactional
+    public DecompositionResult decompose(UUID companyId, UUID parentTaskId, UUID agentId,
+                                         UUID planArtifactId, List<ChildTaskSpec> children) {
+        Task parent = tasks.findByIdAndCompanyId(parentTaskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", parentTaskId));
+        String createdBy = "agent:" + agentId;
+
+        int rows = jdbc.update("""
+                INSERT INTO task_decompositions (company_id, parent_task_id, plan_artifact_id, created_by)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (parent_task_id, plan_artifact_id) DO NOTHING
+                """, companyId, parentTaskId, planArtifactId, createdBy);
+
+        TaskDecomposition row = decompositions
+                .findByCompanyIdAndParentTaskIdAndPlanArtifactId(companyId, parentTaskId, planArtifactId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "task_decompositions row missing right after its own insert"));
+
+        if (rows == 0) {
+            return new DecompositionResult(row.getChildTaskIds(), false);
+        }
+
+        List<UUID> childIds = new ArrayList<>();
+        for (ChildTaskSpec spec : children) {
+            CreateTaskRequest req = new CreateTaskRequest(spec.title(), spec.description(),
+                    spec.requiredSkill(), spec.priority(), null, parentTaskId, List.of());
+            childIds.add(create(companyId, req, createdBy).task().getId());
+        }
+        row.setChildTaskIds(childIds);
+        decompositions.save(row);
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("planArtifactId", planArtifactId.toString());
+        ArrayNode childArray = payload.putArray("childTaskIds");
+        childIds.forEach(id -> childArray.add(id.toString()));
+        recorder.record(parent, "decomposed", createdBy, payload);
+
+        return new DecompositionResult(childIds, true);
+    }
+
+    /**
+     * Task Flow graph (04 §Tasks: GET /tasks/{id}/flow) — resolves {@code taskId}'s
+     * root ancestor, then returns every task reachable from that root (parent/child
+     * edges only; cross-tree blockers are a separate, not-yet-built concept per 15 §3).
+     */
+    @Transactional(readOnly = true)
+    public FlowGraph flow(UUID companyId, UUID taskId) {
+        Task anchor = tasks.findByIdAndCompanyId(taskId, companyId)
+                .orElseThrow(() -> NotFoundException.of("Task", taskId));
+
+        Task root = anchor;
+        while (root.getParentTaskId() != null) {
+            root = tasks.findByIdAndCompanyId(root.getParentTaskId(), companyId)
+                    .orElseThrow(() -> new IllegalStateException("Task chain references a missing parent"));
+        }
+
+        List<Task> chain = tasks.findDescendants(companyId, root.getId());
+        List<FlowNode> nodes = chain.stream()
+                .map(t -> new FlowNode(t.getId(), t.getTitle(), t.getStatus(), resolveAgentName(companyId, t)))
+                .toList();
+        List<FlowEdge> edges = chain.stream()
+                .filter(t -> t.getParentTaskId() != null)
+                .map(t -> new FlowEdge(t.getParentTaskId(), t.getId()))
+                .toList();
+        return new FlowGraph(nodes, edges);
+    }
+
+    private String resolveAgentName(UUID companyId, Task task) {
+        if (task.getAssignedAgentId() == null) {
+            return null;
+        }
+        return agentDirectory.findById(companyId, task.getAssignedAgentId())
+                .map(app.atrium.registry.domain.Agent::getName)
+                .orElse(null);
     }
 
     /**

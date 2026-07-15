@@ -31,7 +31,7 @@ Base URL: `/api/v1`. JSON everywhere. Errors: RFC-7807 `application/problem+json
 | POST | `/tasks/{id}/approve` | human/supervisor; blocked if open children/subtasks |
 | POST | `/tasks/{id}/reject` | `{feedback}` → back to in_progress |
 | GET | `/tasks/{id}/events` | full audit trail |
-| GET | `/tasks/{id}/flow` | parent/children graph for the Task Flow view |
+| GET | `/tasks/{id}/flow` | parent/children graph for the Task Flow view — `{id}` may be ANY task in the chain: resolves the root ancestor first, then returns `{nodes:[{taskId,title,status,agent}], edges:[{from,to}]}` for every task reachable from that root (M2.2) |
 | GET | `/companies/{id}/escalations` | all flagged/pending_review, newest first |
 
 ## Accountability

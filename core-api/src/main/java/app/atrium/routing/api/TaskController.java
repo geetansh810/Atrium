@@ -9,6 +9,7 @@ import app.atrium.routing.api.TaskDtos.RejectRequest;
 import app.atrium.routing.api.TaskDtos.SubtaskResponse;
 import app.atrium.routing.api.TaskDtos.TaskDetailResponse;
 import app.atrium.routing.api.TaskDtos.TaskEventResponse;
+import app.atrium.routing.api.TaskDtos.TaskFlowResponse;
 import app.atrium.routing.api.TaskDtos.TaskListQuery;
 import app.atrium.routing.api.TaskDtos.TaskResponse;
 import jakarta.validation.Valid;
@@ -70,6 +71,11 @@ public class TaskController {
     @PostMapping("/tasks/{id}/reject")
     public TaskResponse reject(@PathVariable UUID id, @Valid @RequestBody RejectRequest request) {
         return TaskResponse.from(taskService.reject(TenantContext.requireCompanyId(), id, request.feedback()));
+    }
+
+    @GetMapping("/tasks/{id}/flow")
+    public TaskFlowResponse flow(@PathVariable UUID id) {
+        return TaskFlowResponse.from(taskService.flow(TenantContext.requireCompanyId(), id));
     }
 
     @GetMapping("/tasks/{id}/events")

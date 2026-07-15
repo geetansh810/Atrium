@@ -94,6 +94,30 @@ public final class TaskDtos {
         }
     }
 
+    /** GET /tasks/{id}/flow (04 §Tasks) — the parent/children graph for the Task Flow view. */
+    public record TaskFlowResponse(List<FlowNodeResponse> nodes, List<FlowEdgeResponse> edges) {
+
+        public record FlowNodeResponse(UUID taskId, String title, String status, String agent) {
+
+            public static FlowNodeResponse from(app.atrium.routing.TaskService.FlowNode node) {
+                return new FlowNodeResponse(node.taskId(), node.title(), node.status(), node.agent());
+            }
+        }
+
+        public record FlowEdgeResponse(UUID from, UUID to) {
+
+            public static FlowEdgeResponse from(app.atrium.routing.TaskService.FlowEdge edge) {
+                return new FlowEdgeResponse(edge.from(), edge.to());
+            }
+        }
+
+        public static TaskFlowResponse from(app.atrium.routing.TaskService.FlowGraph graph) {
+            return new TaskFlowResponse(
+                    graph.nodes().stream().map(FlowNodeResponse::from).toList(),
+                    graph.edges().stream().map(FlowEdgeResponse::from).toList());
+        }
+    }
+
     public record TaskEventResponse(
             UUID id,
             UUID taskId,

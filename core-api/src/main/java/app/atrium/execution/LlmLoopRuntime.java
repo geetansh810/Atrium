@@ -7,6 +7,8 @@ import app.atrium.execution.spi.LlmException;
 import app.atrium.execution.spi.LlmProvider;
 import app.atrium.execution.spi.LlmRequest;
 import app.atrium.execution.spi.LlmResult;
+import app.atrium.execution.spi.LlmToolCall;
+import app.atrium.execution.spi.LlmToolDef;
 import app.atrium.registry.AgentDirectory;
 import app.atrium.registry.RoleDefinitionLookup;
 import app.atrium.registry.domain.Agent;
@@ -45,10 +47,20 @@ import org.springframework.transaction.support.TransactionTemplate;
  * skill-matched work. Replaces the M0.2 {@code LlmLoopRuntimeDescriptor}
  * placeholder now that there's a real loop to run.
  *
- * <p>Deliberately deferred to future tooling milestones: no tool-calling loop
- * (empty tools list — nothing here can hallucinate a tool_use), no periodic
- * lease renewal for long calls (single blocking completion per attempt).
- * Context assembly landed at M-CTX1: {@link app.atrium.agentmind.ContextAssembler}.
+ * <p>M2.2 added the first tool: a role definition whose {@code allowed_tools}
+ * lists {@link ChildTaskTool#NAME} may respond with that tool call instead of
+ * text, fanning its own completion out into child tasks (via {@link
+ * app.atrium.routing.TaskService#completeWithDecomposition}). This is a
+ * single-shot tool use, not a multi-turn loop — a real back-and-forth would
+ * need the assistant's tool_use content block replayed verbatim into the next
+ * request's history (Anthropic's protocol requires it precede the matching
+ * tool_result), which {@link app.atrium.execution.spi.LlmMessage}'s
+ * plain-string content can't carry; deferred until a real multi-turn use case
+ * needs it. Every other role still gets an empty tools list, unchanged.
+ *
+ * <p>Deliberately deferred to future tooling milestones: no periodic lease
+ * renewal for long calls (single blocking completion per attempt). Context
+ * assembly landed at M-CTX1: {@link app.atrium.agentmind.ContextAssembler}.
  */
 @Component
 public class LlmLoopRuntime implements AgentRuntime {
@@ -239,24 +251,67 @@ public class LlmLoopRuntime implements AgentRuntime {
             // along into this attempt's prompt.
             String feedback = taskService.latestRejectionFeedback(companyId, task.getId()).orElse(null);
             AssembledPrompt prompt = PromptAssembler.build(roleDef, task, feedback, bundle);
+            List<LlmToolDef> tools = allowsTool(roleDef.getAllowedTools(), ChildTaskTool.NAME)
+                    ? List.of(ChildTaskTool.DEF) : List.of();
             LlmRequest request = new LlmRequest(agent.getModelProvider(), agent.getModelName(),
-                    prompt.systemPrompt(), prompt.messages(), List.of(), DEFAULT_MAX_OUTPUT_TOKENS,
+                    prompt.systemPrompt(), prompt.messages(), tools, DEFAULT_MAX_OUTPUT_TOKENS,
                     null, null);
             LlmResult result = llmClient.complete(request);
 
-            // Steps 5–6/7: usage + artifact + pending_review, ONE transaction.
+            Optional<LlmToolCall> decomposeCall = result.toolCalls().stream()
+                    .filter(call -> ChildTaskTool.NAME.equals(call.name()))
+                    .findFirst();
+
+            // Steps 5–6/7: usage + artifact (+ decomposition fan-out, if called) + pending_review,
+            // ONE transaction — a crash between usage and completion never records spend without
+            // the corresponding result, same invariant as the non-tool path.
             long costMicroUsd = costCalculator.costMicroUsd(agent.getModelProvider(),
                     agent.getModelName(), result.tokensIn(), result.tokensOut());
             txTemplate.executeWithoutResult(status -> {
                 usageRecorder.record(companyId, agentId, task.getId(), task.getAttempt(),
                         agent.getModelProvider(), agent.getModelName(),
                         result.tokensIn(), result.tokensOut(), costMicroUsd);
-                taskService.complete(companyId, task.getId(), agentId, "text", result.content());
+                if (decomposeCall.isPresent()) {
+                    JsonNode arguments = decomposeCall.get().arguments();
+                    String artifactContent = result.content() != null && !result.content().isBlank()
+                            ? result.content()
+                            : arguments.path("summary").asText("Decomposed into child tasks.");
+                    taskService.completeWithDecomposition(companyId, task.getId(), agentId,
+                            artifactContent, parseChildSpecs(arguments));
+                } else {
+                    taskService.complete(companyId, task.getId(), agentId, "text", result.content());
+                }
             });
         } catch (LlmException e) {
             // Failure path: flag, never crash the loop (05 §execution, 12 §9).
             taskService.flag(companyId, task.getId(), agentId, FlagReasons.forKind(e.kind()));
         }
+    }
+
+    /** {@code allowedTools} is a JSON array of tool-name strings (roles are data — no role-key branching). */
+    private static boolean allowsTool(JsonNode allowedTools, String toolName) {
+        if (allowedTools == null || !allowedTools.isArray()) {
+            return false;
+        }
+        for (JsonNode entry : allowedTools) {
+            if (toolName.equals(entry.asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** {@link ChildTaskTool}'s {@code children} argument → routing's plain spec records. */
+    private static List<app.atrium.routing.TaskService.ChildTaskSpec> parseChildSpecs(JsonNode arguments) {
+        List<app.atrium.routing.TaskService.ChildTaskSpec> specs = new java.util.ArrayList<>();
+        for (JsonNode child : arguments.path("children")) {
+            specs.add(new app.atrium.routing.TaskService.ChildTaskSpec(
+                    child.path("title").asText(),
+                    child.hasNonNull("description") ? child.get("description").asText() : null,
+                    child.path("requiredSkill").asText(),
+                    child.hasNonNull("priority") ? child.get("priority").asInt() : null));
+        }
+        return specs;
     }
 
     /** {pollSeconds?, maxToolTurns?, maxAttemptsPerTask?, contextBudgetTokens?} — 13 §3.2. */

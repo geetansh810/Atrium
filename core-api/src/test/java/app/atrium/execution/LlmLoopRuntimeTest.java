@@ -169,6 +169,29 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         return UUID.fromString(parse(response.getBody()).get("id").asText());
     }
 
+    private UUID createRoleWithTools(String companyId, String key, String title, List<String> allowedTools) {
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/role-definitions",
+                new HttpEntity<>(Map.of(
+                        "key", key, "title", title,
+                        "systemPrompt", "You are a " + title + ".",
+                        "allowedTools", allowedTools,
+                        "outputContract", "markdown"), headers(companyId)),
+                String.class);
+        assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
+        return UUID.fromString(parse(response.getBody()).get("id").asText());
+    }
+
+    private void stubAnthropicToolCall(String toolName, String argumentsJson) {
+        wiremock.stubFor(post(urlEqualTo("/v1/messages")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"id":"msg_%s","type":"message","role":"assistant","model":"claude-sonnet-5",
+                                 "content":[{"type":"tool_use","id":"toolu_1","name":"%s","input":%s}],
+                                 "stop_reason":"tool_use","stop_sequence":null,
+                                 "usage":{"input_tokens":55,"output_tokens":30}}
+                                """.formatted(UUID.randomUUID(), toolName, argumentsJson))));
+    }
+
     private UUID ingestKnowledgeDoc(String companyId, String title, String content) {
         ResponseEntity<String> response = rest.postForEntity("/api/v1/companies/" + companyId + "/knowledge",
                 new HttpEntity<>(Map.of("title", title, "content", content), headers(companyId)), String.class);
@@ -452,5 +475,67 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("## Reference material"))
                 .withRequestBody(containing("Our brand voice is friendly and concise.")));
+    }
+
+    // ── M2.2 Done-when: a PM-role tool call spawns coder+designer children ──
+
+    @Test
+    void pmRoleWithAllowedToolDecomposesTaskViaLlmToolCall() {
+        wiremock.resetRequests();
+        String company = createCompany("m22-decompose");
+        UUID pmRoleId = createRoleWithTools(company, "product", "Product Manager",
+                List.of("create_child_tasks"));
+        String pmAgentId = hireAgentWithCustomRole(company, pmRoleId, "product");
+        hireAgentAndStopAutoLoop(company, "coding");
+        // a designer isn't needed to run — only to exist on the roster so the child's
+        // requiredSkill validation (agentDirectory.findBySkill) passes (05 §routing).
+        rest.postForEntity("/api/v1/companies/" + company + "/agents",
+                new HttpEntity<>(Map.of(
+                        "name", "DesignerAgent", "roleTemplateKey", "coder", "roleTitle", "Designer",
+                        "skillTags", List.of("design"),
+                        "modelProvider", "anthropic", "modelName", "claude-sonnet-5"),
+                        headers(company)), String.class);
+
+        String parentTaskId = createTask(company, "Ship a Diwali gift box feature", "product");
+        stubAnthropicToolCall("create_child_tasks", """
+                {"summary":"Splitting into coding and design work.",
+                 "children":[
+                   {"title":"Build the checkout flow","requiredSkill":"coding","priority":2},
+                   {"title":"Design the packaging","requiredSkill":"design","priority":2}
+                 ]}
+                """);
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(pmAgentId));
+        awaitStatus(company, parentTaskId, "pending_review", 10);
+
+        // parent completed with the tool's summary as its own artifact
+        JsonNode parentDetail = parse(rest.exchange("/api/v1/tasks/" + parentTaskId, HttpMethod.GET,
+                new HttpEntity<>(headers(company)), String.class).getBody());
+        assertThat(parentDetail.get("latestArtifact").get("content").asText())
+                .contains("Splitting into coding and design work.");
+
+        // two real child tasks exist, correctly parented and skill-tagged
+        List<Map<String, Object>> children = jdbc.queryForList(
+                "SELECT title, required_skill FROM tasks WHERE parent_task_id = ?::uuid "
+                        + "ORDER BY required_skill", parentTaskId);
+        assertThat(children).hasSize(2);
+        assertThat(children.get(0).get("required_skill")).isEqualTo("coding");
+        assertThat(children.get(1).get("required_skill")).isEqualTo("design");
+
+        // exact-once fingerprint row recorded, keyed to the parent's own completion artifact
+        Integer decompositionRows = jdbc.queryForObject(
+                "SELECT count(*) FROM task_decompositions WHERE parent_task_id = ?::uuid",
+                Integer.class, parentTaskId);
+        assertThat(decompositionRows).isEqualTo(1);
+
+        // parent is blocked from approval while its children are still open
+        ResponseEntity<String> approve = rest.postForEntity("/api/v1/tasks/" + parentTaskId + "/approve",
+                new HttpEntity<>(headers(company)), String.class);
+        assertThat(approve.getStatusCode().value()).isEqualTo(409);
+
+        // an agent WITHOUT the tool in its role never gets it offered — sanity check
+        // that this is a data-driven gate, not something every agent can trigger
+        wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
+                .withRequestBody(containing("create_child_tasks")));
     }
 }
