@@ -149,7 +149,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M-KN1 | Knowledge ingestion (NEW, doc 17) | depth | ✅ |
 | M-AR1 | Runtime extensibility proof (NEW, doc 17) | depth | ☐ |
 | M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ☐ |
-| M2.1 | PM & Designer roles | 2 | ☐ |
+| M2.1 | PM & Designer roles | 2 | ✅ |
 | M2.2 | Task dependencies & flow | 2 | ☐ |
 | M2.3 | Budget ledger + analytics | 2 | ☐ |
 | M2.4a | SkyOffice vendor & boot | 2 | ☐ |
