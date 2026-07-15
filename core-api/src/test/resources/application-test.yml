@@ -21,3 +21,7 @@ atrium:
     # pollOnce() directly (EventCursorWorkerTest's own precedent) rather than
     # overriding this back down.
     poll-interval-ms: 3600000
+  stats-rollup:
+    # Same reasoning as relay/learning above (shared Testcontainers context).
+    # app.atrium.accountability.StatsRollupTest calls pollOnce() directly.
+    poll-interval-ms: 3600000

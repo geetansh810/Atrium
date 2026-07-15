@@ -170,15 +170,28 @@ CREATE TABLE office_layout (        -- status→location map + desk assignments 
 CREATE TABLE agent_stats_daily (    -- analytics rollup (nightly + on-approve)
   company_id UUID NOT NULL,
   agent_id UUID NOT NULL REFERENCES agents(id),
+  skill TEXT NOT NULL,               -- M2.3: task.required_skill at completion time —
+                                      -- added to the PK so "Top Skills Used" is a plain
+                                      -- GROUP BY on this table, no cross-module read of tasks
   day DATE NOT NULL,
   tasks_completed INT NOT NULL DEFAULT 0,
   tasks_approved INT NOT NULL DEFAULT 0,
   tasks_rejected INT NOT NULL DEFAULT 0,
-  focus_minutes INT NOT NULL DEFAULT 0,
+  focus_minutes INT NOT NULL DEFAULT 0,   -- always 0 until a presence source exists (M2.4c+)
   tokens_spent BIGINT NOT NULL DEFAULT 0,
-  PRIMARY KEY (company_id, agent_id, day)
+  cost_micro_usd BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (company_id, agent_id, skill, day)
 );
--- success_rate = approved / (approved+rejected); Focus Time = Σ focus_minutes.
+CREATE INDEX idx_agent_stats_daily_company_day ON agent_stats_daily(company_id, day);
+-- success_rate = approved / (approved+rejected); Focus Time = Σ focus_minutes (unpopulated for now).
+-- Written two ways (M2.3, 17 §M2.3): StatsRollupWorker (durable outbox consumer on
+-- task.completed|approved|rejected) increments counts+tokens+cost incrementally as
+-- events arrive; a nightly StatsRollupReconciliationJob fully recomputes the trailing
+-- 2 days from raw outbox_events (+ usage_records for cost) as a drift-correcting
+-- safety net, same spirit as OutboxRetentionJob/MemoryTtlArchiver's nightly jobs.
+-- Per-task cost (the Budget Ledger's "cost per task" table) is NOT derived from this
+-- rollup — it queries usage_records directly (grouped by task_id), since a per-task
+-- number can't come from a table keyed one row per (agent, skill, day).
 ```
 
 ## V3 — Multi-tenant & billing (Phase 3)

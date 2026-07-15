@@ -8,10 +8,15 @@ Additive companion to `03-data-model.md` — V1 SQL there is untouched and still
 |---|---|---|
 | `V1__core.sql` | 03 §V1 verbatim + §1 ALTERs below (same file — V1 has never been applied) | M0.1 |
 | `V2__agent_platform.sql` | §§2–4 below: outbox, orchestration, model catalog, skills, memories, knowledge. Requires `CREATE EXTENSION IF NOT EXISTS vector;` → compose image becomes `pgvector/pgvector:pg16` | M0.1 |
-| `V3__communication_office.sql` | 03 §V2 (channels, messages, announcements, office_layout, agent_stats_daily) | M2.x |
-| `V4__multitenant_billing.sql` | 03 §V3 (RLS, billing_accounts) | M3.x |
+| `V2_1__seed.sql` | seed global role templates + model catalog | M0.2 |
+| `V3__budget_alerted_at.sql` | `budgets.alerted_at` addendum | M0.7 |
+| `V4__google_model_catalog.sql` | Google/Gemini model_catalog rows | session 6i |
+| `V5__seed_platform_skills.sql` | seeded platform skills + role attach | M-SK1 |
+| `V6__agent_stats_daily.sql` | 03 §V2's `agent_stats_daily` only (the `skill` column M2.3 added) — split out of the old "V3__communication_office.sql" bundle since channels/messages/announcements/office_layout aren't needed until M2.4c/M2.5 | M2.3 |
+| `V7__communication_office.sql` (future) | 03 §V2's remaining tables: channels, messages, announcements, office_layout | M2.4c/M2.5 |
+| `V8__multitenant_billing.sql` (future) | 03 §V3 (RLS, billing_accounts) | M3.x |
 
-Rule unchanged: never edit an applied migration; gaps/renumbering are free only until M0.1 runs.
+This table is reassigned by actual application order each session (real Flyway files always win over what's written here — see `core-api/src/main/resources/db/migration/`). Rule unchanged: never edit an applied migration.
 
 ## 1. ALTERs folded into V1 (additive columns on 03 tables)
 

@@ -2,16 +2,66 @@ import { useState } from "react";
 import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
-import { formatTokens } from "../../shared/format";
+import { DEV_COMPANY_ID, USE_MOCKS } from "../../shared/config";
+import { formatCost, formatTokens } from "../../shared/format";
 import { costPerTask } from "../../shared/mockData";
+import { currentPeriod, useCostPerTask } from "../../shared/queries";
 import { orgTree } from "../../shared/selectors";
 import type { OrgNode } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
+import type { Task } from "../../shared/types";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { EmptyState } from "../../ui/EmptyState";
 import "./OrganizationPage.css";
+
+interface CostPerTaskSectionProps {
+  period: string;
+  taskById: Map<string, Task>;
+}
+
+// Mock/API split follows SettingsPage's precedent (MF-6) — the mock fixture
+// is a fixed, un-period-scoped sample; the real query (M2.3) genuinely varies
+// by the ledger's period selector.
+function MockCostPerTaskSection({ taskById }: CostPerTaskSectionProps) {
+  return (
+    <>
+      {costPerTask.map(({ taskId, tokens, costUsd }) => (
+        <div className="cost-row" key={taskId}>
+          <span>{taskById.get(taskId)?.title ?? taskId}</span>
+          <span className="mono">
+            {formatTokens(tokens)} tok · {formatCost(costUsd)}
+          </span>
+        </div>
+      ))}
+      <p className="about-text" style={{ marginTop: 6, fontSize: 11.5 }}>
+        Mock fixtures don't vary by period — this is always the same sample.
+      </p>
+    </>
+  );
+}
+
+function ApiCostPerTaskSection({ period, taskById }: CostPerTaskSectionProps) {
+  const query = useCostPerTask(DEV_COMPANY_ID, period);
+  if (query.isLoading) return <p className="about-text">Loading…</p>;
+  const rows = query.data ?? [];
+  if (rows.length === 0) return <EmptyState title={`No spend recorded for ${period}.`} />;
+  return (
+    <>
+      {rows.map(({ taskId, tokens, costUsd }) => (
+        <div className="cost-row" key={taskId}>
+          <span>{taskById.get(taskId)?.title ?? taskId}</span>
+          <span className="mono">
+            {formatTokens(tokens)} tok · {formatCost(costUsd)}
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+const CostPerTaskSection = USE_MOCKS ? MockCostPerTaskSection : ApiCostPerTaskSection;
 
 const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
 
@@ -86,6 +136,7 @@ export function OrganizationPage() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<string | null>(null);
   const [capDraft, setCapDraft] = useState("");
+  const [ledgerPeriod, setLedgerPeriod] = useState(currentPeriod());
 
   const toggle = (id: string) => {
     setCollapsed((prev) => {
@@ -209,15 +260,17 @@ export function OrganizationPage() {
             Over-cap agents are blocked at claim time and flagged — never silently. Click a cap to adjust it.
           </p>
 
-          <div className="section-title">Cost per task (top spenders)</div>
-          {costPerTask.map(({ taskId, tokens, costUsd }) => (
-            <div className="cost-row" key={taskId}>
-              <span>{taskById.get(taskId)?.title ?? taskId}</span>
-              <span className="mono">
-                {formatTokens(tokens)} tok · ${costUsd.toFixed(2)}
-              </span>
-            </div>
-          ))}
+          <div className="ledger-cost-head">
+            <span className="section-title">Cost per task (top spenders)</span>
+            <input
+              type="month"
+              className="ledger-period-input"
+              value={ledgerPeriod}
+              onChange={(e) => setLedgerPeriod(e.target.value)}
+              aria-label="Ledger period"
+            />
+          </div>
+          <CostPerTaskSection period={ledgerPeriod} taskById={taskById} />
         </div>
       ),
     },

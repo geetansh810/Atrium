@@ -1,8 +1,15 @@
 import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
-import { USE_MOCKS } from "../../shared/config";
-import { tasks7d, topSkills } from "../../shared/mockData";
+import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import {
+  analyticsSummary as mockSummary,
+  agentPerformance as mockAgentPerformance,
+  tasks7d as mockTasks7d,
+  topSkills as mockTopSkills,
+} from "../../shared/mockData";
+import { useAgentPerformance, useAnalyticsSummary, useTasks7d, useTopSkills } from "../../shared/queries";
 import { useApp } from "../../shared/store";
+import type { AgentPerformance, DayCount, SkillShare } from "../../shared/types";
 import { Card } from "../../ui/Card";
 import { StatCard } from "../../ui/StatCard";
 import { StatusPill } from "../../ui/StatusPill";
@@ -20,15 +27,55 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+interface AnalyticsData {
+  avgSuccessRate: number;
+  focusMinutesToday: number | null; // null = not tracked (no presence source yet)
+  tasks7d: DayCount[];
+  agentPerformance: AgentPerformance[];
+  topSkills: SkillShare[];
+  isSample: boolean;
+}
+
+// Mock/API split follows SettingsPage's precedent (MF-6): the whole widget
+// block is picked once via USE_MOCKS at module scope, so each variant's hook
+// calls stay unconditional and consistent — never branched inside one component.
+function useMockAnalytics(): AnalyticsData {
+  return {
+    avgSuccessRate: mockSummary.avgSuccessRate,
+    focusMinutesToday: mockSummary.focusMinutesToday,
+    tasks7d: mockTasks7d,
+    agentPerformance: mockAgentPerformance,
+    topSkills: mockTopSkills,
+    isSample: true,
+  };
+}
+
+function useRealAnalytics(): AnalyticsData {
+  const summaryQuery = useAnalyticsSummary(DEV_COMPANY_ID);
+  const tasks7dQuery = useTasks7d(DEV_COMPANY_ID);
+  const performanceQuery = useAgentPerformance(DEV_COMPANY_ID);
+  const topSkillsQuery = useTopSkills(DEV_COMPANY_ID);
+  return {
+    avgSuccessRate: summaryQuery.data?.successRateAllTime ?? 0,
+    focusMinutesToday: null,
+    tasks7d: tasks7dQuery.data ?? [],
+    agentPerformance: performanceQuery.data ?? [],
+    topSkills: topSkillsQuery.data ?? [],
+    isSample: false,
+  };
+}
+
+const useAnalyticsData = USE_MOCKS ? useMockAnalytics : useRealAnalytics;
+
 // Port of the classic Analytics panel (MF-5) + real-derived charts —
 // completion counts, per-agent budget burn, and status distribution all read
-// straight from state; the 7-day trend and top-skills share stay mock-backed
-// in both modes (no backend rollup exists yet, same posture as before MF-5),
-// flagged with a "Sample data" pill in API mode.
+// straight from state; agent performance/7-day trend/top-skills are now real
+// (M2.3) in API mode, still mock-backed in mock mode ("Sample data" pill).
 export function ReportsPage() {
   const { state } = useApp();
-  const maxDayCount = Math.max(1, ...tasks7d.map((d) => d.count));
+  const analytics = useAnalyticsData();
 
+  const maxDayCount = Math.max(1, ...analytics.tasks7d.map((d) => d.count));
   const completedCount = state.tasks.filter((t) => t.status === "approved").length;
 
   const statusCounts = new Map<string, number>();
@@ -44,6 +91,8 @@ export function ReportsPage() {
       Boolean(row.agent),
     );
 
+  const agentById = new Map(state.agents.map((a) => [a.id, a]));
+
   return (
     <div className="reports-page">
       <header className="reports-page-head">
@@ -55,7 +104,17 @@ export function ReportsPage() {
         <StatCard label="Total Agents" value={state.agents.length} />
         <StatCard label="Tasks Approved" value={completedCount} />
         <StatCard label="Tasks Open" value={state.tasks.length - completedCount} />
+        <StatCard label="Avg Success Rate" value={`${analytics.avgSuccessRate}%`} />
+        <StatCard
+          label="Focus Time (Today)"
+          value={analytics.focusMinutesToday !== null ? `${Math.round(analytics.focusMinutesToday / 60)}h` : "—"}
+        />
       </div>
+      {analytics.focusMinutesToday === null && (
+        <p className="about-text" style={{ margin: "-8px 0 0", fontSize: 11.5 }}>
+          Focus Time isn't tracked yet — no presence source exists until the office realtime bridge ships (M2.4c).
+        </p>
+      )}
 
       <Card title="Task Status Distribution">
         <div className="reports-status-bars">
@@ -95,27 +154,60 @@ export function ReportsPage() {
 
       <Card
         title="Tasks Completed (7 Days)"
-        actions={!USE_MOCKS ? <StatusPill label="Sample data" tone="warning" /> : undefined}
+        actions={analytics.isSample ? <StatusPill label="Sample data" tone="warning" /> : undefined}
       >
-        <div className="bar-chart">
-          {tasks7d.map(({ day, count }) => (
-            <div className="bar-col" key={day} title={`${day}: ${count} tasks`}>
-              <span className="bar-value">{count}</span>
-              <span className="bar-fill" style={{ height: `${(count / maxDayCount) * 100}%` }} />
-              <span className="bar-label">{day}</span>
-            </div>
-          ))}
-        </div>
+        {analytics.tasks7d.length === 0 ? (
+          <EmptyState title="No completions in the last 7 days yet." />
+        ) : (
+          <div className="bar-chart">
+            {analytics.tasks7d.map(({ day, count }) => (
+              <div className="bar-col" key={day} title={`${day}: ${count} tasks`}>
+                <span className="bar-value">{count}</span>
+                <span className="bar-fill" style={{ height: `${(count / maxDayCount) * 100}%` }} />
+                <span className="bar-label">{day}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
-      <Card title="Top Skills Used" actions={!USE_MOCKS ? <StatusPill label="Sample data" tone="warning" /> : undefined}>
-        <div className="chip-row">
-          {topSkills.map(({ skill, sharePct }) => (
-            <span className="chip" key={skill}>
-              {skill} <strong>{sharePct}%</strong>
-            </span>
-          ))}
-        </div>
+      <Card
+        title="Agent Performance"
+        actions={analytics.isSample ? <StatusPill label="Sample data" tone="warning" /> : undefined}
+      >
+        {analytics.agentPerformance.length === 0 ? (
+          <EmptyState title="No completed tasks in the last 7 days yet." />
+        ) : (
+          analytics.agentPerformance.map((perf) => {
+            const agent = agentById.get(perf.agentId);
+            return (
+              <div className="perf-row" key={perf.agentId}>
+                <span className="perf-name">
+                  <Avatar name={agent?.name ?? perf.agentId} seed={perf.agentId} size={22} />
+                  {agent?.name ?? perf.agentId}
+                </span>
+                <span className="perf-bar">
+                  <ProgressBar value={perf.successRate} />
+                </span>
+                <span className="perf-pct">{perf.successRate}%</span>
+              </div>
+            );
+          })
+        )}
+      </Card>
+
+      <Card title="Top Skills Used" actions={analytics.isSample ? <StatusPill label="Sample data" tone="warning" /> : undefined}>
+        {analytics.topSkills.length === 0 ? (
+          <EmptyState title="No completed tasks yet." />
+        ) : (
+          <div className="chip-row">
+            {analytics.topSkills.map((s) => (
+              <span className="chip" key={s.skill}>
+                {s.skill} <strong>{s.sharePct}%</strong>
+              </span>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

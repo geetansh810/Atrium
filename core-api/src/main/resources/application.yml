@@ -58,6 +58,10 @@ atrium:
     model-tier: ${ATRIUM_LEARNING_MODEL_TIER:fast}  # 14 §5: extraction uses the agent's own provider, fast tier
     poll-interval-ms: 5000                          # LearningPipeline poll cadence (12 §3 durable consumer)
     batch-size: 5                                   # kept small: each event's LLM call runs inside the batch's shared tx
+  stats-rollup:
+    poll-interval-ms: 5000                          # StatsRollupWorker poll cadence (12 §3 durable consumer, M2.3)
+    batch-size: 50                                  # no LLM calls in this consumer, safe to batch larger than learning's
+    reconcile-cron: "0 15 3 * * *"                  # StatsRollupReconciliationJob: nightly at 3:15am (17 §M2.3)
 
 ---
 spring:

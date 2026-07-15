@@ -4,7 +4,19 @@
 // shapes via shared/adapters.ts so components never see a raw API response.
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import { adaptAgent, adaptArtifact, adaptBudget, adaptSubtask, adaptTaskBase, adaptTaskEvent } from "./adapters";
+import {
+  adaptAgent,
+  adaptAgentPerformance,
+  adaptAnalyticsSummary,
+  adaptArtifact,
+  adaptBudget,
+  adaptDayCount,
+  adaptSkillShare,
+  adaptSubtask,
+  adaptTaskBase,
+  adaptTaskCost,
+  adaptTaskEvent,
+} from "./adapters";
 import type { Task } from "./types";
 
 const POLL_MS = 4000;
@@ -45,6 +57,64 @@ export function useBudgets(companyId: string) {
     queryFn: () => api.listBudgets(companyId, currentPeriod()).then((list) => list.map(adaptBudget)),
     enabled: !!companyId,
     refetchInterval: POLL_MS,
+  });
+}
+
+// GET /companies/{id}/budget?period= for an explicit (possibly non-current)
+// period — the Budget Ledger period selector (M2.3, OrganizationPage's
+// Payroll tab). useBudgets above stays current-period-only for every other consumer.
+export function useBudgetsForPeriod(companyId: string, period: string) {
+  return useQuery({
+    queryKey: ["budgets", companyId, period],
+    queryFn: () => api.listBudgets(companyId, period).then((list) => list.map(adaptBudget)),
+    enabled: !!companyId && !!period,
+  });
+}
+
+// GET /companies/{id}/analytics/* (M2.3) — read-only, page-scoped, deliberately
+// NOT part of AppState/Action (same "net-new data outside the store" precedent
+// MF-5's shared/domains/*.ts and MF-6's useCompany/useModelCatalog set).
+export function useAnalyticsSummary(companyId: string) {
+  return useQuery({
+    queryKey: ["analytics-summary", companyId],
+    queryFn: () => api.analyticsSummary(companyId).then(adaptAnalyticsSummary),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useTasks7d(companyId: string) {
+  return useQuery({
+    queryKey: ["analytics-tasks-7d", companyId],
+    queryFn: () => api.analyticsTasks7d(companyId).then((list) => list.map(adaptDayCount)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useAgentPerformance(companyId: string, days = 7) {
+  return useQuery({
+    queryKey: ["analytics-agent-performance", companyId, days],
+    queryFn: () => api.analyticsAgentPerformance(companyId, days).then((list) => list.map(adaptAgentPerformance)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useTopSkills(companyId: string, days = 7) {
+  return useQuery({
+    queryKey: ["analytics-top-skills", companyId, days],
+    queryFn: () => api.analyticsTopSkills(companyId, days).then((list) => list.map(adaptSkillShare)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useCostPerTask(companyId: string, period: string) {
+  return useQuery({
+    queryKey: ["analytics-cost-per-task", companyId, period],
+    queryFn: () => api.analyticsCostPerTask(companyId, period).then((list) => list.map(adaptTaskCost)),
+    enabled: !!companyId && !!period,
   });
 }
 

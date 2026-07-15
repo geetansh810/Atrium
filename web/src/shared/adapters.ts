@@ -2,14 +2,33 @@
 // (shared/types.ts) so every dashboard component keeps reading the same
 // props whether the data came from mocks or the real API.
 import type {
+  AgentPerformanceResponse,
   AgentResponse,
+  AnalyticsSummaryResponse,
   ArtifactResponse,
   BudgetResponse,
+  DayCountResponse,
+  SkillShareResponse,
   SubtaskResponse,
+  TaskCostResponse,
   TaskEventResponse,
   TaskResponse,
 } from "./api";
-import type { Agent, AgentStatus, Artifact, Budget, Subtask, Task, TaskEvent, TaskStatus } from "./types";
+import type {
+  AgentPerformance,
+  AgentStatus,
+  Agent,
+  AnalyticsSummaryReal,
+  Artifact,
+  Budget,
+  DayCount,
+  SkillShare,
+  Subtask,
+  Task,
+  TaskCost,
+  TaskEvent,
+  TaskStatus,
+} from "./types";
 
 export function adaptAgent(dto: AgentResponse): Agent {
   return {
@@ -81,4 +100,41 @@ export function adaptBudget(dto: BudgetResponse): Budget {
     capTokens: dto.capTokens,
     spentTokens: dto.spentTokens,
   };
+}
+
+const MICRO_USD_PER_USD = 1_000_000;
+
+export function adaptAnalyticsSummary(dto: AnalyticsSummaryResponse): AnalyticsSummaryReal {
+  return {
+    tasksCompletedToday: dto.tasksCompletedToday,
+    tasksApprovedToday: dto.tasksApprovedToday,
+    tasksRejectedToday: dto.tasksRejectedToday,
+    tokensSpentToday: dto.tokensSpentToday,
+    costUsdToday: dto.costMicroUsdToday / MICRO_USD_PER_USD,
+    successRateAllTime: dto.successRateAllTime,
+  };
+}
+
+export function adaptDayCount(dto: DayCountResponse): DayCount {
+  return { day: dto.day, count: dto.count };
+}
+
+export function adaptAgentPerformance(dto: AgentPerformanceResponse): AgentPerformance {
+  return {
+    agentId: dto.agentId,
+    successRate: dto.successRate,
+    tasksCompleted: dto.tasksCompleted,
+    tasksApproved: dto.tasksApproved,
+    tasksRejected: dto.tasksRejected,
+    tokensSpent: dto.tokensSpent,
+    costUsd: dto.costMicroUsd / MICRO_USD_PER_USD,
+  };
+}
+
+export function adaptSkillShare(dto: SkillShareResponse): SkillShare {
+  return { skill: dto.skill, sharePct: dto.sharePct, tasksCompleted: dto.tasksCompleted };
+}
+
+export function adaptTaskCost(dto: TaskCostResponse): TaskCost {
+  return { taskId: dto.taskId, tokens: dto.tokens, costUsd: dto.costMicroUsd / MICRO_USD_PER_USD };
 }

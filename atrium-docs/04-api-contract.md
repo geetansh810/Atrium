@@ -40,10 +40,11 @@ Base URL: `/api/v1`. JSON everywhere. Errors: RFC-7807 `application/problem+json
 |---|---|---|
 | GET | `/companies/{id}/budget?period=YYYY-MM` | caps + spend, company & per-agent |
 | PUT | `/companies/{id}/budget` | `{agentId?, period, capTokens}` |
-| GET | `/companies/{id}/analytics/summary` | KPI cards |
-| GET | `/companies/{id}/analytics/tasks-7d` | bar-chart series |
-| GET | `/companies/{id}/analytics/agent-performance` | leaderboard |
-| GET | `/companies/{id}/analytics/top-skills` | skill-share chips |
+| GET | `/companies/{id}/analytics/summary` | KPI cards: `{tasksCompletedToday, tasksApprovedToday, tasksRejectedToday, tokensSpentToday, costMicroUsdToday, successRateAllTime}` |
+| GET | `/companies/{id}/analytics/tasks-7d` | bar-chart series, `[{day:"YYYY-MM-DD", count}]`, oldest first |
+| GET | `/companies/{id}/analytics/agent-performance?days=` (default 7) | leaderboard, `[{agentId, tasksCompleted, tasksApproved, tasksRejected, successRate, tokensSpent, costMicroUsd}]` desc by tasksCompleted — bare `agentId`, frontend resolves name from its own roster fetch (same join pattern as `/budget`'s bare `agentId`) |
+| GET | `/companies/{id}/analytics/top-skills?days=` (default 7) | skill-share chips, `[{skill, tasksCompleted, sharePct}]` desc by tasksCompleted |
+| GET | `/companies/{id}/analytics/cost-per-task?period=YYYY-MM&limit=` (default 10) | **M2.3 addition, not in the original 17 sketch** — real per-task spend for the Budget Ledger's cost table, `[{taskId, tokens, costMicroUsd}]` desc by cost. Queries `usage_records` directly (grouped by `task_id`), not `agent_stats_daily` — a per-task number can't come from a table keyed one row per (agent, skill, day) |
 
 ## Communication
 

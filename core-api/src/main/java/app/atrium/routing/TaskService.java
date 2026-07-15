@@ -259,6 +259,8 @@ public class TaskService {
         payload.put("artifactId", artifact.getId().toString());
         payload.put("artifactKind", artifactKind);
         payload.put("agentId", agentId.toString());
+        payload.put("requiredSkill", task.getRequiredSkill());
+        payload.put("attempt", task.getAttempt());
         recorder.record(task, "completed", "agent:" + agentId, payload);
         return task;
     }
@@ -403,6 +405,7 @@ public class TaskService {
         if (task.getAssignedAgentId() != null) {
             payload.put("agentId", task.getAssignedAgentId().toString());
         }
+        payload.put("requiredSkill", task.getRequiredSkill());
         recorder.record(task, "approved", actor(), payload);
         return task;
     }
@@ -428,6 +431,7 @@ public class TaskService {
         if (previousAgentId != null) {
             rejectedPayload.put("agentId", previousAgentId.toString());
         }
+        rejectedPayload.put("requiredSkill", task.getRequiredSkill());
         recorder.record(task, "rejected", actor(), rejectedPayload);
 
         TaskStateGuard.transition(task, "queued");

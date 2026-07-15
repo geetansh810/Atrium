@@ -184,3 +184,25 @@
 .cost-row:last-child {
   border-bottom: none;
 }
+
+.ledger-cost-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ledger-period-input {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+.ledger-period-input:focus {
+  border-color: var(--accent);
+}

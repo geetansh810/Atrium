@@ -151,7 +151,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ☐ |
 | M2.1 | PM & Designer roles | 2 | ✅ |
 | M2.2 | Task dependencies & flow | 2 | ✅ |
-| M2.3 | Budget ledger + analytics | 2 | ☐ |
+| M2.3 | Budget ledger + analytics | 2 | ✅ |
 | M2.4a | SkyOffice vendor & boot | 2 | ☐ |
 | M2.4b | Strip & identity wiring | 2 | ☐ |
 | M2.4c | Agent avatars, real state | 2 | ☐ |

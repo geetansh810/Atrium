@@ -143,11 +143,31 @@ export interface DayCount {
 export interface AgentPerformance {
   agentId: string;
   successRate: number;
+  // Real fields since M2.3 (agent_stats_daily) — optional so the pre-M2.3 mock
+  // fixture (successRate only) still type-checks.
+  tasksCompleted?: number;
+  tasksApproved?: number;
+  tasksRejected?: number;
+  tokensSpent?: number;
+  costUsd?: number;
 }
 
 export interface SkillShare {
   skill: string;
   sharePct: number;
+  tasksCompleted?: number; // real since M2.3
+}
+
+// GET /companies/{id}/analytics/summary (M2.3) — real KPI totals, distinct
+// from the mock-only AnalyticsSummary above (which carries invented trend
+// deltas no real endpoint computes).
+export interface AnalyticsSummaryReal {
+  tasksCompletedToday: number;
+  tasksApprovedToday: number;
+  tasksRejectedToday: number;
+  tokensSpentToday: number;
+  costUsdToday: number;
+  successRateAllTime: number;
 }
 
 export interface Budget {

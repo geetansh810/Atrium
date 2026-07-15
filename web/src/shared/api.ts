@@ -203,6 +203,43 @@ export interface BudgetResponse {
   alertedAt: string | null;
 }
 
+// GET /companies/{id}/analytics/* (04 §Accountability, M2.3)
+export interface AnalyticsSummaryResponse {
+  tasksCompletedToday: number;
+  tasksApprovedToday: number;
+  tasksRejectedToday: number;
+  tokensSpentToday: number;
+  costMicroUsdToday: number;
+  successRateAllTime: number;
+}
+
+export interface DayCountResponse {
+  day: string;
+  count: number;
+}
+
+export interface AgentPerformanceResponse {
+  agentId: string;
+  tasksCompleted: number;
+  tasksApproved: number;
+  tasksRejected: number;
+  successRate: number;
+  tokensSpent: number;
+  costMicroUsd: number;
+}
+
+export interface SkillShareResponse {
+  skill: string;
+  tasksCompleted: number;
+  sharePct: number;
+}
+
+export interface TaskCostResponse {
+  taskId: string;
+  tokens: number;
+  costMicroUsd: number;
+}
+
 export const api = {
   createCompany: (body: { name: string; slug: string }) =>
     request<CompanyResponse>("/companies", { method: "POST", body, companyId: "" }),
@@ -241,4 +278,27 @@ export const api = {
     ),
   upsertBudget: (companyId: string, body: { agentId: string | null; period: string; capTokens: number }) =>
     request<BudgetResponse>(`/companies/${companyId}/budget`, { method: "PUT", body, companyId }),
+
+  analyticsSummary: (companyId: string) =>
+    request<AnalyticsSummaryResponse>(`/companies/${companyId}/analytics/summary`, { companyId }),
+  analyticsTasks7d: (companyId: string) =>
+    request<DayCountResponse[]>(`/companies/${companyId}/analytics/tasks-7d`, { companyId }),
+  analyticsAgentPerformance: (companyId: string, days?: number) =>
+    request<AgentPerformanceResponse[]>(
+      `/companies/${companyId}/analytics/agent-performance${days ? `?days=${days}` : ""}`,
+      { companyId },
+    ),
+  analyticsTopSkills: (companyId: string, days?: number) =>
+    request<SkillShareResponse[]>(
+      `/companies/${companyId}/analytics/top-skills${days ? `?days=${days}` : ""}`,
+      { companyId },
+    ),
+  analyticsCostPerTask: (companyId: string, period?: string, limit?: number) =>
+    request<TaskCostResponse[]>(
+      `/companies/${companyId}/analytics/cost-per-task?${new URLSearchParams({
+        ...(period ? { period } : {}),
+        ...(limit ? { limit: String(limit) } : {}),
+      }).toString()}`,
+      { companyId },
+    ),
 };

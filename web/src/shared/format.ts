@@ -30,6 +30,15 @@ export function formatTokens(tokens: number): string {
   return String(tokens);
 }
 
+// Real per-task costs at demo scale are often sub-cent (M2.3) — plain
+// toFixed(2) would silently round every one of them to "$0.00", making a
+// per-task cost table useless. Use more precision below a cent.
+export function formatCost(usd: number): string {
+  if (usd === 0) return "$0.00";
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
 export function formatElapsed(sinceIso: string, now: Date): string {
   const totalSec = Math.max(0, Math.floor((now.getTime() - new Date(sinceIso).getTime()) / 1000));
   const h = Math.floor(totalSec / 3600);
