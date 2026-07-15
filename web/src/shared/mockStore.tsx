@@ -58,8 +58,6 @@ function reducer(state: AppState, action: Action): AppState {
           activeChannelId: action.channelId ?? state.ui.activeChannelId,
         },
       };
-    case "setRoom":
-      return { ...state, ui: { ...state.ui, activeRoom: action.room } };
     case "setChannel":
       return { ...state, ui: { ...state.ui, activeChannelId: action.channelId } };
 
@@ -216,7 +214,6 @@ function reducer(state: AppState, action: Action): AppState {
         managerAgentId: action.input.managerAgentId,
         status: "online",
         statusSince: nowIso(),
-        locationKey: "lobby",
         currentActivity: "Just joined",
         about: action.input.about,
         joinedAt: nowIso(),
@@ -289,7 +286,7 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         agents: state.agents.map((a) =>
           a.id === agent.id
-            ? { ...a, status: "online", statusSince: nowIso(), locationKey: "desk_1", currentActivity: "Back at desk" }
+            ? { ...a, status: "online", statusSince: nowIso(), currentActivity: "Back at desk" }
             : a,
         ),
         activity: withEvent(state.activity, agent.id, "Left the Focus Pod"),

@@ -18,7 +18,6 @@ import type {
 export interface UiState {
   chatOpen: boolean;
   activeChannelId: string;
-  activeRoom: string;
   botNotice: string | null;
   inviteOpen: boolean;
   newTaskOpen: boolean;
@@ -27,7 +26,6 @@ export interface UiState {
 export const initialUiState: UiState = {
   chatOpen: false,
   activeChannelId: "ch-general",
-  activeRoom: "Lobby",
   botNotice: null,
   inviteOpen: false,
   newTaskOpen: false,
@@ -70,7 +68,6 @@ export interface InviteAgentInput {
 
 export type Action =
   | { type: "setChatOpen"; open: boolean; channelId?: string }
-  | { type: "setRoom"; room: string }
   | { type: "setChannel"; channelId: string }
   | { type: "sendMessage"; channelId: string; sender: string; text: string }
   | { type: "createTask"; input: NewTaskInput }

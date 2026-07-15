@@ -1,4 +1,5 @@
 # 03 — Data Model (Postgres, Flyway-managed)
+> **Office track removed 2026-07-15** — the SkyOffice virtual office (M2.4a–c, office-realtime, office_layout, /office-state) was retired and replaced by the live Team view (`/team`) in the dashboard; see `07-milestones.md`. Office references below are historical.
 
 > **Rev C (2026-07-12):** `15-data-model-delta.md` adds the agent-platform tables and **reassigns migration numbers by application order** (V1 core+ALTERs, V2 agent platform, V3 communication/office, V4 multi-tenant) — the V2/V3 section headings below keep their content but ship as V3/V4. The canonical claim query below is amended at 17 §M0.4 (`attempt = attempt + 1`, paused-agent guard). Read 15 alongside this file for any schema work.
 

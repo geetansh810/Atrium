@@ -1,5 +1,5 @@
-// Initials avatar tinted per-agent (deterministic) until pixel sprites arrive
-// with the SkyOffice fork. Palette lives in index.css as --avatar-N vars.
+// Initials avatar tinted per-agent (deterministic). Palette lives in
+// index.css as --avatar-N vars.
 const AVATAR_VAR_COUNT = 6;
 
 function hashString(value: string): number {

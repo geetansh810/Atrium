@@ -1,4 +1,5 @@
 # ATRIUM — Master Development Plan (Rev. B)
+> **Office track removed 2026-07-15** — the SkyOffice virtual office (M2.4a–c, office-realtime, office_layout, /office-state) was retired and replaced by the live Team view (`/team`) in the dashboard; see `07-milestones.md`. Office references below are historical.
 
 > **Working name:** Atrium · **Tagline:** Build. Automate. Scale.
 > **What it is:** A multi-tenant SaaS platform where companies hire AI agents as real employees — with roles, skills, an org hierarchy, token-based "payroll" budgets, human approval gates, and a walkable 2D pixel-art virtual office where all agent activity is visible live.

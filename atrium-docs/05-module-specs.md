@@ -1,4 +1,5 @@
 # 05 — Module Specifications
+> **Office track removed 2026-07-15** — the SkyOffice virtual office (M2.4a–c, office-realtime, office_layout, /office-state) was retired and replaced by the live Team view (`/team`) in the dashboard; see `07-milestones.md`. Office references below are historical.
 
 Each module below is a self-contained unit an LLM session can build against. **When working in one module, an LLM should never need to modify another** — if it does, the contract (03/04) is wrong; stop and fix the contract first.
 

@@ -1,4 +1,5 @@
 # 10 — Deployment Plan
+> **Office track removed 2026-07-15** — the SkyOffice virtual office (M2.4a–c, office-realtime, office_layout, /office-state) was retired and replaced by the live Team view (`/team`) in the dashboard; see `07-milestones.md`. Office references below are historical.
 
 ## 1. Environments
 

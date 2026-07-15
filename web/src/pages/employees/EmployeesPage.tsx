@@ -1,12 +1,11 @@
 import { Avatar } from "../../shared/Avatar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
 import { skillColor } from "../../shared/skillColor";
+import { agentWorkload } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
 import { StatusPill } from "../../ui/StatusPill";
 import "./EmployeesPage.css";
-
-const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
 
 // Real (not a placeholder): card grid with role/skills/model/live workload/
 // status, upgraded from the MF-1 teaser. Full profile page (EmployeeProfile,
@@ -15,11 +14,7 @@ export function EmployeesPage() {
   const { state } = useApp();
   const nav = useAppNav();
 
-  const workloadByAgent = new Map<string, number>();
-  for (const task of state.tasks) {
-    if (!task.assignedAgentId || !ACTIVE_STATUSES.has(task.status)) continue;
-    workloadByAgent.set(task.assignedAgentId, (workloadByAgent.get(task.assignedAgentId) ?? 0) + 1);
-  }
+  const workloadByAgent = agentWorkload(state.tasks);
 
   return (
     <div className="employees-page">

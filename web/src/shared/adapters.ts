@@ -45,9 +45,6 @@ export function adaptAgent(dto: AgentResponse): Agent {
     // isn't published anywhere — 12 §4 taxonomy exists, nothing calls it yet).
     // joinedAt is the closest honest stand-in.
     statusSince: dto.joinedAt,
-    // No office_layout table yet (M2.4c) — officeLayout.ts falls back to the
-    // status-zone mapping whenever locationKey doesn't match a real seat.
-    locationKey: "",
     currentActivity: dto.currentActivity ?? "",
     about: dto.about,
     joinedAt: dto.joinedAt,

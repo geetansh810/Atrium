@@ -1,4 +1,5 @@
 # 04 — API Contract
+> **Office track removed 2026-07-15** — the SkyOffice virtual office (M2.4a–c, office-realtime, office_layout, /office-state) was retired and replaced by the live Team view (`/team`) in the dashboard; see `07-milestones.md`. Office references below are historical.
 
 > **Rev C:** `16-api-contract-delta.md` adds skills/memory/review-queue/model-catalog endpoints, new agent fields (`runtimeType`, `runtimeConfig`, `paused`), new event payloads, and names the claim/progress/complete set below as the **Worker API gateway** for external agent runtimes. Read 16 alongside this file.
 

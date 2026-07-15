@@ -1,6 +1,6 @@
 # realtime-events
 
-**What:** the Redis pub/sub contract between [[realtimebridge]] (publisher) and [[office-realtime]] (subscriber). Channel: `atrium:events:{companyId}`.
+**What:** the Redis pub/sub contract published by [[realtimebridge]]. Channel: `atrium:events:{companyId}`. (Its planned subscriber, [[office-realtime]], was retired 2026-07-15 — the contract stays live for any future realtime consumer, e.g. a dashboard WebSocket.)
 
 **State: LIVE (M0.75).** [[realtimebridge]]'s `OutboxRelay` publishes this exact contract from the transactional outbox.
 
@@ -12,8 +12,8 @@
 { "type": "chat.message", "channel": "#general", "from": "agent:…", "text": "…" }
 ```
 
-**Key rules:** publish AFTER_COMMIT only · channels always company-prefixed (tenant isolation) · office consumes events but business truth stays in [[core-api]] — office state must always be rebuildable from `GET /office-state` alone.
+**Key rules:** publish AFTER_COMMIT only · channels always company-prefixed (tenant isolation) · any subscriber is a pure projection — business truth stays in [[core-api]] and must always be rebuildable from its HTTP API alone.
 
 **Contracts:** `atrium-docs/02-architecture.md §4` · `04-api-contract.md` (WS events).
 
-Links: [[_Atrium]] · [[realtimebridge]] · [[office-realtime]] · [[web-office]]
+Links: [[_Atrium]] · [[realtimebridge]]

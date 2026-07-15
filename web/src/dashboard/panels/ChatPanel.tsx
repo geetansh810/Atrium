@@ -20,7 +20,7 @@ export function ChatPanel() {
   const channel =
     state.channels.find((c) => c.id === state.ui.activeChannelId) ?? state.channels[0];
 
-  // Simulated replies until office-realtime exists: DMs answer, the bot narrates.
+  // Simulated replies — no chat backend exists yet: DMs answer, the bot narrates.
   const handleSend = () => {
     if (channel.kind !== "dm") return;
     const agent = state.agents.find((a) => a.id === channel.agentId);

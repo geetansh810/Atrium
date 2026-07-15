@@ -6,11 +6,11 @@ import {
   FlowIcon,
   KnowledgeIcon,
   MissionControlIcon,
-  OfficeIcon,
   OrganizationIcon,
   ProjectsIcon,
   ReportsIcon,
   TasksIcon,
+  TeamIcon,
 } from "../shared/icons";
 import "./NavSidebar.css";
 
@@ -23,7 +23,7 @@ const PRIMARY_NAV = [
   { to: "/projects", label: "Projects", icon: ProjectsIcon },
   { to: "/knowledge", label: "Knowledge", icon: KnowledgeIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
-  { to: "/office", label: "Office View", icon: OfficeIcon },
+  { to: "/team", label: "Team", icon: TeamIcon },
 ];
 
 export function NavSidebar() {

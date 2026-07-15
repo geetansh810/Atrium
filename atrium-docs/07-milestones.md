@@ -74,18 +74,13 @@ parent_task_id semantics; approval blocked while children open; `/tasks/{id}/flo
 agent_stats_daily rollups; analytics endpoints (summary, 7d, performance, top-skills); ledger + analytics dashboard panels per reference image.
 ✅ "What did this agent cost last week?" answerable in the UI; KPI cards match a hand-checked query.
 
-**M2.4a — SkyOffice vendor & boot** · deps: M2.1 · see 06 §A
-✅ Stock SkyOffice runs inside our compose at `/office`; asset license verified & logged in 06 §D.
+**M2.4a — SkyOffice vendor & boot** · **RETIRED 2026-07-15** — SkyOffice office view removed entirely (owner decision: gimmicky, no real usage); replaced by the live Team view (`/team`, derives agent zones from live task state). The vendored client and LimeZu assets were deleted; `office-realtime` will never be vendored.
 
-**M2.4b — Strip & identity wiring** · deps: M2.4a
-Remove webcam/PeerJS/whiteboard; auto-join `office:{companyId}` with core-api room token; user avatar named from session.
-✅ Two browsers in the same company share one office; a different company cannot join it (test).
+**M2.4b — Strip & identity wiring** · **RETIRED 2026-07-15** — see M2.4a.
 
-**M2.4c — Agent avatars driven by real state** · deps: M2.4b
-realtimebridge events → Redis; office-realtime subscriber; office_layout table + seed; agent avatars walk to status locations with dots + activity bubbles; office-state bootstrap.
-✅ Approving a task in the dashboard moves that agent's avatar/status in the office within 2s, no manual sync.
+**M2.4c — Agent avatars driven by real state** · **RETIRED 2026-07-15** — see M2.4a. The realtimebridge → Redis relay (M0.75) stays live and generic; it simply has no office subscriber anymore.
 
-**M2.5 — Escalation surface + chat v1** · deps: M2.4c
+**M2.5 — Escalation surface + chat v1** · deps: M2.1 (was M2.4c — office track retired 2026-07-15; the chat/bubble Done-when line about office bubbles no longer applies)
 Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/messages API; chat panel; Atrium Bot notices; agent status lines posted to chat and mirrored as bubbles.
 ✅ Every flagged task reachable in ≤2 clicks; an agent completing work produces a chat message and a bubble.
 
@@ -111,7 +106,7 @@ Stripe metered billing from spent_tokens; billing page.
 ✅ Non-technical tester: signup → first assigned task <10 min, unassisted.
 
 **M3.5 — Production hardening** · deps: M3.1–M3.4
-Rate limiting, structured logs, error alerting, load test at realistic early concurrency, AWS deploy per 02 §7, THIRD-PARTY-LICENSES + credits screen.
+Rate limiting, structured logs, error alerting, load test at realistic early concurrency, AWS deploy per 02 §7, THIRD-PARTY-LICENSES + credits screen. (The LimeZu paid-asset license launch-blocker from 06 §D no longer applies — assets removed with the office-track retirement, 2026-07-15.)
 ✅ Load test passes; a triggered error alerts within 1 min; prod URL live.
 
 ## PHASE 4 — COMPLIANCE (3)
@@ -152,9 +147,9 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M2.1 | PM & Designer roles | 2 | ✅ |
 | M2.2 | Task dependencies & flow | 2 | ✅ |
 | M2.3 | Budget ledger + analytics | 2 | ✅ |
-| M2.4a | SkyOffice vendor & boot | 2 | ☐ |
-| M2.4b | Strip & identity wiring | 2 | ☐ |
-| M2.4c | Agent avatars, real state | 2 | ☐ |
+| M2.4a | SkyOffice vendor & boot | 2 | ✗ retired 2026-07-15 |
+| M2.4b | Strip & identity wiring | 2 | ✗ retired 2026-07-15 |
+| M2.4c | Agent avatars, real state | 2 | ✗ retired 2026-07-15 |
 | M2.5 | Escalations + chat v1 | 2 | ☐ |
 | M2.6 | Profile & Workspace panels | 2 | ☐ |
 | M3.1 | Auth & signup | 3 | ☐ |

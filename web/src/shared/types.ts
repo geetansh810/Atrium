@@ -23,7 +23,6 @@ export interface Agent {
   managerAgentId: string | null;
   status: AgentStatus;
   statusSince: string;
-  locationKey: string;
   currentActivity: string;
   about: string;
   joinedAt: string;

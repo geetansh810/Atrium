@@ -200,6 +200,117 @@ export function describeStalledSummary({ reason, count, skills }: StalledSummary
   return `${count} ${taskWord} (skill: ${skillList}) queued ${STALL_THRESHOLD_MINUTES}+ min with no agent claiming them — if those agents use a paid LLM provider, confirm its API key is configured in the backend.`;
 }
 
+// Per-agent count of tasks in a non-terminal, still-owned state — promoted
+// out of EmployeesPage's inline loop so the Team view shares the same number.
+const WORKLOAD_STATUSES = new Set<string>(["queued", "claimed", "in_progress", "flagged"]);
+
+export function agentWorkload(tasks: Task[]): Map<string, number> {
+  const byAgent = new Map<string, number>();
+  for (const task of tasks) {
+    if (!task.assignedAgentId || !WORKLOAD_STATUSES.has(task.status)) continue;
+    byAgent.set(task.assignedAgentId, (byAgent.get(task.assignedAgentId) ?? 0) + 1);
+  }
+  return byAgent;
+}
+
+export type TeamZoneKey = "working" | "awaiting_review" | "in_focus" | "idle" | "paused" | "offline";
+
+export interface TeamMember {
+  agent: Agent;
+  zone: TeamZoneKey;
+  // The task justifying working/awaiting_review (also shown for a paused
+  // agent's in-flight work); null when the zone is purely status-derived.
+  activeTask: Task | null;
+  // When the agent entered this zone — ONLY set from real task events (the
+  // claimed/completed task_events row), never from agent.statusSince: in API
+  // mode adapters.ts stands that in with joinedAt (no agent.status_changed
+  // publisher exists), and rendering it as "idle for 3 weeks" would fabricate
+  // data. Status-derived zones therefore get null and the UI omits the time.
+  sinceIso: string | null;
+  workload: number;
+}
+
+export interface TeamZone {
+  key: TeamZoneKey;
+  label: string;
+  members: TeamMember[];
+}
+
+export const TEAM_ZONE_ORDER: TeamZoneKey[] = ["working", "awaiting_review", "in_focus", "idle", "paused", "offline"];
+
+export const TEAM_ZONE_LABEL: Record<TeamZoneKey, string> = {
+  working: "Working now",
+  awaiting_review: "Awaiting review",
+  in_focus: "In focus",
+  idle: "Idle",
+  paused: "Paused",
+  offline: "Offline",
+};
+
+// Latest matching event wins — a re-claimed task (attempt 2+) should show the
+// current attempt's claim time, not the first one's.
+function latestEventTime(task: Task, eventType: string): string | null {
+  const events = task.events ?? [];
+  let latest: string | null = null;
+  for (const e of events) {
+    if (e.eventType === eventType && (!latest || e.createdAt > latest)) latest = e.createdAt;
+  }
+  return latest;
+}
+
+// The Team view's core derivation: which zone each agent is in RIGHT NOW,
+// derived from live task assignments (which move via the 4s polls) instead of
+// the stale agent.status field (nothing on the backend ever auto-updates it —
+// only in_focus/offline, the genuinely human-set statuses, are trusted).
+// Precedence per agent, first match wins:
+//   1. paused                                  → paused
+//   2. assigned task claimed|in_progress       → working
+//   3. assigned task pending_review|flagged    → awaiting_review
+//   4. agent.status === "in_focus"             → in_focus
+//   5. agent.status === "offline"              → offline
+//   6. otherwise                               → idle
+// A queued-but-preassigned task (mock createTask does this) counts toward
+// workload only, never "working" — matching real claim semantics.
+export function liveTeamZones(agents: Agent[], tasks: Task[]): TeamZone[] {
+  const workload = agentWorkload(tasks);
+  const zones = new Map<TeamZoneKey, TeamMember[]>(TEAM_ZONE_ORDER.map((key) => [key, []]));
+
+  const byPriorityThenAge = (a: Task, b: Task) =>
+    a.priority - b.priority || a.createdAt.localeCompare(b.createdAt);
+
+  for (const agent of agents) {
+    const assigned = tasks.filter((t) => t.assignedAgentId === agent.id);
+    const working = assigned.filter((t) => t.status === "claimed" || t.status === "in_progress").sort(byPriorityThenAge);
+    const inReview = assigned.filter((t) => t.status === "pending_review" || t.status === "flagged").sort(byPriorityThenAge);
+
+    let zone: TeamZoneKey;
+    let activeTask: Task | null = null;
+    let sinceIso: string | null = null;
+    if (agent.paused) {
+      zone = "paused";
+      activeTask = working[0] ?? null; // pause blocks new claims, not in-flight work
+    } else if (working.length > 0) {
+      zone = "working";
+      activeTask = working[0];
+      sinceIso = latestEventTime(activeTask, "claimed") ?? activeTask.createdAt;
+    } else if (inReview.length > 0) {
+      zone = "awaiting_review";
+      activeTask = inReview[0];
+      sinceIso = latestEventTime(activeTask, "completed") ?? activeTask.completedAt;
+    } else if (agent.status === "in_focus") {
+      zone = "in_focus";
+    } else if (agent.status === "offline") {
+      zone = "offline";
+    } else {
+      zone = "idle";
+    }
+
+    zones.get(zone)!.push({ agent, zone, activeTask, sinceIso, workload: workload.get(agent.id) ?? 0 });
+  }
+
+  return TEAM_ZONE_ORDER.map((key) => ({ key, label: TEAM_ZONE_LABEL[key], members: zones.get(key)! }));
+}
+
 export interface OrgNode {
   agent: Agent;
   children: OrgNode[];

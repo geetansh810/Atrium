@@ -4,6 +4,8 @@ Two upstream projects cut months off this build. Rule of thumb: **fork SkyOffice
 
 ## A. SkyOffice — fork and adapt (the office surface)
 
+> **Removed 2026-07-15.** The vendored SkyOffice client (`web/src/office/`, vendored session 3) was deleted with the office-view retirement — replaced by the live Team view (`/team`); `office-realtime` (the server half) was never vendored. M2.4a–c are retired in 07. This section is kept as a historical record of the plan.
+
 **Repo:** `github.com/kevinshen56714/SkyOffice` · **License:** MIT · ~1.2k stars, TypeScript ≈98%.
 **Stack (verified):** Phaser 3 (game engine) + Colyseus (WebSocket server) + React/Redux (client shell) + PeerJS (WebRTC — we strip this). Repo layout: `client/` (Phaser+React), `server/` (Colyseus), `types/` (shared).
 **Built-in features we inherit free:** tile-map office with rooms, WASD/arrow movement, `E` to sit, avatar name tags, real-time text chat with dialog bubbles, custom/private rooms, multi-user presence.
@@ -39,7 +41,7 @@ SkyOffice isn't a library — it's an app. Forking is the intended reuse mode (M
 ## D. License & attribution ledger (keep updated)
 | Component | License | Obligation |
 |---|---|---|
-| SkyOffice (code) | MIT | Keep copyright notice; credit in-app (they request a courtesy mention/coffee) |
-| LimeZu art assets | itch.io license — **verified 2026-07-12 (M2.4a)** | Free tier is NON-commercial only. **Must buy the paid tier (~$1.50+/pack: Modern Office Revamped, Modern Interiors, etc.) before commercial launch** — blocker for M3.5, fine for dev. Paid tier: commercial use OK, credit LimeZu (link to limezu.itch.io) in-app, never redistribute/resell the raw assets |
+| SkyOffice (code) | MIT | ~~Keep copyright notice; credit in-app~~ — **removed 2026-07-15** (vendored client deleted, nothing shipped); obligation no longer applies |
+| LimeZu art assets | itch.io license — verified 2026-07-12 | ~~Must buy the paid tier before commercial launch (M3.5 blocker)~~ — **removed 2026-07-15** (all assets deleted with the office retirement); launch blocker VOID |
 | Paperclip (patterns/utils) | MIT (verify) | Attribution for any imported code |
-| Phaser 3 / Colyseus / React | MIT | Notices in a THIRD-PARTY-LICENSES file |
+| React (Phaser 3 / Colyseus no longer shipped — office removed 2026-07-15) | MIT | Notices in a THIRD-PARTY-LICENSES file |

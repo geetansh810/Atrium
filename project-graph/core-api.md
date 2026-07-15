@@ -1,6 +1,6 @@
 # core-api
 
-**What:** Java 21 / Spring Boot 3.x / Maven service — **the source of truth** for all business state. Postgres + Redis. Everything else ([[web-dashboard]], [[office-realtime]]) is a projection of it.
+**What:** Java 21 / Spring Boot 3.x / Maven service — **the source of truth** for all business state. Postgres + Redis. Everything else (e.g. [[web-dashboard]]) is a projection of it.
 
 **State: current test count 127/127 green, 3 skipped (2026-07-15, session 17, M-KN1) — see [[agentmind]] for the latest milestone (knowledge ingestion — the skills→context→memory→learning→knowledge depth series is now complete). This paragraph is otherwise unchanged since M0.8.**
 

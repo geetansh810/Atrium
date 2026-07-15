@@ -51,7 +51,6 @@ type LocalAction = Extract<
   {
     type:
       | "setChatOpen"
-      | "setRoom"
       | "setChannel"
       | "sendMessage"
       | "addAnnouncement"
@@ -79,8 +78,6 @@ function localReducer(state: LocalState, action: LocalAction): LocalState {
           activeChannelId: action.channelId ?? state.ui.activeChannelId,
         },
       };
-    case "setRoom":
-      return { ...state, ui: { ...state.ui, activeRoom: action.room } };
     case "setChannel":
       return { ...state, ui: { ...state.ui, activeChannelId: action.channelId } };
     case "sendMessage":
@@ -172,7 +169,6 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
   function dispatch(action: Action) {
     switch (action.type) {
       case "setChatOpen":
-      case "setRoom":
       case "setChannel":
       case "sendMessage":
       case "addAnnouncement":

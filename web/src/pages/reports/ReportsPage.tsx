@@ -112,7 +112,7 @@ export function ReportsPage() {
       </div>
       {analytics.focusMinutesToday === null && (
         <p className="about-text" style={{ margin: "-8px 0 0", fontSize: 11.5 }}>
-          Focus Time isn't tracked yet — no presence source exists until the office realtime bridge ships (M2.4c).
+          Focus Time isn't tracked yet — no presence source exists.
         </p>
       )}
 

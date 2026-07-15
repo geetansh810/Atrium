@@ -1,4 +1,9 @@
 .page-shell {
+  /* width:100% matters: AppShell's content area is a flex column, and a flex
+     item with auto horizontal margins otherwise shrinks to content width
+     instead of stretching (latent since MF-2 — TeamPage is the first real
+     PageShell consumer to hit it). */
+  width: 100%;
   max-width: 1120px;
   margin: 0 auto;
   padding: 28px 24px 40px;

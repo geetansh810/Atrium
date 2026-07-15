@@ -9,13 +9,13 @@ import {
   FlowIcon,
   KnowledgeIcon,
   MissionControlIcon,
-  OfficeIcon,
   OrganizationIcon,
   PlusIcon,
   ProjectsIcon,
   ReportsIcon,
   SettingsIcon,
   TasksIcon,
+  TeamIcon,
 } from "../shared/icons";
 import "./CommandPalette.css";
 
@@ -47,7 +47,7 @@ const PAGES: { to: string; label: string; icon: Command["icon"] }[] = [
   { to: "/projects", label: "Projects", icon: ProjectsIcon },
   { to: "/knowledge", label: "Knowledge", icon: KnowledgeIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
-  { to: "/office", label: "Office View", icon: OfficeIcon },
+  { to: "/team", label: "Team", icon: TeamIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 

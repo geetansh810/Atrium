@@ -22,9 +22,6 @@
   --status-in-focus: #4fa8e0;
   --status-flagged: #e0574c;
   --status-offline: #5c687f;
-  /* Additive only — office reads --status-* by name at boot (OfficeCanvas.tsx),
-     so new tokens are safe, renames are not. */
-  --status-blocked: #e0574c;
 
   /* Workflow node semantics (mini graph on Mission Control, MF-2; full DAG MF-5) */
   --node-pending: #5c687f;

@@ -10,7 +10,7 @@ import { ProjectsPage } from "../pages/projects/ProjectsPage";
 import { ProjectDetail } from "../pages/projects/ProjectDetail";
 import { KnowledgePage } from "../pages/knowledge/KnowledgePage";
 import { ReportsPage } from "../pages/reports/ReportsPage";
-import { OfficePage } from "../pages/office/OfficePage";
+import { TeamPage } from "../pages/team/TeamPage";
 import { NotificationsPage } from "../pages/notifications/NotificationsPage";
 import { SettingsPage } from "../pages/settings/SettingsPage";
 
@@ -29,7 +29,9 @@ export function AppRoutes() {
       <Route path="/projects/:id" element={<ProjectDetail />} />
       <Route path="/knowledge" element={<KnowledgePage />} />
       <Route path="/reports" element={<ReportsPage />} />
-      <Route path="/office" element={<OfficePage />} />
+      <Route path="/team" element={<TeamPage />} />
+      {/* Old office-view bookmarks — the SkyOffice route was retired 2026-07-15. */}
+      <Route path="/office" element={<Navigate to="/team" replace />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

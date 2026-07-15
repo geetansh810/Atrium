@@ -19,80 +19,7 @@ function Icon({ children, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function LobbyIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <path d="M3 11L12 4l9 7" />
-      <path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9" />
-      <path d="M9 20v-6h6v6" />
-    </Icon>
-  );
-}
-
-export function WorkstationsIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <rect x="3" y="4" width="18" height="12" rx="1.5" />
-      <path d="M8 20h8" />
-      <path d="M12 16v4" />
-    </Icon>
-  );
-}
-
-export function MeetingRoomsIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" />
-      <circle cx="18" cy="9" r="2.3" />
-      <path d="M16.2 14.5c2.7.3 4.8 2.4 4.8 5.5" />
-    </Icon>
-  );
-}
-
-export function CafeIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z" />
-      <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" />
-      <path d="M8 3c0 1-1 1-1 2" />
-      <path d="M12 3c0 1-1 1-1 2" />
-    </Icon>
-  );
-}
-
-export function FocusPodsIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="4.5" />
-      <circle cx="12" cy="12" r="0.5" fill="currentColor" />
-    </Icon>
-  );
-}
-
-export function ServerRoomIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <rect x="4" y="3" width="16" height="7" rx="1" />
-      <rect x="4" y="14" width="16" height="7" rx="1" />
-      <circle cx="7.5" cy="6.5" r="0.6" fill="currentColor" />
-      <circle cx="7.5" cy="17.5" r="0.6" fill="currentColor" />
-    </Icon>
-  );
-}
-
-export function RooftopIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <path d="M3 12L12 5l9 7" />
-      <path d="M6 11v8h12v-8" />
-      <path d="M10 19v-5h4v5" />
-    </Icon>
-  );
-}
-
-export function PeopleIcon(props: SVGProps<SVGSVGElement>) {
+export function TeamIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
       <circle cx="9" cy="8" r="3" />
@@ -372,16 +299,6 @@ export function ReportsIcon(props: SVGProps<SVGSVGElement>) {
     <Icon {...props}>
       <path d="M5 20V10M12 20V4M19 20v-7" />
       <path d="M3 20h18" />
-    </Icon>
-  );
-}
-
-export function OfficeIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Icon {...props}>
-      <path d="M3 11L12 4l9 7" />
-      <path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9" />
-      <path d="M9 20v-6h6v6" />
     </Icon>
   );
 }
