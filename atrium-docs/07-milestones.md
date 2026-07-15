@@ -144,9 +144,9 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M-MEM1 | Memory store + recall (NEW, doc 17) | depth | ✅ |
 | M-LN1 | Learning pipeline + review governance (NEW, doc 17) | depth | ✅ |
 | M1.1 | Business role via registry | 1 | ✅ |
-| M1.2 | Real pilot run | 1 | ☐ |
+| M1.2 | Real pilot run | 1 | ✅ |
 | M1.3 | Feedback fixes | 1 | ☐ |
-| M-KN1 | Knowledge ingestion (NEW, doc 17) | depth | ☐ |
+| M-KN1 | Knowledge ingestion (NEW, doc 17) | depth | ✅ |
 | M-AR1 | Runtime extensibility proof (NEW, doc 17) | depth | ☐ |
 | M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ☐ |
 | M2.1 | PM & Designer roles | 2 | ☐ |
