@@ -80,9 +80,9 @@ agent_stats_daily rollups; analytics endpoints (summary, 7d, performance, top-sk
 
 **M2.4c — Agent avatars driven by real state** · **RETIRED 2026-07-15** — see M2.4a. The realtimebridge → Redis relay (M0.75) stays live and generic; it simply has no office subscriber anymore.
 
-**M2.5 — Escalation surface + chat v1** · deps: M2.1 (was M2.4c — office track retired 2026-07-15; the chat/bubble Done-when line about office bubbles no longer applies)
-Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/messages API; chat panel; Atrium Bot notices; agent status lines posted to chat and mirrored as bubbles.
-✅ Every flagged task reachable in ≤2 clicks; an agent completing work produces a chat message and a bubble.
+**M2.5 — Escalation surface + chat v1** · deps: M2.1 · **DONE 2026-07-16 (session 24)** — new `communication` module (V7 channels/messages/announcements), `ChatNoticePipeline` (durable consumer: `task.completed` → bot message in `#general`), `GET /companies/{id}/escalations`, and frontend chat wired to the real API. The office-bubble clause was voided when the office track retired (M2.4a); only the chat-message half of the Done-when applies.
+Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/messages API; chat panel; Atrium Bot notices; agent status lines posted to chat ~~and mirrored as bubbles~~ (bubbles void — office retired).
+✅ Every flagged task reachable in ≤2 clicks (ReviewInbox + `/escalations`); an agent completing work produces a chat message (live-verified: Priya → "🤖 Priya finished '…' — ready for review" in `#general`).
 
 **M2.6 — Agent Profile & My Workspace panels** · deps: M2.3, M2.5
 Profile panel (stats, skills, current tasks, activity feed from task_events); Workspace tabs + task detail with subtask checklist per reference images.
@@ -150,7 +150,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M2.4a | SkyOffice vendor & boot | 2 | ✗ retired 2026-07-15 |
 | M2.4b | Strip & identity wiring | 2 | ✗ retired 2026-07-15 |
 | M2.4c | Agent avatars, real state | 2 | ✗ retired 2026-07-15 |
-| M2.5 | Escalations + chat v1 | 2 | ☐ |
+| M2.5 | Escalations + chat v1 | 2 | ✅ |
 | M2.6 | Profile & Workspace panels | 2 | ☐ |
 | M3.1 | Auth & signup | 3 | ☐ |
 | M3.2 | Isolation hardening | 3 | ☐ |

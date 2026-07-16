@@ -41,6 +41,8 @@ Review-queue actions append `task_events`-style audit rows? No — memories are 
 
 **M-LN1 addition:** `task.completed`/`task.rejected`/`task.approved` payloads (04, unchanged shape otherwise) now also carry `agentId` — the agent who did the work being reviewed. Additive only (no existing field renamed/removed). Needed because `LearningPipeline` (a durable outbox consumer, 12 §3) processes these asynchronously, by which point `tasks.assigned_agent_id` may already be cleared (e.g. `reject()` clears it in the same transaction that writes the `rejected` event) — the payload is the only reliable place left to find "whose work is this."
 
+**M2.5 addition:** `task.completed` also carries `title` (the task's title). Additive only. Same asynchronous-consumer reason as `agentId`: `communication.ChatNoticePipeline` turns each `task.completed` into a bot message in `#general` ("🤖 {agent} finished '{title}' — ready for review") and needs the title without a cross-module read back into `routing`. `chat.message {channelId, sender, text}` and `announcement.created {id, title, category}` (04 §WS) are now actually produced — by `communication` via `OutboxWriter` on every message/announcement write.
+
 ```
 budget.threshold          {agentId?, period, spentTokens, capTokens, pct}     # once per period at alert_pct
 budget.exceeded           {agentId?, period}                                  # claim refused + auto-pause

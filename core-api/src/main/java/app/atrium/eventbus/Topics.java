@@ -37,4 +37,9 @@ public final class Topics {
     public static String memory(UUID companyId, UUID agentId) {
         return PREFIX + companyId + "/memory/" + (agentId != null ? agentId : "company");
     }
+
+    /** {@code atrium/v1/{companyId}/chat/{channelId}} (12 §4, M2.5) — carries {@code chat.message}. */
+    public static String chat(UUID companyId, UUID channelId) {
+        return PREFIX + companyId + "/chat/" + channelId;
+    }
 }

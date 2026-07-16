@@ -12,6 +12,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     Optional<Task> findByIdAndCompanyId(UUID id, UUID companyId);
 
+    /** Escalations surface (04 §Tasks, M2.5): everything needing a human — flagged
+     *  or awaiting review — newest first. */
+    List<Task> findByCompanyIdAndStatusInOrderByCreatedAtDesc(UUID companyId, Collection<String> statuses);
+
     /** Approve gate (03 invariant 5): true if any child task isn't shipped/dropped yet. */
     boolean existsByParentTaskIdAndCompanyIdAndStatusNotIn(
             UUID parentTaskId, UUID companyId, Collection<String> terminalStatuses);

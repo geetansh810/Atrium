@@ -27,13 +27,16 @@ core-api/src/main/java/app/atrium/
 │                     PgVectorMemoryStore, EmbeddingClient, LearningPipeline,
 │                     knowledge ingestion   ← NEW module
 ├── accountability/   budgets, BudgetGuard, UsageRecorder, approvals, task_events
-│                     read API, StatsRollup, Atrium Bot notices
+│                     read API, StatsRollup
+├── communication/    channels, messages, announcements, Atrium Bot notices,   ← NEW module (M2.5)
+│                     ChatNoticePipeline (durable outbox consumer: task.completed
+│                     → bot message in #general)
 ├── eventbus/         DomainEvents, OutboxWriter, OutboxRelay, consumer cursors ← NEW module
 └── realtimebridge/   Redis publisher fed by eventbus (office projection)
 ```
 
 Boundary rules (unchanged + additions):
-- Cross-module calls only via service interfaces; no circular imports. Dependency direction: `routing → registry`, `routing → accountability (BudgetGuard)`, `execution → routing (TaskService)`, `execution → agentmind (ContextAssembler)`, `agentmind → registry`, `agentmind → accountability (UsageLedger, M-LN1: LearningPipeline meters extraction calls)`, `agentmind → execution.spi (LlmClient only — never app.atrium.execution itself)`, `eventbus ← everyone (write-only)`, `realtimebridge → eventbus (read-only)`.
+- Cross-module calls only via service interfaces; no circular imports. Dependency direction: `routing → registry`, `routing → accountability (BudgetGuard)`, `execution → routing (TaskService)`, `execution → agentmind (ContextAssembler)`, `agentmind → registry`, `agentmind → accountability (UsageLedger, M-LN1: LearningPipeline meters extraction calls)`, `agentmind → execution.spi (LlmClient only — never app.atrium.execution itself)`, `communication → registry (AgentDirectory, to resolve agent names for chat notices)`, `communication` is a durable eventbus consumer (reads outbox via `EventCursorWorker`, writes outbox via `OutboxWriter`) — it never imports routing/execution internals, `eventbus ← everyone (write-only)`, `realtimebridge → eventbus (read-only)`.
 - `agentmind` never writes task state. `eventbus` has no business logic. `if (skill == …)` anywhere in routing remains a bug by definition.
 
 ## 3. Event backbone: transactional outbox (the "mesh" sized for v1)

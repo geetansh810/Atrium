@@ -13,6 +13,7 @@ import app.atrium.routing.api.TaskDtos.TaskFlowResponse;
 import app.atrium.routing.api.TaskDtos.TaskListQuery;
 import app.atrium.routing.api.TaskDtos.TaskResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,6 +57,12 @@ public class TaskController {
                 new TaskListQuery(status, skill, agentId, view, limit, cursor));
         return new PageEnvelope<>(page.tasks().stream().map(TaskResponse::from).toList(),
                 page.nextCursor());
+    }
+
+    @GetMapping("/companies/{id}/escalations")
+    public List<TaskResponse> escalations(@PathVariable UUID id) {
+        requireTenantMatch(id);
+        return taskService.listEscalations(id).stream().map(TaskResponse::from).toList();
     }
 
     @GetMapping("/tasks/{id}")

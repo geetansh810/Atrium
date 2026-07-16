@@ -5,9 +5,12 @@ import type {
   AgentPerformanceResponse,
   AgentResponse,
   AnalyticsSummaryResponse,
+  AnnouncementResponse,
   ArtifactResponse,
   BudgetResponse,
+  ChannelResponse,
   DayCountResponse,
+  MessageResponse,
   SkillShareResponse,
   SubtaskResponse,
   TaskCostResponse,
@@ -19,8 +22,12 @@ import type {
   AgentStatus,
   Agent,
   AnalyticsSummaryReal,
+  Announcement,
+  AnnouncementCategory,
   Artifact,
   Budget,
+  Channel,
+  ChatMessage,
   DayCount,
   SkillShare,
   Subtask,
@@ -134,4 +141,31 @@ export function adaptSkillShare(dto: SkillShareResponse): SkillShare {
 
 export function adaptTaskCost(dto: TaskCostResponse): TaskCost {
   return { taskId: dto.taskId, tokens: dto.tokens, costUsd: dto.costMicroUsd / MICRO_USD_PER_USD };
+}
+
+export function adaptChannel(dto: ChannelResponse): Channel {
+  // Real channels carry no agent link column, so DMs (none created in API mode
+  // yet) resolve agentId to null — the frontend Channel.kind union still holds.
+  return {
+    id: dto.id,
+    name: dto.name,
+    kind: dto.kind === "dm" ? "dm" : "channel",
+    agentId: null,
+  };
+}
+
+export function adaptMessage(dto: MessageResponse): ChatMessage {
+  return { id: dto.id, channelId: dto.channelId, sender: dto.sender, text: dto.text, createdAt: dto.createdAt };
+}
+
+export function adaptAnnouncement(dto: AnnouncementResponse): Announcement {
+  return {
+    id: dto.id,
+    title: dto.title,
+    body: dto.body,
+    category: (["company", "update", "maintenance"].includes(dto.category)
+      ? dto.category
+      : "company") as AnnouncementCategory,
+    createdAt: dto.createdAt,
+  };
 }

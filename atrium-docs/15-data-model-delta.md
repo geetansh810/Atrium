@@ -13,7 +13,7 @@ Additive companion to `03-data-model.md` — V1 SQL there is untouched and still
 | `V4__google_model_catalog.sql` | Google/Gemini model_catalog rows | session 6i |
 | `V5__seed_platform_skills.sql` | seeded platform skills + role attach | M-SK1 |
 | `V6__agent_stats_daily.sql` | 03 §V2's `agent_stats_daily` only (the `skill` column M2.3 added) — split out of the old "V3__communication_office.sql" bundle since channels/messages/announcements/office_layout aren't needed until M2.4c/M2.5 | M2.3 |
-| `V7__communication_office.sql` (future) | 03 §V2's remaining tables: channels, messages, announcements, office_layout | M2.4c/M2.5 |
+| `V7__communication.sql` | 03 §V2's channels, messages, announcements only — **`office_layout` dropped** (office track retired 2026-07-15, M2.4a; the Team view derives zones from live task state, no desk map). Renamed from the old "V7__communication_office" bundle | M2.5 |
 | `V8__multitenant_billing.sql` (future) | 03 §V3 (RLS, billing_accounts) | M3.x |
 
 This table is reassigned by actual application order each session (real Flyway files always win over what's written here — see `core-api/src/main/resources/db/migration/`). Rule unchanged: never edit an applied migration.

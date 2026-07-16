@@ -207,6 +207,14 @@ public class TaskService {
         return new TaskPage(page, nextCursor);
     }
 
+    private static final List<String> ESCALATION_STATUSES = List.of("flagged", "pending_review");
+
+    /** Everything a human needs to act on — flagged + awaiting review, newest first (04 §Tasks, M2.5). */
+    @Transactional(readOnly = true)
+    public List<Task> listEscalations(UUID companyId) {
+        return tasks.findByCompanyIdAndStatusInOrderByCreatedAtDesc(companyId, ESCALATION_STATUSES);
+    }
+
     @Transactional(readOnly = true)
     public TaskDetail get(UUID companyId, UUID taskId) {
         Task task = tasks.findByIdAndCompanyId(taskId, companyId)
@@ -261,6 +269,7 @@ public class TaskService {
         payload.put("agentId", agentId.toString());
         payload.put("requiredSkill", task.getRequiredSkill());
         payload.put("attempt", task.getAttempt());
+        payload.put("title", task.getTitle());   // 16 §4 (M2.5): ChatNoticePipeline reads it off the payload
         recorder.record(task, "completed", "agent:" + agentId, payload);
         return task;
     }

@@ -1,47 +1,43 @@
 // React-Query-backed provider — the VITE_USE_MOCKS=0 code path. Talks to
-// core-api for agents/tasks/budgets (the entities M0.8 wires up); channels,
-// messages, announcements and the activity feed stay on static seed data
-// because no chat/announcements/analytics endpoints exist yet (04 lists them,
-// nothing implements them before M1.x/M2.3) — documented gap, not an oversight.
+// core-api for agents/tasks/budgets AND (M2.5) channels/messages/announcements.
+// Only the activity feed stays local (no backend endpoint exists for it yet).
 import { createContext, useContext, useReducer } from "react";
 import type { Dispatch, ReactNode } from "react";
 import { DEV_COMPANY_ID } from "./config";
 import { REAL_ROLE_TEMPLATES } from "./roleTemplateDefaults";
-import * as mock from "./mockData";
 import {
   describeApiError,
+  useAddAnnouncementMutation,
+  useAnnouncements,
   useApproveTaskMutation,
   useBudgets,
+  useChannels,
+  useChannelMessages,
   useCreateTaskMutation,
   useEnrichedTasks,
   useHireAgentMutation,
   usePatchAgentMutation,
   useRejectTaskMutation,
   useRoster,
+  useSendMessageMutation,
   useSetBudgetCapMutation,
 } from "./queries";
 import { escalationCount, initialUiState } from "./storeTypes";
 import type { Action, AppState } from "./storeTypes";
-import type { ActivityEvent, Announcement, Channel, ChatMessage } from "./types";
+import type { ActivityEvent } from "./types";
 
 export { escalationCount };
 export type { Action, AppState };
 
-// The chat/announcements/activity slices have no backend yet — reuse a small
-// local reducer over the same seed shape so ChatPanel and the Notifications
-// composer keep working unmodified. Agents/tasks/budgets never live here.
+// Only the activity feed + UI slice live locally now — channels/messages/
+// announcements are real API data (M2.5). sendMessage/addAnnouncement dispatch
+// straight to mutations below, so they're no longer handled by this reducer.
 interface LocalState {
-  channels: Channel[];
-  messages: ChatMessage[];
-  announcements: Announcement[];
   activity: ActivityEvent[];
   ui: AppState["ui"];
 }
 
 const initialLocal: LocalState = {
-  channels: mock.channels,
-  messages: mock.messages,
-  announcements: mock.announcements,
   activity: [],
   ui: initialUiState,
 };
@@ -52,20 +48,12 @@ type LocalAction = Extract<
     type:
       | "setChatOpen"
       | "setChannel"
-      | "sendMessage"
-      | "addAnnouncement"
       | "setNotice"
       | "dismissNotice"
       | "setInviteOpen"
       | "setNewTaskOpen";
   }
 >;
-
-let idCounter = 0;
-function makeId(prefix: string): string {
-  idCounter += 1;
-  return `${prefix}-${Date.now()}-${idCounter}`;
-}
 
 function localReducer(state: LocalState, action: LocalAction): LocalState {
   switch (action.type) {
@@ -80,37 +68,6 @@ function localReducer(state: LocalState, action: LocalAction): LocalState {
       };
     case "setChannel":
       return { ...state, ui: { ...state.ui, activeChannelId: action.channelId } };
-    case "sendMessage":
-      return {
-        ...state,
-        messages: [
-          ...state.messages,
-          { id: makeId("msg"), channelId: action.channelId, sender: action.sender, text: action.text, createdAt: new Date().toISOString() },
-        ],
-      };
-    case "addAnnouncement": {
-      const announcement: Announcement = {
-        id: makeId("ann"),
-        title: action.title,
-        body: action.body || null,
-        category: action.category,
-        createdAt: new Date().toISOString(),
-      };
-      return {
-        ...state,
-        announcements: [announcement, ...state.announcements],
-        messages: [
-          ...state.messages,
-          {
-            id: makeId("msg"),
-            channelId: "ch-announcements",
-            sender: "bot",
-            text: `📢 ${action.title}${action.body ? ` — ${action.body}` : ""}`,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      };
-    }
     case "setNotice":
       return { ...state, ui: { ...state.ui, botNotice: action.text } };
     case "dismissNotice":
@@ -138,6 +95,8 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
   const rosterQuery = useRoster(companyId);
   const { tasks } = useEnrichedTasks(companyId);
   const budgetsQuery = useBudgets(companyId);
+  const channelsQuery = useChannels(companyId);
+  const announcementsQuery = useAnnouncements(companyId);
 
   const createTaskM = useCreateTaskMutation(companyId);
   const approveTaskM = useApproveTaskMutation(companyId);
@@ -145,9 +104,23 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
   const hireAgentM = useHireAgentMutation(companyId);
   const setBudgetCapM = useSetBudgetCapMutation(companyId);
   const patchAgentM = usePatchAgentMutation(companyId);
+  const sendMessageM = useSendMessageMutation(companyId);
+  const addAnnouncementM = useAddAnnouncementMutation(companyId);
 
   const agents = rosterQuery.data ?? [];
   const budgets = budgetsQuery.data ?? [];
+  const channels = channelsQuery.data ?? [];
+  const announcements = announcementsQuery.data ?? [];
+
+  // The stored activeChannelId defaults to a mock id ("ch-general") that no real
+  // channel matches — fall back to the first real channel so ChatPanel always
+  // opens on something valid. Only load messages once we have a real channel id.
+  const activeChannelId = channels.some((c) => c.id === local.ui.activeChannelId)
+    ? local.ui.activeChannelId
+    : channels[0]?.id ?? local.ui.activeChannelId;
+  const realActiveId = channels.some((c) => c.id === activeChannelId) ? activeChannelId : undefined;
+  const messages = useChannelMessages(companyId, realActiveId).data ?? [];
+
   // core-api's AgentController always returns zeroed stats until M2.3's rollups land.
   const agentStats = Object.fromEntries(
     agents.map((a) => [a.id, { tasksCompleted: 0, successRate: 0, focusMinutes: 0 }]),
@@ -158,25 +131,41 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
     agentStats,
     tasks,
     activity: local.activity,
-    channels: local.channels,
-    messages: local.messages,
-    announcements: local.announcements,
+    channels,
+    messages,
+    announcements,
     budgets,
     roleTemplates: REAL_ROLE_TEMPLATES,
-    ui: local.ui,
+    ui: { ...local.ui, activeChannelId },
   };
 
   function dispatch(action: Action) {
     switch (action.type) {
       case "setChatOpen":
       case "setChannel":
-      case "sendMessage":
-      case "addAnnouncement":
       case "setNotice":
       case "dismissNotice":
       case "setInviteOpen":
       case "setNewTaskOpen":
         localDispatch(action);
+        return;
+
+      case "sendMessage":
+        // Backend assigns the real sender from the (absent) X-User-Id → "user".
+        sendMessageM.mutate(
+          { channelId: action.channelId, text: action.text },
+          { onError: (err) => localDispatch({ type: "setNotice", text: describeApiError(err) }) },
+        );
+        return;
+
+      case "addAnnouncement":
+        addAnnouncementM.mutate(
+          { title: action.title, body: action.body, category: action.category },
+          {
+            onSuccess: () => localDispatch({ type: "setNotice", text: `Announcement "${action.title}" posted.` }),
+            onError: (err) => localDispatch({ type: "setNotice", text: describeApiError(err) }),
+          },
+        );
         return;
 
       case "toggleSubtask":

@@ -240,6 +240,31 @@ export interface TaskCostResponse {
   costMicroUsd: number;
 }
 
+// GET/POST /companies/{id}/channels, /channels/{id}/messages (04 §Communication, M2.5)
+export interface ChannelResponse {
+  id: string;
+  companyId: string;
+  name: string;
+  kind: string;
+  createdAt: string;
+}
+
+export interface MessageResponse {
+  id: string;
+  channelId: string;
+  sender: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface AnnouncementResponse {
+  id: string;
+  title: string;
+  body: string | null;
+  category: string;
+  createdAt: string;
+}
+
 export const api = {
   createCompany: (body: { name: string; slug: string }) =>
     request<CompanyResponse>("/companies", { method: "POST", body, companyId: "" }),
@@ -301,4 +326,21 @@ export const api = {
       }).toString()}`,
       { companyId },
     ),
+
+  listChannels: (companyId: string) =>
+    request<ChannelResponse[]>(`/companies/${companyId}/channels`, { companyId }),
+  createChannel: (companyId: string, body: { name: string; kind?: string }) =>
+    request<ChannelResponse>(`/companies/${companyId}/channels`, { method: "POST", body, companyId }),
+  listMessages: (companyId: string, channelId: string, limit = 50) =>
+    request<PageEnvelope<MessageResponse>>(`/channels/${channelId}/messages?limit=${limit}`, { companyId }),
+  sendMessage: (companyId: string, channelId: string, text: string) =>
+    request<MessageResponse>(`/channels/${channelId}/messages`, { method: "POST", body: { text }, companyId }),
+
+  listAnnouncements: (companyId: string) =>
+    request<AnnouncementResponse[]>(`/companies/${companyId}/announcements`, { companyId }),
+  createAnnouncement: (companyId: string, body: { title: string; body?: string; category?: string }) =>
+    request<AnnouncementResponse>(`/companies/${companyId}/announcements`, { method: "POST", body, companyId }),
+
+  listEscalations: (companyId: string) =>
+    request<TaskResponse[]>(`/companies/${companyId}/escalations`, { companyId }),
 };

@@ -8,9 +8,12 @@ import {
   adaptAgent,
   adaptAgentPerformance,
   adaptAnalyticsSummary,
+  adaptAnnouncement,
   adaptArtifact,
   adaptBudget,
+  adaptChannel,
   adaptDayCount,
+  adaptMessage,
   adaptSkillShare,
   adaptSubtask,
   adaptTaskBase,
@@ -163,6 +166,62 @@ export function useEnrichedTasks(companyId: string): { tasks: Task[]; isLoading:
   });
 
   return { tasks, isLoading: listQuery.isLoading };
+}
+
+// ── Communication (M2.5): channels, messages, announcements ──────────────────
+
+export function useChannels(companyId: string) {
+  return useQuery({
+    queryKey: ["channels", companyId],
+    queryFn: () => api.listChannels(companyId).then((list) => list.map(adaptChannel)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+// Messages for ONE channel — ConversationThread filters state.messages by
+// channelId anyway, so loading only the active channel's history is enough.
+// Returned oldest-first to match the mock's ascending order.
+export function useChannelMessages(companyId: string, channelId: string | undefined) {
+  return useQuery({
+    queryKey: ["messages", companyId, channelId],
+    queryFn: () =>
+      api.listMessages(companyId, channelId as string).then((page) => page.data.map(adaptMessage).reverse()),
+    enabled: !!companyId && !!channelId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useSendMessageMutation(companyId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ channelId, text }: { channelId: string; text: string }) =>
+      api.sendMessage(companyId, channelId, text),
+    onSuccess: (_r, { channelId }) =>
+      qc.invalidateQueries({ queryKey: ["messages", companyId, channelId] }),
+  });
+}
+
+export function useAnnouncements(companyId: string) {
+  return useQuery({
+    queryKey: ["announcements", companyId],
+    queryFn: () => api.listAnnouncements(companyId).then((list) => list.map(adaptAnnouncement)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useAddAnnouncementMutation(companyId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { title: string; body: string; category: string }) =>
+      api.createAnnouncement(companyId, {
+        title: input.title,
+        body: input.body || undefined,
+        category: input.category,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["announcements", companyId] }),
+  });
 }
 
 export function useCreateTaskMutation(companyId: string) {

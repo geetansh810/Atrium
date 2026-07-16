@@ -10,7 +10,8 @@ import "./ConversationThread.css";
 
 function senderName(sender: string, state: AppState): string {
   if (sender === "bot") return "Atrium Bot";
-  if (sender.startsWith("user:")) return currentUser.displayName;
+  // "user:<id>" (mock) and bare "user" (API mode, no X-User-Id) both mean the human.
+  if (sender === "user" || sender.startsWith("user:")) return currentUser.displayName;
   const agent = state.agents.find((a) => `agent:${a.id}` === sender);
   return agent?.name ?? "Unknown";
 }
