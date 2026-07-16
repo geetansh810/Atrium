@@ -101,7 +101,7 @@ Postgres RLS on all business tables; adversarial cross-tenant test suite (API + 
 Stripe metered billing from spent_tokens; billing page.
 ✅ Test-company tasks → matching Stripe line item.
 
-**M3.4 — Onboarding & starter rosters** · deps: M3.1
+**M3.4 — Onboarding & starter rosters** · deps: M3.1 · **DONE 2026-07-17 (session 30)** — `V9__seed_starter_roster_templates.sql` seeds 2 real installable packs' worth of global role templates (`lead`/`product`/`content`, alongside M0.2's `coder`/`tester`/`research`); frontend `OnboardingWizard` (post-signup only) drives pick-pack → sequential hire with manager hierarchy → guided first task → success screen linking to Team view. See `project-graph/milestones.md` and `web-dashboard.md`/`registry.md` for the full build + live Done-when evidence.
 2–3 installable templates ("Engineering pod", "Content team"); guided first task.
 ✅ Non-technical tester: signup → first assigned task <10 min, unassisted.
 
@@ -155,7 +155,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M3.1 | Auth & signup | 3 | ☐ |
 | M3.2 | Isolation hardening | 3 | ☐ |
 | M3.3 | Usage-based billing | 3 | ☐ |
-| M3.4 | Onboarding & templates | 3 | ☐ |
+| M3.4 | Onboarding & templates | 3 | ✅ |
 | M3.5 | Production hardening | 3 | ☐ |
 | M4.1–M4.3 | Compliance roles & docs | 4 | ☐ |
 

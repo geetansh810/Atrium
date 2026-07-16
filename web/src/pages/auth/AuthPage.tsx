@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, ApiError } from "../../shared/api";
 import { setAuthSession } from "../../shared/auth";
+import { markSignupNeedsOnboarding } from "../../shared/onboarding";
 import { PRODUCT_NAME } from "../../shared/theme";
 import "./AuthPage.css";
 
@@ -31,6 +32,9 @@ export function AuthPage() {
         mode === "signup"
           ? await api.signup({ companyName, companySlug, displayName, email, password })
           : await api.login({ email, password });
+      // M3.4: only a fresh signup owes the onboarding wizard — logging back
+      // into an existing (possibly still-empty) company must not re-trigger it.
+      if (mode === "signup") markSignupNeedsOnboarding(auth.companyId);
       setAuthSession(auth);
     } catch (err) {
       if (err instanceof ApiError) {

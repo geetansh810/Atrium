@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router";
 import { AppShell } from "./shell/AppShell";
 import { AppProvider } from "./shared/store";
 import { AuthPage } from "./pages/auth/AuthPage";
+import { OnboardingWizard } from "./pages/onboarding/OnboardingWizard";
 import { useAuthSession } from "./shared/auth";
+import { completeOnboarding, needsOnboarding } from "./shared/onboarding";
 import { USE_MOCKS } from "./shared/config";
 
 const queryClient = new QueryClient();
@@ -16,9 +19,30 @@ function AuthGate() {
   if (!session) return <AuthPage />;
   return (
     <AppProvider>
-      <AppShell />
+      <OnboardingOrShell companyId={session.companyId} />
     </AppProvider>
   );
+}
+
+// M3.4: a fresh signup owes the onboarding wizard (shared/onboarding.ts's
+// localStorage flag, set by AuthPage) before it ever sees AppShell. Checked
+// once at mount, not derived from the live roster — the roster query is still
+// loading (empty) on first render for an already-onboarded company too, and
+// that must never flash the wizard.
+function OnboardingOrShell({ companyId }: { companyId: string }) {
+  const [pending, setPending] = useState(() => needsOnboarding(companyId));
+  if (pending) {
+    return (
+      <OnboardingWizard
+        companyId={companyId}
+        onDone={() => {
+          completeOnboarding(companyId);
+          setPending(false);
+        }}
+      />
+    );
+  }
+  return <AppShell />;
 }
 
 export default function App() {
