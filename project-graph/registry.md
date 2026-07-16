@@ -6,6 +6,8 @@
 
 **Rev C additions ([[agent-platform]]):** owns `model_catalog` (+ `GET /model-catalog`); agents gain `runtime_type`/`runtime_config` (validated against RuntimeRegistry on hire/patch → 400) and `paused`; hire auto-attaches the role template's skill set (M-SK1, live — see [[agentmind]]).
 
+**+ M-AR1 (2026-07-16 session 28): runtime-axis pluggability proven, zero diff here.** [[execution]]'s new `EchoRuntime` bean (a second `AgentRuntime` implementation) was picked up by `RuntimeRegistry`'s `List<AgentRuntime>` injection and `AgentService.hire()`'s already-generic `runtimeRegistry.validate(runtimeType, runtimeConfig)` with **no code change in this module at all** — the "roles are data" pattern already documented above for skills turns out to hold identically for runtimes. See [[execution]] for the build.
+
 **Key rules:** hire via template key or explicit role_definition; skill_tags non-empty; manager cycles rejected. Exposes `AgentDirectory` interface for [[routing]] to validate skills, and now (M0.7) for [[accountability]]'s `BudgetService` to auto-pause an over-cap agent (`AgentDirectory.pauseForBudget`) — other modules never import registry internals. **`JpaAgentDirectory` injects `AgentLifecycleService` `@Lazy`:** that service sits behind `RuntimeRegistry → LlmLoopRuntime → WorkBroker → AgentDirectory`, so an eager constructor injection there would be a circular bean dependency at context startup — the lazy proxy defers resolution past boot. **Roles are data**: adding a role must never touch router code (proven at M1.1).
 
 **Contracts:** `atrium-docs/03-data-model.md` (companies/users/role_definitions/agents) · `04-api-contract.md §Registry` · `05-module-specs.md §registry`.
