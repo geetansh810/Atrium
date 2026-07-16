@@ -119,7 +119,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 
 ## Master tracker
 
-> Kept in sync manually and only occasionally — for the actually-current status, prefer root `CLAUDE.md` ("Current state"/"Likely next") and `project-graph/milestones.md`, which are updated every session. This table was last refreshed 2026-07-14 (session 14, after M-CTX1).
+> Kept in sync manually and only occasionally — for the actually-current status, prefer root `CLAUDE.md` ("Current state"/"Likely next") and `project-graph/milestones.md`, which are updated every session. This table was last refreshed 2026-07-16 (session 28, after M-AR1) — also caught M-LN2 still showing ☐ despite shipping at session 26, the kind of periodic tracker staleness this file's own header already warns about.
 
 | ID | Milestone | Phase | Status |
 |---|---|---|---|
@@ -140,10 +140,10 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M-LN1 | Learning pipeline + review governance (NEW, doc 17) | depth | ✅ |
 | M1.1 | Business role via registry | 1 | ✅ |
 | M1.2 | Real pilot run | 1 | ✅ |
-| M1.3 | Feedback fixes | 1 | ☐ |
+| M1.3 | Feedback fixes | 1 | ☐ n/a — conditional on pilot friction; M1.2's pilot run surfaced none (session 19) |
 | M-KN1 | Knowledge ingestion (NEW, doc 17) | depth | ✅ |
-| M-AR1 | Runtime extensibility proof (NEW, doc 17) | depth | ☐ |
-| M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ☐ |
+| M-AR1 | Runtime extensibility proof (NEW, doc 17) | depth | ✅ |
+| M-LN2 | Learning surfaces in dashboard (NEW, doc 17, frontend) | depth | ✅ |
 | M2.1 | PM & Designer roles | 2 | ✅ |
 | M2.2 | Task dependencies & flow | 2 | ✅ |
 | M2.3 | Budget ledger + analytics | 2 | ✅ |
