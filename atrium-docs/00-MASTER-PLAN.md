@@ -90,7 +90,7 @@ A company signs up on Atrium and builds a roster of AI employees — e.g. Resear
 
 The signature surface is the **virtual office**: a top-down pixel-art floor (Meeting Room Alpha, Cafe, Focus Pods, Workstations, Server Room, Rooftop) where every agent is an avatar whose position and animation **is** its live status — at a desk means working, in the meeting room means escalated/reviewing, in a focus pod means deep work with do-not-disturb, at the help desk means waiting on a human. The user walks around as their own avatar (WASD), clicks any agent for its profile (stats, skills, activity feed, current tasks), chats in channels or DMs, and watches analytics roll up in real time.
 
-**Differentiation** (vs. Paperclip and the self-hosted ecosystem): hosted and non-technical-friendly; verification/approval as the core feature, not an afterthought; the office as a live rendering of true system state; managed multi-tenancy with billing.
+**Differentiation** (vs. Paperclip and the self-hosted ecosystem): hosted and non-technical-friendly; verification/approval as the core feature, not an afterthought; the office as a live rendering of true system state; managed multi-tenancy. (Originally read "managed multi-tenancy **with billing**" — billing was deferred post-pilot on 2026-07-17, and it was never the differentiator anyway; the isolation and approval story is.)
 
 ## 3. Reference images — the visual ground truth
 
@@ -105,7 +105,7 @@ All in `assets/`. **Check every UI milestone against these before calling it don
 - **Phase 0 — Foundation (9 milestones):** OSS evaluation spike, then the core loop: registry → skill-routed queue → competing-consumer claim → real LLM agent → approval gate → budget enforcement → minimal task board.
 - **Phase 1 — Validate (3):** one business role, a real pilot (Agrawal Namkeen), feedback fixes.
 - **Phase 2 — Expand (6):** more roles, task dependencies/subtasks, budget ledger UI, **SkyOffice fork integration** (office view v1), agent profile + workspace panels, escalation surface.
-- **Phase 3 — Multi-tenant (5):** auth/signup, isolation hardening, Stripe metered billing, onboarding templates, production hardening.
+- **Phase 3 — Multi-tenant (4):** auth/signup, isolation hardening, onboarding templates, production hardening. (**Stripe metered billing moved out 2026-07-17** — monetization is deferred until after the pilot; the card lives in 07's "Deferred — post-pilot backlog". Prod still ships, just unmetered.)
 - **Phase 4 — Compliance (3):** gated legal role, audited HR role, compliance documentation.
 
 ## 5. Success criteria for the whole project

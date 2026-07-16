@@ -160,39 +160,7 @@ matching the structure of the attached reference image. Use theme.ts tokens
 (create theme.ts now from 01 §4 Theme).
 ```
 
-## M2.4a — SkyOffice vendor & boot
-📎 `06 §A`, `docs/notes/skyoffice-findings.md`
-```
-Implement milestone M2.4a. Vendor the SkyOffice fork into the monorepo:
-server/ → office-realtime/, client/ → web/src/office/ (keep it a separately
-bootable Vite/Parcel target for now), types/ → shared-types/office/. Add both to
-docker-compose. Change nothing functional. Done-when: stock SkyOffice runs from
-our compose. List every file moved and any path fixes made.
-```
-
-## M2.4b — Strip & identity wiring
-📎 findings note (PeerJS file list), `04` (room-token endpoint)
-```
-Implement milestone M2.4b. Remove all PeerJS/webcam/screen-share/whiteboard code
-and UI from the fork (use the file list from skyoffice-findings). Replace the
-lobby/room-picker with auto-join of Colyseus room "office:{companyId}": client
-fetches POST /companies/{id}/office/room-token from core-api, sends it in join
-options; office-realtime validates the token (shared HMAC secret env
-OFFICE_ROOM_TOKEN_SECRET) and rejects company mismatch. User avatar display name
-from the session. Test: second company's token cannot join the first's room.
-```
-
-## M2.4c — Agent avatars from real state
-📎 `02 §4`, `03` (office_layout), `04` (office-state, WS events), `05` §office-realtime
-```
-Implement milestone M2.4c. core-api/realtimebridge: publish the 04-spec events on
-Redis atrium:events:{companyId} AFTER_COMMIT. V-next migration: office_layout +
-seed default layout (desks 1-8, meeting_room_alpha, focus_pod_1-3, cafe, help_desk).
-office-realtime: on room create, fetch /office-state and spawn agent avatars;
-subscribe to Redis; map status→location per the table in 02 §4; move avatars
-(straight-line tween), set name-tag status dot color and activity bubble icon.
-Done-when: approving a task in the dashboard visibly updates the office within 2s.
-```
+> M2.4a/b/c (SkyOffice) used to sit here, between M2.3 and M2.5 — hence the gap. Retired 2026-07-15; their prompts moved to "RETIRED — cancelled tracks (do not run)" at the bottom of this file on 2026-07-17.
 
 ## M2.5 — Escalations + chat v1
 📎 `03` V2 (channels/messages/announcements), `04` §Communication, reference images
@@ -231,14 +199,17 @@ entirely. All existing tests updated to authenticate properly.
 ```
 Implement milestone M3.2. Enable Postgres RLS on every business table with a
 company_id = current_setting('app.company_id') policy; set the setting per
-transaction from TenantContext. Write the adversarial suite: for every 04 endpoint,
-authenticated-as-B requests against A's resources → 404/403; Colyseus join with
-wrong-company token → rejected; Redis events never crosses channels. Plant one
-deliberate bypass in a test branch and confirm the suite catches it, then remove.
+transaction from TenantContext. Migration is RLS policies ONLY — billing_accounts
+is deferred with M3.3 (07 Rev D), so do not create it. Write the adversarial suite:
+for every 04 endpoint, authenticated-as-B requests against A's resources → 404/403;
+Redis events never cross channels. Plant one deliberate bypass in a test branch and
+confirm the suite catches it, then remove.
 ```
+> Card amended 2026-07-17: the original also said "Colyseus join with wrong-company token → rejected" — void, the office track retired 2026-07-15 (07 M2.4a) and no Colyseus server was ever vendored. And billing_accounts was split out of this card's migration (07 Rev D).
 
-## M3.3 — Usage-based billing
-📎 `10 §5`, `03` V3 billing_accounts
+## M3.3 — Usage-based billing · ⏸ DEFERRED 2026-07-17 (07 Rev D)
+Post-pilot backlog, not part of Phase 3 anymore — Atrium is being piloted, not sold. Card preserved verbatim for whoever picks it up; deps (M3.1, M2.3) are already green, so it runs cold.
+📎 `10 §5`, `03` V3 billing_accounts (also deferred — 15 §0's billing migration row is deliberately unnumbered until this card runs)
 ```
 Implement milestone M3.3. Stripe: customer per company on signup, metered
 subscription item; nightly job reports token usage deltas; billing page (current
@@ -274,6 +245,57 @@ impossible for any actor except a named human user (enforced in routing, tested)
 full reconstruction]. M4.3 is a writing session: retention policy, review-process
 explainer, EU AI Act posture note into docs/compliance/.
 ```
+
+---
+
+## RETIRED — cancelled tracks (do not run)
+
+**The SkyOffice office-view fork, retired 2026-07-15 (07 M2.4a).** These prompts are kept only as a record of what was cut and why — the office view was removed entirely (gimmicky, no real usage) and replaced by the live Team view at `/team`. **Do not run any of them.** They reference things that no longer exist and would not survive contact with the codebase: `web/src/office/` and the LimeZu assets were deleted, `phaser` was removed from `package.json`, `office-realtime`/Colyseus was never vendored, `office_layout` was dropped from V7 and never applied, and `OFFICE_ROOM_TOKEN_SECRET` is gone from 08 §Config. Moved here from inline between M2.3 and M2.5 on 2026-07-17.
+
+<details>
+<summary>M2.4a — SkyOffice vendor & boot (retired)</summary>
+
+📎 `06 §A`, `docs/notes/skyoffice-findings.md`
+```
+Implement milestone M2.4a. Vendor the SkyOffice fork into the monorepo:
+server/ → office-realtime/, client/ → web/src/office/ (keep it a separately
+bootable Vite/Parcel target for now), types/ → shared-types/office/. Add both to
+docker-compose. Change nothing functional. Done-when: stock SkyOffice runs from
+our compose. List every file moved and any path fixes made.
+```
+</details>
+
+<details>
+<summary>M2.4b — Strip & identity wiring (retired)</summary>
+
+📎 findings note (PeerJS file list), `04` (room-token endpoint)
+```
+Implement milestone M2.4b. Remove all PeerJS/webcam/screen-share/whiteboard code
+and UI from the fork (use the file list from skyoffice-findings). Replace the
+lobby/room-picker with auto-join of Colyseus room "office:{companyId}": client
+fetches POST /companies/{id}/office/room-token from core-api, sends it in join
+options; office-realtime validates the token (shared HMAC secret env
+OFFICE_ROOM_TOKEN_SECRET) and rejects company mismatch. User avatar display name
+from the session. Test: second company's token cannot join the first's room.
+```
+</details>
+
+<details>
+<summary>M2.4c — Agent avatars from real state (retired)</summary>
+
+📎 `02 §4`, `03` (office_layout), `04` (office-state, WS events), `05` §office-realtime
+```
+Implement milestone M2.4c. core-api/realtimebridge: publish the 04-spec events on
+Redis atrium:events:{companyId} AFTER_COMMIT. V-next migration: office_layout +
+seed default layout (desks 1-8, meeting_room_alpha, focus_pod_1-3, cafe, help_desk).
+office-realtime: on room create, fetch /office-state and spawn agent avatars;
+subscribe to Redis; map status→location per the table in 02 §4; move avatars
+(straight-line tween), set name-tag status dot color and activity bubble icon.
+Done-when: approving a task in the dashboard visibly updates the office within 2s.
+```
+</details>
+
+*Salvaged from this track and still live:* the `realtimebridge` → Redis relay (M0.75) is generic infra and stays — it just has no office subscriber. The `agent.status_changed` publisher (12 §4) that M2.4c would have needed was never built, which is why the Team view's `in_focus`/`offline` zones still only move on a manual PATCH.
 
 ---
 

@@ -40,7 +40,8 @@ Cost posture at launch: smallest Fargate sizes, single-AZ RDS `db.t4g.micro`, si
 
 ## 5. Configuration & secrets
 - All config via env vars (08 §Config). Secrets Manager in AWS; `.env` locally.
-- LLM provider keys are **platform-level** at launch; per-company BYO-key is a Phase-3+ backlog item (changes billing math — decide before building).
+- LLM provider keys are **platform-level** at launch; per-company BYO-key is a backlog item (07 "Deferred — post-pilot backlog"). It was parked partly because it changes billing math — with billing itself deferred post-pilot (2026-07-17, 07 Rev D), that objection is void and this is now a plain isolation/key-handling call whenever a pilot company asks.
+- **No payment configuration exists or is expected before M3.3** (deferred post-pilot): no Stripe keys, no webhook secret, no billing env vars. The prod deploy at M3.5 ships unmetered. `usage_records` remains the token-accounting truth regardless — that is metering for control, not charging.
 - `OFFICE_ROOM_TOKEN_SECRET` rotated on schedule; rotation must not kick live rooms (tokens are join-time only).
 
 ## 6. Observability

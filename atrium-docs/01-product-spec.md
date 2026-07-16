@@ -54,7 +54,7 @@ Atrium lets any company run a workforce of specialized AI agents the way it runs
 ### 3.7 Budgets ("payroll")
 - Per-company and per-agent monthly caps in tokens; spend metered per LLM call and rolled up per task/agent/period.
 - Claim-time budget check; over-cap = blocked + flagged, never silent.
-- Ledger UI: spend vs. cap bars, historical periods, cost-per-task drilldown. Phase 3: Stripe metered billing on top.
+- Ledger UI: spend vs. cap bars, historical periods, cost-per-task drilldown. ~~Phase 3: Stripe metered billing on top.~~ **Deferred post-pilot 2026-07-17** (07 Rev D) — everything above this line is live and stays live; billing would sit *on top of* it, and the pilot doesn't charge anyone. Budgets are a control surface, not a payment one.
 
 ### 3.8 Announcements
 - Company-wide announcements with category chips (Company / Update / Maintenance), shown in the panel and mirrored on the in-office board.

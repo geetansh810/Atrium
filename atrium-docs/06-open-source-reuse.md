@@ -36,7 +36,7 @@ SkyOffice isn't a library — it's an app. Forking is the intended reuse mode (M
 - **Colyseus** (comes with SkyOffice) — realtime rooms. **Flyway** — migrations. **springdoc-openapi** — serves 04 as live Swagger.
 - **LLM SDKs:** official Anthropic/OpenAI/Google Java or REST clients behind our `LlmClient` interface.
 - **Langfuse or Helicone (self-host/free tier)** — optional LLM tracing in dev; our `usage_records` remains the billing source of truth.
-- **Stripe metered billing** (Phase 3) — never hand-roll invoicing.
+- ~~**Stripe metered billing** (Phase 3)~~ — **deferred post-pilot 2026-07-17** (07 Rev D; M3.3 moved to the backlog — Atrium is being piloted, not sold). The advice still stands for whoever picks it up: never hand-roll invoicing.
 
 ## D. License & attribution ledger (keep updated)
 | Component | License | Obligation |

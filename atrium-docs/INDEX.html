@@ -276,7 +276,7 @@
         <div class="card"><span class="eyebrow">Realtime office</span><h3>Colyseus · Phaser 3 (SkyOffice fork)</h3><p>TypeScript strict; PeerJS/webcam stripped; agent avatars added.</p></div>
         <div class="card"><span class="eyebrow">Frontend</span><h3>React · Vite · React Query</h3><p>Redux Toolkit only inside the office slice (inherited). theme.ts tokens.</p></div>
         <div class="card"><span class="eyebrow">AI layer</span><h3>LlmClient abstraction</h3><p>Anthropic / OpenAI / Google per agent row; usage metered per call.</p></div>
-        <div class="card"><span class="eyebrow">Infra</span><h3>Docker · AWS · GitHub Actions</h3><p>Compose locally; ECS Fargate + RDS + ElastiCache + CloudFront in prod; Stripe metered billing (M3.3).</p></div>
+        <div class="card"><span class="eyebrow">Infra</span><h3>Docker · AWS · GitHub Actions</h3><p>Compose locally; ECS Fargate + RDS + ElastiCache + CloudFront in prod. Prod ships <strong>unmetered</strong> — Stripe metered billing (M3.3) deferred post-pilot 2026-07-17.</p></div>
       </div>
     </section>
 
@@ -318,7 +318,7 @@
       </div>
       <div style="margin-top:10px;">
         <span class="pill">PHASE 3 · Multi-tenant</span>
-        <span class="pill alt">M3.1 auth</span><span class="pill alt">M3.2 isolation</span><span class="pill alt">M3.3 billing</span><span class="pill alt">M3.4 onboarding</span><span class="pill alt">M3.5 prod deploy</span>
+        <span class="pill alt">M3.1 auth</span><span class="pill alt">M3.2 isolation</span><span class="pill alt">M3.4 onboarding</span><span class="pill alt">M3.5 prod deploy</span><span class="pill alt" style="opacity:.5;text-decoration:line-through;">M3.3 billing</span> <span class="pill alt" style="opacity:.7;">⏸ M3.3 deferred post-pilot 2026-07-17</span>
       </div>
       <div style="margin-top:10px;">
         <span class="pill">PHASE 4 · Compliance</span>

@@ -196,19 +196,33 @@ CREATE INDEX idx_agent_stats_daily_company_day ON agent_stats_daily(company_id, 
 -- number can't come from a table keyed one row per (agent, skill, day).
 ```
 
-## V3 — Multi-tenant & billing (Phase 3)
+## V3 — Multi-tenant (Phase 3)
+
+> **Split 2026-07-17 (07 Rev D):** this section used to be "Multi-tenant & billing" and shipped RLS + `billing_accounts` as one migration. Monetization is deferred until after the pilot, so the two halves are now separate: **RLS is live work (M3.2, next up)**; **`billing_accounts` is post-pilot backlog (M3.3)** and must not be created by M3.2's migration. See 15 §0 for the migration rows.
 
 ```sql
 -- auth: credentials/OAuth identities on users; sessions or JWT (no table if stateless JWT)
+--   → shipped at M3.1 (V8__users_auth.sql): users.password_hash, stateless JWT, no session table.
+
+-- M3.2 — the whole of V3 as it stands today:
+-- ALTER tables to enable Postgres ROW LEVEL SECURITY with a
+-- company_id = current_setting('app.company_id')::uuid policy on every business table.
+```
+
+### Deferred — billing (M3.3, post-pilot)
+
+Not part of V3's migration. Reproduced here so the shape isn't lost; create it only when M3.3 is picked up.
+
+```sql
 CREATE TABLE billing_accounts (
   company_id UUID PRIMARY KEY REFERENCES companies(id),
   stripe_customer_id TEXT UNIQUE NOT NULL,
   stripe_subscription_id TEXT,
   status TEXT NOT NULL DEFAULT 'active'
 );
--- Plus: ALTER tables to enable Postgres ROW LEVEL SECURITY with a
--- company_id = current_setting('app.company_id')::uuid policy on every business table.
 ```
+
+`companies.plan_tier` (V1, applied) is **not** part of this deferral — it exists, defaults to `'solo'`, is displayed read-only on the Settings page, and gates nothing. Wiring it to entitlements is M3.3's job. Likewise `budgets`/`usage_records`/`agent_stats_daily` are **not** billing: they meter tokens for control and accountability, which the pilot needs, and they stay live.
 
 ## The claim query (canonical — copy exactly; amended at M0.4 per 17 §M0.4)
 

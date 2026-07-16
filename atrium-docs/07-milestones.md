@@ -4,6 +4,10 @@ One milestone = one LLM coding session. Verify **Done when** yourself before the
 
 Changes from Rev. A: added **M0.0** (Paperclip spike), replaced monolithic M2.4 with **M2.4a/b/c** (SkyOffice fork), added **M2.6** (Agent Profile & Workspace panels), renumbered nothing else.
 
+> **Rev D structure note (2026-07-17):** work that is **not in any phase's sequence now lives at the bottom of this file**, in two sections — **DEFERRED — post-pilot backlog** (real work, no slot: M3.3) and **RETIRED — cancelled tracks** (dead, do not build: M2.4a/b/c, the SkyOffice fork). Previously both sat inline among live milestones as annotated cards, which made cancelled and deferred work read like part of the sequence. The phases now contain only work that is done or actually next. Numbering gaps (M2.3 → M2.5, M3.2 → M3.4) are intentional and signposted.
+>
+> **Rev D (2026-07-17):** **Monetization is deferred until after the pilot** (owner decision — the product is being piloted, not sold, and nothing about charging real money needs to be true for a pilot to succeed). **M3.3 (Stripe metered billing) is moved out of Phase 3** into the new "Deferred — post-pilot backlog" section at the bottom of this file; its card text is preserved verbatim so a future session can pick it up unchanged. Phase 3 is now 4 milestones (M3.1, M3.2, M3.4, M3.5) and M3.5's deps drop M3.3 — you still ship a real hardened prod URL for the pilot, it just doesn't charge anyone. Token budgets/payroll (M0.7, M2.3) are **unaffected and stay core** — they are a control and accountability surface, not a monetization one. Schema follow-on: 03 §V3's `billing_accounts` and the RLS policies are split apart (see 15 §0), so M3.2's migration carries RLS only.
+>
 > **Rev C (2026-07-12):** `17-backend-execution-plan.md` is now the authoritative backend sequence — it supersedes the M0.1/M0.2/M0.4 cards below, splits M0.5 into M0.5a/b, redefines M0.8 (dashboard already exists on mocks → milestone = mock→API swap), and inserts M0.75 + the M-SK/CTX/MEM/LN/KN/AR agent-depth series between Phase 0 and the pilot. M0.0's Paperclip half is done (notes/ committed 2026-07-12); the SkyOffice half was done in the session-3 vendor work. Frontend halves of M0.8/M2.3/M2.5/M2.6 were built early (sessions 2–3).
 
 ---
@@ -60,7 +64,9 @@ A non-you reviewer at Agrawal Namkeen submits + reviews a real task via the UI.
 Write friction list; ship ≥1 fix.
 ✅ Second pilot task completes with less friction; friction list committed to docs/notes/.
 
-## PHASE 2 — EXPAND (6)
+## PHASE 2 — EXPAND (5)
+
+> M2.4a/b/c (the SkyOffice office-view fork) used to sit between M2.3 and M2.5 — hence the numbering gap. They were retired 2026-07-15 and moved to "RETIRED — cancelled tracks" at the bottom of this file on 2026-07-17. Nothing here depends on them.
 
 **M2.1 — PM & Designer roles** · deps: Phase 1
 Two role_definitions + queues; role-appropriate prompts.
@@ -74,12 +80,6 @@ parent_task_id semantics; approval blocked while children open; `/tasks/{id}/flo
 agent_stats_daily rollups; analytics endpoints (summary, 7d, performance, top-skills); ledger + analytics dashboard panels per reference image.
 ✅ "What did this agent cost last week?" answerable in the UI; KPI cards match a hand-checked query.
 
-**M2.4a — SkyOffice vendor & boot** · **RETIRED 2026-07-15** — SkyOffice office view removed entirely (owner decision: gimmicky, no real usage); replaced by the live Team view (`/team`, derives agent zones from live task state). The vendored client and LimeZu assets were deleted; `office-realtime` will never be vendored.
-
-**M2.4b — Strip & identity wiring** · **RETIRED 2026-07-15** — see M2.4a.
-
-**M2.4c — Agent avatars driven by real state** · **RETIRED 2026-07-15** — see M2.4a. The realtimebridge → Redis relay (M0.75) stays live and generic; it simply has no office subscriber anymore.
-
 **M2.5 — Escalation surface + chat v1** · deps: M2.1 · **DONE 2026-07-16 (session 24)** — new `communication` module (V7 channels/messages/announcements), `ChatNoticePipeline` (durable consumer: `task.completed` → bot message in `#general`), `GET /companies/{id}/escalations`, and frontend chat wired to the real API. The office-bubble clause was voided when the office track retired (M2.4a); only the chat-message half of the Done-when applies.
 Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/messages API; chat panel; Atrium Bot notices; agent status lines posted to chat ~~and mirrored as bubbles~~ (bubbles void — office retired).
 ✅ Every flagged task reachable in ≤2 clicks (ReviewInbox + `/escalations`); an agent completing work produces a chat message (live-verified: Priya → "🤖 Priya finished '…' — ready for review" in `#general`).
@@ -88,25 +88,23 @@ Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/me
 Profile panel (stats, skills, current tasks, activity feed from task_events); Workspace tabs + task detail with subtask checklist per reference images.
 ✅ Both panels match reference structure; activity feed shows real events; subtask checks update progress.
 
-## PHASE 3 — MULTI-TENANT (5)
+## PHASE 3 — MULTI-TENANT (4)
+
+> M3.3 (Stripe metered billing) used to live here. It moved to "Deferred — post-pilot backlog" below on 2026-07-17 (Rev D) — the pilot doesn't charge anyone, so nothing in this phase blocks on it.
 
 **M3.1 — Auth & self-serve signup** · deps: Phase 2
 ✅ Fresh browser → signup → empty roster, unassisted. Dev headers removed.
 
 **M3.2 — Isolation hardening** · deps: M3.1
-Postgres RLS on all business tables; adversarial cross-tenant test suite (API + Colyseus join + Redis channel).
+Postgres RLS on all business tables; adversarial cross-tenant test suite (API + Redis channel). ~~Colyseus join~~ (void — office track retired 2026-07-15, M2.4a; there is no Colyseus room to join). The migration for this card is **RLS policies only** — `billing_accounts` is deferred with M3.3 (see 15 §0).
 ✅ Suite passes; a deliberately planted bypass attempt fails.
-
-**M3.3 — Usage-based billing** · deps: M3.1, M2.3
-Stripe metered billing from spent_tokens; billing page.
-✅ Test-company tasks → matching Stripe line item.
 
 **M3.4 — Onboarding & starter rosters** · deps: M3.1 · **DONE 2026-07-17 (session 30)** — `V9__seed_starter_roster_templates.sql` seeds 2 real installable packs' worth of global role templates (`lead`/`product`/`content`, alongside M0.2's `coder`/`tester`/`research`); frontend `OnboardingWizard` (post-signup only) drives pick-pack → sequential hire with manager hierarchy → guided first task → success screen linking to Team view. See `project-graph/milestones.md` and `web-dashboard.md`/`registry.md` for the full build + live Done-when evidence.
 2–3 installable templates ("Engineering pod", "Content team"); guided first task.
 ✅ Non-technical tester: signup → first assigned task <10 min, unassisted.
 
-**M3.5 — Production hardening** · deps: M3.1–M3.4
-Rate limiting, structured logs, error alerting, load test at realistic early concurrency, AWS deploy per 02 §7, THIRD-PARTY-LICENSES + credits screen. (The LimeZu paid-asset license launch-blocker from 06 §D no longer applies — assets removed with the office-track retirement, 2026-07-15.)
+**M3.5 — Production hardening** · deps: M3.1, M3.2, M3.4 (**not** M3.3 — billing deferred, Rev D)
+Rate limiting, structured logs, error alerting, load test at realistic early concurrency, AWS deploy per 02 §7, THIRD-PARTY-LICENSES + credits screen. (The LimeZu paid-asset license launch-blocker from 06 §D no longer applies — assets removed with the office-track retirement, 2026-07-15.) **Ships unmetered:** a real hardened prod URL the pilot runs on, with no payment path — no Stripe keys, no billing page, no plan gating. Whoever picks up M3.3 later adds charging on top of this, not into it.
 ✅ Load test passes; a triggered error alerts within 1 min; prod URL live.
 
 ## PHASE 4 — COMPLIANCE (3)
@@ -117,9 +115,40 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 
 ---
 
+## DEFERRED — post-pilot backlog
+
+Real work, deliberately not sequenced. Nothing in Phases 0–4 depends on anything here, and nothing here blocks a pilot. Each card is preserved as written so a future session can pick it up unchanged — treat these as ready-to-run milestone cards without a slot, not as sketches.
+
+**M3.3 — Usage-based billing** · deps: M3.1, M2.3 (both satisfied) · **DEFERRED 2026-07-17 (Rev D)**
+*Why deferred:* owner decision — Atrium is being piloted, not sold. Charging real money is the one Phase-3 concern with no pilot value, and building it early would mean carrying Stripe keys, a webhook surface, and a payment-failure state machine through every pilot iteration for no feedback in return. Deferring costs nothing: no billing code was ever written (`grep -ri stripe core-api/ web/` is empty as of 2026-07-17), and the card's deps were already green, so it can be picked up cold whenever charging becomes real.
+*Card, unchanged:* Stripe metered billing from spent_tokens; billing page.
+✅ Done when: Test-company tasks → matching Stripe line item.
+*What it will need on pickup:* 03 §V3's `billing_accounts` table (deferred alongside this card — see 15 §0's billing migration row, which is deliberately unnumbered until then); the session prompt in `11-session-prompts.md`; `plan_tier` on `companies` already exists in the applied V1 schema and is already surfaced read-only on the Settings page — it is inert, not wired to any entitlement, and gating on it is part of this card, not a prerequisite.
+*What is NOT part of this and must not be confused with it:* token budgets/caps/`usage_records`/the payroll ledger (M0.7, M2.3) are **core product and already live** — they meter spend for control and accountability, which a pilot needs. `billing_task_id` (15 §1) is cost *attribution* up a delegation chain, not money. None of that is monetization.
+
+**Per-company BYO LLM keys** · deps: none · deferred
+Noted in 10 §5 as a Phase-3+ backlog item. It was parked partly because it changes billing math — with billing itself deferred, that particular objection is void, so this is now a plain product call (isolation + key-handling work) whenever a pilot company asks to bring its own key.
+
+---
+
+## RETIRED — cancelled tracks
+
+Dead, not deferred. Kept as tombstones so the numbering gaps above make sense and so nobody re-proposes a track that was already tried and cut. **Do not build these.** Moved here from inline in Phase 2 on 2026-07-17 — they had been sitting between M2.3 and M2.5 as retired-in-place cards, which made a cancelled track read like part of the sequence.
+
+**M2.4a — SkyOffice vendor & boot** · **RETIRED 2026-07-15 (session 23)**
+The SkyOffice pixel-art office view was removed entirely — owner decision: gimmicky, no real usage (avatars sat static; nothing ever auto-updated `agent.status`). Replaced by the live **Team view** (`/team`), which derives every agent's zone from live task state via `shared/selectors.ts`'s `liveTeamZones`. The vendored client (`web/src/office/`, 21 files), the `phaser` dependency, and 1.7MB of LimeZu assets were all deleted; `office-realtime` was never vendored and never will be. **The LimeZu non-commercial-license launch blocker from 06 §D is void** — there are no assets to license.
+
+**M2.4b — Strip & identity wiring** · **RETIRED 2026-07-15** — see M2.4a. No Colyseus server was ever vendored, so there is no room to join and no `OFFICE_ROOM_TOKEN_SECRET` to rotate.
+
+**M2.4c — Agent avatars driven by real state** · **RETIRED 2026-07-15** — see M2.4a. The `realtimebridge` → Redis relay (M0.75) **stays live and generic** — it simply has no office subscriber anymore. The `office_layout` table was dropped from V7 and never applied.
+
+*Still-open thread this track leaves behind, worth knowing:* `agent.status_changed` (12 §4) has no publisher. The Team view's task-derived zones are live via polling, but its status-derived zones (`in_focus`/`offline`) still only move on a manual PATCH. That gap predates the retirement and outlived it.
+
+---
+
 ## Master tracker
 
-> Kept in sync manually and only occasionally — for the actually-current status, prefer root `CLAUDE.md` ("Current state"/"Likely next") and `project-graph/milestones.md`, which are updated every session. This table was last refreshed 2026-07-16 (session 28, after M-AR1) — also caught M-LN2 still showing ☐ despite shipping at session 26, the kind of periodic tracker staleness this file's own header already warns about.
+> Kept in sync manually and only occasionally — for the actually-current status, prefer root `CLAUDE.md` ("Current state"/"Likely next") and `project-graph/milestones.md`, which are updated every session. Last refreshed **2026-07-17 (Rev D, monetization deferral)** — which also caught **M3.1 still showing ☐ despite shipping at session 29**, the same periodic staleness this file's own header warns about (M-LN2 had the identical problem at the previous refresh). M3.3 is sorted to the bottom of the table because it is no longer part of any phase's sequence.
 
 | ID | Milestone | Phase | Status |
 |---|---|---|---|
@@ -147,16 +176,17 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M2.1 | PM & Designer roles | 2 | ✅ |
 | M2.2 | Task dependencies & flow | 2 | ✅ |
 | M2.3 | Budget ledger + analytics | 2 | ✅ |
-| M2.4a | SkyOffice vendor & boot | 2 | ✗ retired 2026-07-15 |
-| M2.4b | Strip & identity wiring | 2 | ✗ retired 2026-07-15 |
-| M2.4c | Agent avatars, real state | 2 | ✗ retired 2026-07-15 |
 | M2.5 | Escalations + chat v1 | 2 | ✅ |
 | M2.6 | Profile & Workspace panels | 2 | ✅ |
-| M3.1 | Auth & signup | 3 | ☐ |
-| M3.2 | Isolation hardening | 3 | ☐ |
-| M3.3 | Usage-based billing | 3 | ☐ |
+| M3.1 | Auth & signup | 3 | ✅ (session 29 — row was stale at ☐ until 2026-07-17) |
+| M3.2 | Isolation hardening | 3 | ☐ ← next |
 | M3.4 | Onboarding & templates | 3 | ✅ |
 | M3.5 | Production hardening | 3 | ☐ |
 | M4.1–M4.3 | Compliance roles & docs | 4 | ☐ |
+| | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |
+| M3.3 | Usage-based billing | ~~3~~ backlog | ⏸ deferred 2026-07-17 — post-pilot |
+| M2.4a | SkyOffice vendor & boot | ~~2~~ — | ✗ retired 2026-07-15 |
+| M2.4b | Strip & identity wiring | ~~2~~ — | ✗ retired 2026-07-15 |
+| M2.4c | Agent avatars, real state | ~~2~~ — | ✗ retired 2026-07-15 |
 
 **Frontend redesign series (MF-1…MF-6, not part of the 26 above — see `project-graph/milestones.md`): ✅ all complete.** Ran interleaved with the depth series (2026-07-14, sessions 7–12); supersedes the office-canvas-first dashboard with the routed Mission-Control-style shell. Not tracked in `atrium-docs/` — full plan lives at `/Users/geetanshagrawal/.claude/plans/multi-agent-employee-platform-redesign-fluttering-crescent.md`.
