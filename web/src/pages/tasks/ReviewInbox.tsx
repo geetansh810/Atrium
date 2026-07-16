@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Avatar } from "../../shared/Avatar";
 import { formatTimeAgo } from "../../shared/format";
-import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import { USE_MOCKS } from "../../shared/config";
+import { useAuthSession } from "../../shared/auth";
 import { useMemoryReviewQueue, useReviewMemoryMutation } from "../../shared/queries";
 import { useApp } from "../../shared/store";
 import type { Task } from "../../shared/types";
@@ -25,9 +26,10 @@ function MockMemoriesTab() {
 }
 
 function ApiMemoriesTab() {
-  const { data: queue = [] } = useMemoryReviewQueue(DEV_COMPANY_ID);
+  const companyId = useAuthSession()?.companyId ?? "";
+  const { data: queue = [] } = useMemoryReviewQueue(companyId);
   const { state } = useApp();
-  const review = useReviewMemoryMutation(DEV_COMPANY_ID);
+  const review = useReviewMemoryMutation(companyId);
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
 
   if (queue.length === 0) {

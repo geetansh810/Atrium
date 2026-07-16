@@ -3,7 +3,7 @@
 // Only the activity feed stays local (no backend endpoint exists for it yet).
 import { createContext, useContext, useReducer } from "react";
 import type { Dispatch, ReactNode } from "react";
-import { DEV_COMPANY_ID } from "./config";
+import { useAuthSession } from "./auth";
 import { REAL_ROLE_TEMPLATES } from "./roleTemplateDefaults";
 import {
   describeApiError,
@@ -90,7 +90,10 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function ApiAppProvider({ children }: { children: ReactNode }) {
-  const companyId = DEV_COMPANY_ID;
+  // App.tsx's AuthGate never renders this provider without a session, so this
+  // is always a real company by the time any of the hooks below fire.
+  const session = useAuthSession();
+  const companyId = session?.companyId ?? "";
   const [local, localDispatch] = useReducer(localReducer, initialLocal);
 
   const rosterQuery = useRoster(companyId);

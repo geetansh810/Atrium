@@ -43,11 +43,13 @@ class RoutingApiTest extends IntegrationTestBase {
 
     // ── helpers ────────────────────────────────────────────────────────────
 
-    private HttpHeaders headers(String companyId, String userId) {
+    private final Map<String, String> tokenByCompany = new HashMap<>();
+    private final Map<String, String> adminUserIdByCompany = new HashMap<>();
+
+    private HttpHeaders headers(String companyId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        if (companyId != null) headers.set("X-Company-Id", companyId);
-        if (userId != null) headers.set("X-User-Id", userId);
+        if (companyId != null) headers.setBearerAuth(tokenByCompany.get(companyId));
         return headers;
     }
 
@@ -59,13 +61,23 @@ class RoutingApiTest extends IntegrationTestBase {
         }
     }
 
+    /** M3.1: every company needs a signed-up admin now — this issues the JWT the rest of the file's calls carry. */
     private String createCompany(String slugPrefix) {
         String slug = slugPrefix + "-" + UUID.randomUUID().toString().substring(0, 8);
-        ResponseEntity<String> response = rest.postForEntity("/api/v1/companies",
-                new HttpEntity<>(Map.of("name", "Co " + slug, "slug", slug), headers(null, null)),
+        HttpHeaders signupHeaders = new HttpHeaders();
+        signupHeaders.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/auth/signup",
+                new HttpEntity<>(Map.of(
+                        "companyName", "Co " + slug, "companySlug", slug,
+                        "displayName", "Admin", "email", slug + "@test.local", "password", "testpass123"),
+                        signupHeaders),
                 String.class);
         assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
-        return parse(response.getBody()).get("id").asText();
+        JsonNode body = parse(response.getBody());
+        String companyId = body.get("companyId").asText();
+        tokenByCompany.put(companyId, body.get("token").asText());
+        adminUserIdByCompany.put(companyId, body.get("userId").asText());
+        return companyId;
     }
 
     private void hireAgent(String companyId, String name, String skill) {
@@ -77,18 +89,18 @@ class RoutingApiTest extends IntegrationTestBase {
                         "roleTitle", "Engineer",
                         "skillTags", List.of(skill),
                         "modelProvider", "anthropic",
-                        "modelName", "claude-sonnet-5"), headers(companyId, null)),
+                        "modelName", "claude-sonnet-5"), headers(companyId)),
                 String.class);
         assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
     }
 
-    private ResponseEntity<String> postTask(String companyId, String userId, Map<String, Object> body) {
+    private ResponseEntity<String> postTask(String companyId, Map<String, Object> body) {
         return rest.postForEntity("/api/v1/companies/" + companyId + "/tasks",
-                new HttpEntity<>(body, headers(companyId, userId)), String.class);
+                new HttpEntity<>(body, headers(companyId)), String.class);
     }
 
     private ResponseEntity<String> getWithTenant(String url, String companyId) {
-        return rest.exchange(url, HttpMethod.GET, new HttpEntity<>(headers(companyId, null)),
+        return rest.exchange(url, HttpMethod.GET, new HttpEntity<>(headers(companyId)),
                 String.class);
     }
 
@@ -99,26 +111,19 @@ class RoutingApiTest extends IntegrationTestBase {
         return body;
     }
 
-    /** No users API until Phase 3 — seed the human directly (tasks.created_by_user_id FK). */
-    private String createUser(String companyId) {
-        return jdbc.queryForObject(
-                "INSERT INTO users (company_id, display_name, email) VALUES (?::uuid, ?, ?) RETURNING id",
-                String.class, companyId, "Test User", "user-" + UUID.randomUUID() + "@test.local");
-    }
-
     // ── Done-when: one task_events row AND one outbox_events row, same tx ──
 
     @Test
     void createTaskWritesExactlyOneAuditRowAndOneOutboxRow() {
         String company = createCompany("m03");
         hireAgent(company, "CoderAgent", "coding");
-        String userId = createUser(company);
+        String userId = adminUserIdByCompany.get(company);
 
         Map<String, Object> body = taskBody("Build the widget", "coding");
         body.put("description", "A widget");
         body.put("priority", 2);
         body.put("subtasks", List.of(Map.of("label", "design"), Map.of("label", "implement")));
-        ResponseEntity<String> response = postTask(company, userId, body);
+        ResponseEntity<String> response = postTask(company, body);
         assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
 
         JsonNode task = parse(response.getBody()).get("task");
@@ -168,21 +173,23 @@ class RoutingApiTest extends IntegrationTestBase {
         String company = createCompany("chain");
         hireAgent(company, "CoderAgent", "coding");
 
-        String parentId = parse(postTask(company, null, taskBody("Parent", "coding")).getBody())
+        String parentId = parse(postTask(company, taskBody("Parent", "coding")).getBody())
                 .get("task").get("id").asText();
 
         Map<String, Object> childBody = taskBody("Child", "coding");
         childBody.put("parentTaskId", parentId);
-        JsonNode child = parse(postTask(company, null, childBody).getBody()).get("task");
+        JsonNode child = parse(postTask(company, childBody).getBody()).get("task");
 
         assertThat(child.get("parentTaskId").asText()).isEqualTo(parentId);
         assertThat(child.get("billingTaskId").asText()).as("bills to the root").isEqualTo(parentId);
         assertThat(child.get("requestDepth").asInt()).isEqualTo(1);
-        // created without a user header → system actor
+        // M3.1: every authenticated call now carries a real user (the signed-up admin) —
+        // there's no more "no user header" path, so this is never the "system" actor.
         JsonNode events = parse(getWithTenant(
                 "/api/v1/tasks/" + child.get("id").asText() + "/events", company).getBody());
         assertThat(events.get("data")).hasSize(1);
-        assertThat(events.get("data").get(0).get("actor").asText()).isEqualTo("system");
+        assertThat(events.get("data").get(0).get("actor").asText())
+                .isEqualTo("user:" + adminUserIdByCompany.get(company));
     }
 
     // ── skill is validated against the roster, never a switch ───────────────
@@ -192,7 +199,7 @@ class RoutingApiTest extends IntegrationTestBase {
         String company = createCompany("noskill");
         hireAgent(company, "CoderAgent", "coding");
 
-        ResponseEntity<String> response = postTask(company, null, taskBody("Nope", "juggling"));
+        ResponseEntity<String> response = postTask(company, taskBody("Nope", "juggling"));
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(parse(response.getBody()).get("fieldErrors").has("requiredSkill")).isTrue();
         // nothing half-written
@@ -208,7 +215,7 @@ class RoutingApiTest extends IntegrationTestBase {
         String company = createCompany("page");
         hireAgent(company, "CoderAgent", "coding");
         for (int i = 1; i <= 5; i++) {
-            assertThat(postTask(company, null, taskBody("Task " + i, "coding"))
+            assertThat(postTask(company, taskBody("Task " + i, "coding"))
                     .getStatusCode().value()).isEqualTo(201);
         }
 
@@ -253,7 +260,7 @@ class RoutingApiTest extends IntegrationTestBase {
         String companyA = createCompany("task-iso-a");
         String companyB = createCompany("task-iso-b");
         hireAgent(companyA, "SecretCoder", "coding");
-        String taskA = parse(postTask(companyA, null, taskBody("Secret work", "coding")).getBody())
+        String taskA = parse(postTask(companyA, taskBody("Secret work", "coding")).getBody())
                 .get("task").get("id").asText();
 
         // B's board is empty
@@ -270,11 +277,11 @@ class RoutingApiTest extends IntegrationTestBase {
                 .getStatusCode().value()).isEqualTo(404);
 
         // B cannot create tasks on A's board
-        assertThat(postTask(companyA, null, taskBody("Sneaky", "coding")).getStatusCode().value())
-                .as("A's own header still works").isEqualTo(201);
+        assertThat(postTask(companyA, taskBody("Sneaky", "coding")).getStatusCode().value())
+                .as("A's own token still works").isEqualTo(201);
         ResponseEntity<String> cross = rest.postForEntity(
                 "/api/v1/companies/" + companyA + "/tasks",
-                new HttpEntity<>(taskBody("Hijack", "coding"), headers(companyB, null)),
+                new HttpEntity<>(taskBody("Hijack", "coding"), headers(companyB)),
                 String.class);
         assertThat(cross.getStatusCode().value()).isEqualTo(404);
     }
@@ -288,7 +295,7 @@ class RoutingApiTest extends IntegrationTestBase {
 
         Map<String, Object> body = taskBody("Detailed", "coding");
         body.put("subtasks", List.of(Map.of("label", "step one")));
-        String taskId = parse(postTask(company, null, body).getBody())
+        String taskId = parse(postTask(company, body).getBody())
                 .get("task").get("id").asText();
 
         JsonNode detail = parse(getWithTenant("/api/v1/tasks/" + taskId, company).getBody());
@@ -307,6 +314,6 @@ class RoutingApiTest extends IntegrationTestBase {
         // unknown parent → 404, nothing created
         Map<String, Object> orphan = taskBody("Orphan", "coding");
         orphan.put("parentTaskId", UUID.randomUUID().toString());
-        assertThat(postTask(company, null, orphan).getStatusCode().value()).isEqualTo(404);
+        assertThat(postTask(company, orphan).getStatusCode().value()).isEqualTo(404);
     }
 }

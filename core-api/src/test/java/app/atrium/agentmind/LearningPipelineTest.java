@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -108,10 +109,12 @@ class LearningPipelineTest extends IntegrationTestBase {
 
     // ── helpers (same shapes as LlmLoopRuntimeTest) ─────────────────────────
 
+    private final Map<String, String> tokenByCompany = new HashMap<>();
+
     private HttpHeaders headers(String companyId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        if (companyId != null) headers.set("X-Company-Id", companyId);
+        if (companyId != null) headers.setBearerAuth(tokenByCompany.get(companyId));
         return headers;
     }
 
@@ -123,12 +126,22 @@ class LearningPipelineTest extends IntegrationTestBase {
         }
     }
 
+    /** M3.1: every company needs a signed-up admin now — this issues the JWT the rest of the file's calls carry. */
     private String createCompany(String slugPrefix) {
         String slug = slugPrefix + "-" + UUID.randomUUID().toString().substring(0, 8);
-        ResponseEntity<String> response = rest.postForEntity("/api/v1/companies",
-                new HttpEntity<>(Map.of("name", "Co " + slug, "slug", slug), headers(null)), String.class);
+        HttpHeaders signupHeaders = new HttpHeaders();
+        signupHeaders.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> response = rest.postForEntity("/api/v1/auth/signup",
+                new HttpEntity<>(Map.of(
+                        "companyName", "Co " + slug, "companySlug", slug,
+                        "displayName", "Admin", "email", slug + "@test.local", "password", "testpass123"),
+                        signupHeaders),
+                String.class);
         assertThat(response.getStatusCode().value()).as(response.getBody()).isEqualTo(201);
-        return parse(response.getBody()).get("id").asText();
+        JsonNode body = parse(response.getBody());
+        String companyId = body.get("companyId").asText();
+        tokenByCompany.put(companyId, body.get("token").asText());
+        return companyId;
     }
 
     /** Hires via the API (which auto-starts the real llm_loop), then stops that loop

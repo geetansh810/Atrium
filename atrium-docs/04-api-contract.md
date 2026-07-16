@@ -3,14 +3,22 @@
 
 > **Rev C:** `16-api-contract-delta.md` adds skills/memory/review-queue/model-catalog endpoints, new agent fields (`runtimeType`, `runtimeConfig`, `paused`), new event payloads, and names the claim/progress/complete set below as the **Worker API gateway** for external agent runtimes. Read 16 alongside this file.
 
-Base URL: `/api/v1`. JSON everywhere. Errors: RFC-7807 `application/problem+json`. Auth: Phase 0–2 dev header `X-Company-Id` + `X-User-Id`; Phase 3 replaces with `Authorization: Bearer <JWT>` (claims: userId, companyId, role) — endpoint shapes do not change.
+Base URL: `/api/v1`. JSON everywhere. Errors: RFC-7807 `application/problem+json`. **Auth (M3.1, 2026-07-16): `X-Company-Id`/`X-User-Id` dev headers are gone.** Every `/api/**` route (except `/api/v1/auth/signup`, `/api/v1/auth/login`, and the Worker API gateway below) requires `Authorization: Bearer <JWT>` (claims: `sub`=userId, `companyId`, `role`, HS256, `atrium.jwt.secret`/`ATRIUM_JWT_SECRET`) — endpoint shapes below are otherwise unchanged. The Worker API gateway (`/tasks/{id}/claim`, `/tasks/{id}/lease/renew`) is a separate auth axis — `X-Agent-Id` only, no human bearer token — since it resolves its own tenant from the agent id (registry `AgentDirectory.companyIdOf`).
+
+## Auth
+
+| Method | Path | Body → Response |
+|---|---|---|
+| POST | `/auth/signup` | `{companyName, companySlug, displayName, email, password}` → `{token, companyId, userId, role, companyName, companySlug}` — creates the company AND its first admin user atomically; the one pre-auth bootstrap route |
+| POST | `/auth/login` | `{email, password}` → same shape as signup |
+
+Passwords: BCrypt (`spring-security-crypto`), never logged, never returned. JWT expiry: 30 days (no refresh-token flow this milestone — a real production posture would want shorter-lived tokens + refresh; deferred to M3.5). `role` is carried on the token but nothing gates on it yet (single-admin-per-company reality so far — RBAC enforcement is a future card, not this one's scope).
 
 ## Registry
 
 | Method | Path | Body → Response |
 |---|---|---|
-| POST | `/companies` | `{name, slug}` → Company |
-| GET | `/companies/{id}` | → Company |
+| GET | `/companies/{id}` | → Company (company creation now only via `POST /auth/signup` above — M3.1 removed the standalone bootstrap route since every company must have an owning admin user) |
 | POST | `/companies/{id}/agents` | `{name, spriteKey, roleDefinitionId?, roleTemplateKey?, roleTitle, skillTags[], modelProvider, modelName, managerAgentId?, about?}` → Agent |
 | GET | `/companies/{id}/roster` | → `Agent[]` (with live status, current activity line) |
 | PATCH | `/agents/{id}` | partial update → Agent |

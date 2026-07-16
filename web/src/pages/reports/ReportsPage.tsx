@@ -1,6 +1,7 @@
 import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
-import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import { USE_MOCKS } from "../../shared/config";
+import { useAuthSession } from "../../shared/auth";
 import {
   analyticsSummary as mockSummary,
   agentPerformance as mockAgentPerformance,
@@ -51,10 +52,11 @@ function useMockAnalytics(): AnalyticsData {
 }
 
 function useRealAnalytics(): AnalyticsData {
-  const summaryQuery = useAnalyticsSummary(DEV_COMPANY_ID);
-  const tasks7dQuery = useTasks7d(DEV_COMPANY_ID);
-  const performanceQuery = useAgentPerformance(DEV_COMPANY_ID);
-  const topSkillsQuery = useTopSkills(DEV_COMPANY_ID);
+  const companyId = useAuthSession()?.companyId ?? "";
+  const summaryQuery = useAnalyticsSummary(companyId);
+  const tasks7dQuery = useTasks7d(companyId);
+  const performanceQuery = useAgentPerformance(companyId);
+  const topSkillsQuery = useTopSkills(companyId);
   return {
     avgSuccessRate: summaryQuery.data?.successRateAllTime ?? 0,
     focusMinutesToday: null,

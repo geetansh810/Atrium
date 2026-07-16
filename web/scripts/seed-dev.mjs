@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Seeds a demo company against a running core-api (docker compose up, or
-// core-api on :8080 some other way) and writes the resulting company id into
-// web/.env.local so `npm run dev` picks it up as VITE_COMPANY_ID.
+// core-api on :8080 some other way) via the real signup flow (M3.1) — there's
+// no more dev-header bootstrap. Prints the admin email/password so you can
+// log in through the actual web UI at /.
 //
 // Hires the 3 real global role templates (coder/tester/research — the only
 // ones that actually exist server-side, all Anthropic models since
 // AnthropicClient is the only live LlmProvider) instead of the 6-persona mock
-// roster: M0.8's demo company only needs agents that can really claim and run.
+// roster: the demo company only needs agents that can really claim and run.
 //
 // Usage: node scripts/seed-dev.mjs [--api-base http://localhost:8080/api/v1]
 
@@ -18,9 +19,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const argApiBase = process.argv.find((a) => a.startsWith("--api-base="))?.split("=")[1];
 const API_BASE = argApiBase ?? process.env.VITE_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
-async function request(path, { method = "GET", body, companyId } = {}) {
+let token;
+
+async function request(path, { method = "GET", body, auth = true } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (companyId) headers["X-Company-Id"] = companyId;
+  if (auth && token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
@@ -82,12 +85,16 @@ const AGENTS = [
 
 async function main() {
   const slug = `atrium-demo-${Date.now().toString(36)}`;
-  console.log(`Creating company "Atrium Demo Co" (slug ${slug}) against ${API_BASE}...`);
-  const company = await request("/companies", {
+  const email = `admin@${slug}.local`;
+  const password = "demo-password-123";
+  console.log(`Signing up "Atrium Demo Co" (slug ${slug}) against ${API_BASE}...`);
+  const auth = await request("/auth/signup", {
     method: "POST",
-    body: { name: "Atrium Demo Co", slug },
+    auth: false,
+    body: { companyName: "Atrium Demo Co", companySlug: slug, displayName: "Demo Admin", email, password },
   });
-  console.log(`  company id: ${company.id}`);
+  token = auth.token;
+  console.log(`  company id: ${auth.companyId}`);
 
   const period = (() => {
     const now = new Date();
@@ -95,16 +102,14 @@ async function main() {
   })();
 
   // Company-wide cap so the Budget panel's top bar isn't empty.
-  await request(`/companies/${company.id}/budget`, {
+  await request(`/companies/${auth.companyId}/budget`, {
     method: "PUT",
-    companyId: company.id,
     body: { agentId: null, period, capTokens: 10_000_000 },
   });
 
   for (const spec of AGENTS) {
-    const agent = await request(`/companies/${company.id}/agents`, {
+    const agent = await request(`/companies/${auth.companyId}/agents`, {
       method: "POST",
-      companyId: company.id,
       body: {
         name: spec.name,
         roleTemplateKey: spec.roleTemplateKey,
@@ -115,9 +120,8 @@ async function main() {
         about: spec.about,
       },
     });
-    await request(`/companies/${company.id}/budget`, {
+    await request(`/companies/${auth.companyId}/budget`, {
       method: "PUT",
-      companyId: company.id,
       body: { agentId: agent.id, period, capTokens: spec.budgetTokens },
     });
     // status defaults to 'offline' (V1__core.sql) — flip online so the office
@@ -126,7 +130,6 @@ async function main() {
     // "online" here is a one-time visual seed, not a live indicator.
     await request(`/agents/${agent.id}`, {
       method: "PATCH",
-      companyId: company.id,
       body: { status: "online" },
     });
     console.log(`  hired ${agent.name} (${agent.id})`);
@@ -137,11 +140,11 @@ async function main() {
     envPath,
     `# Written by scripts/seed-dev.mjs on ${new Date().toISOString()}\n` +
       `VITE_USE_MOCKS=0\n` +
-      `VITE_API_BASE_URL=${API_BASE}\n` +
-      `VITE_COMPANY_ID=${company.id}\n`,
+      `VITE_API_BASE_URL=${API_BASE}\n`,
   );
   console.log(`\nWrote ${envPath} — restart \`npm run dev\` to pick it up.`);
-  console.log(`Company: ${company.name} (${company.id})`);
+  console.log(`\nCompany: ${auth.companyName} (${auth.companyId})`);
+  console.log(`Log in at / with:\n  email:    ${email}\n  password: ${password}`);
 }
 
 main().catch((err) => {

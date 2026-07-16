@@ -3,7 +3,8 @@ import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
 import { formatFocusTime, formatTimeAgo } from "../../shared/format";
-import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import { USE_MOCKS } from "../../shared/config";
+import { useAuthSession } from "../../shared/auth";
 import { synthesizeFeed, TASK_EVENT_LABEL } from "../../shared/selectors";
 import { useAgentMemories } from "../../shared/queries";
 import { useApp } from "../../shared/store";
@@ -32,7 +33,8 @@ function MockMemoryTab(_props: { agentId: string }) {
 }
 
 function ApiMemoryTab({ agentId }: { agentId: string }) {
-  const memories = useAgentMemories(DEV_COMPANY_ID, agentId).data ?? [];
+  const companyId = useAuthSession()?.companyId ?? "";
+  const memories = useAgentMemories(companyId, agentId).data ?? [];
   if (memories.length === 0) {
     return <EmptyState title="No memories yet." description="This agent hasn't learned anything scoped to it yet." />;
   }

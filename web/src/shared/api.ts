@@ -1,8 +1,9 @@
 // Typed client for core-api (atrium-docs/04-api-contract.md + 16-api-contract-delta.md
-// §1). Dev auth per 04 §Base URL: X-Company-Id header on every /api/v1 call except
-// company creation. No X-User-Id — no Users API exists yet (Phase 3); omitting the
-// header leaves tasks.created_by_user_id NULL rather than tripping the users FK.
-import { API_BASE_URL, DEV_COMPANY_ID } from "./config";
+// §1). Auth (M3.1): every /api/v1 call carries Authorization: Bearer <token> from
+// the signed-in session (shared/auth.ts) — the old X-Company-Id/X-User-Id dev
+// headers are gone. auth.signup/auth.login are the only pre-auth calls.
+import { API_BASE_URL } from "./config";
+import { getAuthSession } from "./auth";
 
 export class ApiError extends Error {
   status: number;
@@ -18,13 +19,16 @@ export class ApiError extends Error {
 interface RequestOptions {
   method?: string;
   body?: unknown;
-  companyId?: string;
+  /** Only auth.signup/auth.login pass this — every other call authenticates via the stored session. */
+  skipAuth?: boolean;
 }
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const companyId = opts.companyId ?? DEV_COMPANY_ID;
-  if (companyId) headers["X-Company-Id"] = companyId;
+  if (!opts.skipAuth) {
+    const token = getAuthSession()?.token;
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: opts.method ?? "GET",
@@ -50,6 +54,16 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 }
 
 // ── Shapes mirroring the Java DTOs verbatim (camelCase, so no reshape needed) ──
+
+export interface AuthResponse {
+  token: string;
+  companyId: string;
+  companyName: string;
+  companySlug: string;
+  userId: string;
+  displayName: string;
+  role: string;
+}
 
 export interface CompanyResponse {
   id: string;
@@ -284,57 +298,53 @@ export interface MemoryResponse {
 }
 
 export const api = {
-  createCompany: (body: { name: string; slug: string }) =>
-    request<CompanyResponse>("/companies", { method: "POST", body, companyId: "" }),
+  // M3.1: the only two pre-auth calls — everything else authenticates via the
+  // stored session's bearer token (shared/auth.ts), never a companyId header.
+  signup: (body: { companyName: string; companySlug: string; displayName: string; email: string; password: string }) =>
+    request<AuthResponse>("/auth/signup", { method: "POST", body, skipAuth: true }),
+  login: (body: { email: string; password: string }) =>
+    request<AuthResponse>("/auth/login", { method: "POST", body, skipAuth: true }),
+
   getCompany: (id: string) => request<CompanyResponse>(`/companies/${id}`),
 
   hireAgent: (companyId: string, body: HireAgentRequest) =>
-    request<AgentResponse>(`/companies/${companyId}/agents`, { method: "POST", body, companyId }),
-  roster: (companyId: string) =>
-    request<AgentResponse[]>(`/companies/${companyId}/roster`, { companyId }),
-  patchAgent: (companyId: string, agentId: string, body: PatchAgentRequest) =>
-    request<AgentResponse>(`/agents/${agentId}`, { method: "PATCH", body, companyId }),
+    request<AgentResponse>(`/companies/${companyId}/agents`, { method: "POST", body }),
+  roster: (companyId: string) => request<AgentResponse[]>(`/companies/${companyId}/roster`),
+  patchAgent: (_companyId: string, agentId: string, body: PatchAgentRequest) =>
+    request<AgentResponse>(`/agents/${agentId}`, { method: "PATCH", body }),
 
-  roleDefinitions: (companyId: string) =>
-    request<RoleDefinitionResponse[]>("/role-definitions", { companyId }),
+  roleDefinitions: () => request<RoleDefinitionResponse[]>("/role-definitions"),
 
-  modelCatalog: (companyId: string) =>
-    request<ModelCatalogResponse[]>("/model-catalog", { companyId }),
+  modelCatalog: (_companyId: string) => request<ModelCatalogResponse[]>("/model-catalog"),
 
   createTask: (companyId: string, body: CreateTaskRequest) =>
-    request<TaskDetailResponse>(`/companies/${companyId}/tasks`, { method: "POST", body, companyId }),
+    request<TaskDetailResponse>(`/companies/${companyId}/tasks`, { method: "POST", body }),
   listTasks: (companyId: string, limit = 200) =>
-    request<PageEnvelope<TaskResponse>>(`/companies/${companyId}/tasks?limit=${limit}`, { companyId }),
-  getTask: (companyId: string, taskId: string) =>
-    request<TaskDetailResponse>(`/tasks/${taskId}`, { companyId }),
-  approveTask: (companyId: string, taskId: string) =>
-    request<TaskResponse>(`/tasks/${taskId}/approve`, { method: "POST", companyId }),
-  rejectTask: (companyId: string, taskId: string, feedback: string) =>
-    request<TaskResponse>(`/tasks/${taskId}/reject`, { method: "POST", body: { feedback }, companyId }),
-  taskEvents: (companyId: string, taskId: string, limit = 50) =>
-    request<PageEnvelope<TaskEventResponse>>(`/tasks/${taskId}/events?limit=${limit}`, { companyId }),
+    request<PageEnvelope<TaskResponse>>(`/companies/${companyId}/tasks?limit=${limit}`),
+  getTask: (_companyId: string, taskId: string) => request<TaskDetailResponse>(`/tasks/${taskId}`),
+  approveTask: (_companyId: string, taskId: string) =>
+    request<TaskResponse>(`/tasks/${taskId}/approve`, { method: "POST" }),
+  rejectTask: (_companyId: string, taskId: string, feedback: string) =>
+    request<TaskResponse>(`/tasks/${taskId}/reject`, { method: "POST", body: { feedback } }),
+  taskEvents: (_companyId: string, taskId: string, limit = 50) =>
+    request<PageEnvelope<TaskEventResponse>>(`/tasks/${taskId}/events?limit=${limit}`),
 
   listBudgets: (companyId: string, period?: string) =>
-    request<BudgetResponse[]>(
-      `/companies/${companyId}/budget${period ? `?period=${period}` : ""}`,
-      { companyId },
-    ),
+    request<BudgetResponse[]>(`/companies/${companyId}/budget${period ? `?period=${period}` : ""}`),
   upsertBudget: (companyId: string, body: { agentId: string | null; period: string; capTokens: number }) =>
-    request<BudgetResponse>(`/companies/${companyId}/budget`, { method: "PUT", body, companyId }),
+    request<BudgetResponse>(`/companies/${companyId}/budget`, { method: "PUT", body }),
 
   analyticsSummary: (companyId: string) =>
-    request<AnalyticsSummaryResponse>(`/companies/${companyId}/analytics/summary`, { companyId }),
+    request<AnalyticsSummaryResponse>(`/companies/${companyId}/analytics/summary`),
   analyticsTasks7d: (companyId: string) =>
-    request<DayCountResponse[]>(`/companies/${companyId}/analytics/tasks-7d`, { companyId }),
+    request<DayCountResponse[]>(`/companies/${companyId}/analytics/tasks-7d`),
   analyticsAgentPerformance: (companyId: string, days?: number) =>
     request<AgentPerformanceResponse[]>(
       `/companies/${companyId}/analytics/agent-performance${days ? `?days=${days}` : ""}`,
-      { companyId },
     ),
   analyticsTopSkills: (companyId: string, days?: number) =>
     request<SkillShareResponse[]>(
       `/companies/${companyId}/analytics/top-skills${days ? `?days=${days}` : ""}`,
-      { companyId },
     ),
   analyticsCostPerTask: (companyId: string, period?: string, limit?: number) =>
     request<TaskCostResponse[]>(
@@ -342,33 +352,29 @@ export const api = {
         ...(period ? { period } : {}),
         ...(limit ? { limit: String(limit) } : {}),
       }).toString()}`,
-      { companyId },
     ),
 
-  listChannels: (companyId: string) =>
-    request<ChannelResponse[]>(`/companies/${companyId}/channels`, { companyId }),
+  listChannels: (companyId: string) => request<ChannelResponse[]>(`/companies/${companyId}/channels`),
   createChannel: (companyId: string, body: { name: string; kind?: string }) =>
-    request<ChannelResponse>(`/companies/${companyId}/channels`, { method: "POST", body, companyId }),
-  listMessages: (companyId: string, channelId: string, limit = 50) =>
-    request<PageEnvelope<MessageResponse>>(`/channels/${channelId}/messages?limit=${limit}`, { companyId }),
-  sendMessage: (companyId: string, channelId: string, text: string) =>
-    request<MessageResponse>(`/channels/${channelId}/messages`, { method: "POST", body: { text }, companyId }),
+    request<ChannelResponse>(`/companies/${companyId}/channels`, { method: "POST", body }),
+  listMessages: (_companyId: string, channelId: string, limit = 50) =>
+    request<PageEnvelope<MessageResponse>>(`/channels/${channelId}/messages?limit=${limit}`),
+  sendMessage: (_companyId: string, channelId: string, text: string) =>
+    request<MessageResponse>(`/channels/${channelId}/messages`, { method: "POST", body: { text } }),
 
   listAnnouncements: (companyId: string) =>
-    request<AnnouncementResponse[]>(`/companies/${companyId}/announcements`, { companyId }),
+    request<AnnouncementResponse[]>(`/companies/${companyId}/announcements`),
   createAnnouncement: (companyId: string, body: { title: string; body?: string; category?: string }) =>
-    request<AnnouncementResponse>(`/companies/${companyId}/announcements`, { method: "POST", body, companyId }),
+    request<AnnouncementResponse>(`/companies/${companyId}/announcements`, { method: "POST", body }),
 
-  listEscalations: (companyId: string) =>
-    request<TaskResponse[]>(`/companies/${companyId}/escalations`, { companyId }),
+  listEscalations: (companyId: string) => request<TaskResponse[]>(`/companies/${companyId}/escalations`),
 
   listMemories: (companyId: string, agentId: string) =>
     request<PageEnvelope<MemoryResponse>>(
       `/companies/${companyId}/memories?${new URLSearchParams({ agentId }).toString()}`,
-      { companyId },
     ),
   memoryReviewQueue: (companyId: string) =>
-    request<PageEnvelope<MemoryResponse>>(`/companies/${companyId}/memories/review-queue`, { companyId }),
-  reviewMemory: (companyId: string, memoryId: string, body: { action: "approve" | "reject" }) =>
-    request<MemoryResponse>(`/memories/${memoryId}/review`, { method: "POST", body, companyId }),
+    request<PageEnvelope<MemoryResponse>>(`/companies/${companyId}/memories/review-queue`),
+  reviewMemory: (_companyId: string, memoryId: string, body: { action: "approve" | "reject" }) =>
+    request<MemoryResponse>(`/memories/${memoryId}/review`, { method: "POST", body }),
 };

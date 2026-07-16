@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { BotIcon } from "../shared/icons";
 import { PRODUCT_NAME } from "../shared/theme";
+import { USE_MOCKS } from "../shared/config";
 import { currentUser } from "../shared/mockData";
+import { useAuthSession } from "../shared/auth";
 import { useApp } from "../shared/store";
 import "./Toast.css";
 
@@ -10,9 +12,11 @@ import "./Toast.css";
 // anywhere — locate-me, budget warnings, etc.).
 export function Toast() {
   const { state, dispatch } = useApp();
+  const session = useAuthSession(); // real API mode: the signed-in admin (M3.1); ignored in mock mode
   const [greetingDismissed, setGreetingDismissed] = useState(false);
   const notice = state.ui.botNotice;
   const inProgressCount = state.tasks.filter((t) => t.status === "in_progress").length;
+  const displayName = USE_MOCKS ? currentUser.displayName : (session?.displayName ?? "there");
 
   if (notice === null && greetingDismissed) return null;
 
@@ -26,7 +30,7 @@ export function Toast() {
         <div className="toast-text">
           {notice ?? (
             <>
-              Welcome back, {currentUser.displayName}! You have {inProgressCount} tasks in
+              Welcome back, {displayName}! You have {inProgressCount} tasks in
               progress.
             </>
           )}

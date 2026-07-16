@@ -41,6 +41,18 @@ public class JpaAgentDirectory implements AgentDirectory {
         return agents.findByIdAndCompanyId(agentId, companyId);
     }
 
+    /**
+     * The one deliberate exception to "no method without a companyId parameter"
+     * (AgentRepository's own class javadoc): this returns nothing but the
+     * companyId itself, used only to bootstrap the Worker API gateway's tenant
+     * resolution from {@code X-Agent-Id} before any company-scoped work happens.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> companyIdOf(UUID agentId) {
+        return agents.findById(agentId).map(Agent::getCompanyId);
+    }
+
     @Override
     @Transactional
     public void pauseForBudget(UUID companyId, UUID agentId) {

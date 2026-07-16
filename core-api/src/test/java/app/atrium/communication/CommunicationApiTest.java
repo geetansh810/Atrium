@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.atrium.IntegrationTestBase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,13 @@ class CommunicationApiTest extends IntegrationTestBase {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
 
+    private final Map<String, String> tokenByCompany = new HashMap<>();
+    private final Map<String, String> adminUserIdByCompany = new HashMap<>();
+
     private HttpHeaders headers(String companyId) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
-        if (companyId != null) h.set("X-Company-Id", companyId);
+        if (companyId != null) h.setBearerAuth(tokenByCompany.get(companyId));
         return h;
     }
 
@@ -42,12 +46,23 @@ class CommunicationApiTest extends IntegrationTestBase {
         }
     }
 
+    /** M3.1: every company needs a signed-up admin now — this issues the JWT the rest of the file's calls carry. */
     private String createCompany(String slugPrefix) {
         String slug = slugPrefix + "-" + UUID.randomUUID().toString().substring(0, 8);
-        ResponseEntity<String> r = rest.postForEntity("/api/v1/companies",
-                new HttpEntity<>(Map.of("name", "Co " + slug, "slug", slug), headers(null)), String.class);
+        HttpHeaders signupHeaders = new HttpHeaders();
+        signupHeaders.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> r = rest.postForEntity("/api/v1/auth/signup",
+                new HttpEntity<>(Map.of(
+                        "companyName", "Co " + slug, "companySlug", slug,
+                        "displayName", "Admin", "email", slug + "@test.local", "password", "testpass123"),
+                        signupHeaders),
+                String.class);
         assertThat(r.getStatusCode().value()).as(r.getBody()).isEqualTo(201);
-        return parse(r.getBody()).get("id").asText();
+        JsonNode body = parse(r.getBody());
+        String companyId = body.get("companyId").asText();
+        tokenByCompany.put(companyId, body.get("token").asText());
+        adminUserIdByCompany.put(companyId, body.get("userId").asText());
+        return companyId;
     }
 
     private ResponseEntity<String> post(String path, Object body, String companyId) {
@@ -102,7 +117,9 @@ class CommunicationApiTest extends IntegrationTestBase {
             ResponseEntity<String> sent = post("/api/v1/channels/" + channelId + "/messages",
                     Map.of("text", text), company);
             assertThat(sent.getStatusCode().value()).as(sent.getBody()).isEqualTo(201);
-            assertThat(parse(sent.getBody()).get("sender").asText()).isEqualTo("user"); // no X-User-Id
+            // M3.1: every authenticated call now carries a real user (the signed-up admin)
+            assertThat(parse(sent.getBody()).get("sender").asText())
+                    .isEqualTo("user:" + adminUserIdByCompany.get(company));
         }
         assertThat(outboxCount(company, "chat.message")).isEqualTo(outboxBefore + 3);
 

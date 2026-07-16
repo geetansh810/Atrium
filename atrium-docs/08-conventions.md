@@ -26,8 +26,8 @@
 
 ## Config & environments
 - `.env.example` committed with every variable documented; real `.env` gitignored.
-- Key vars: `DATABASE_URL, REDIS_URL, ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_API_KEY, OFFICE_ROOM_TOKEN_SECRET, APP_BASE_URL, PRODUCT_NAME` (single rename point).
-- Profiles: `dev` (dev auth headers, verbose logs), `prod` (JWT, JSON logs).
+- Key vars: `DATABASE_URL, REDIS_URL, ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_API_KEY, ATRIUM_JWT_SECRET, APP_BASE_URL, PRODUCT_NAME` (single rename point).
+- Profiles: `dev`/`prod` both use real JWT auth now (M3.1 removed dev headers) — `dev` ships an insecure fallback `atrium.jwt.secret` in `application.yml` for local convenience only; `ATRIUM_JWT_SECRET` MUST be set in any shared/prod environment.
 
 ## Definition of done (every milestone)
 1. "Done when" line verified by you, by hand or by the committed test — not assumed.

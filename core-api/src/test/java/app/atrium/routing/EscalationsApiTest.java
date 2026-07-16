@@ -8,6 +8,7 @@ import app.atrium.execution.UsageRecorder;
 import app.atrium.registry.runtime.AgentHandle;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,10 +38,12 @@ class EscalationsApiTest extends IntegrationTestBase {
     @Autowired UsageRecorder usageRecorder;
     @Autowired PlatformTransactionManager txManager;
 
+    private final Map<String, String> tokenByCompany = new HashMap<>();
+
     private HttpHeaders headers(String companyId) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
-        if (companyId != null) h.set("X-Company-Id", companyId);
+        if (companyId != null) h.setBearerAuth(tokenByCompany.get(companyId));
         return h;
     }
 
@@ -52,12 +55,22 @@ class EscalationsApiTest extends IntegrationTestBase {
         }
     }
 
+    /** M3.1: every company needs a signed-up admin now — this issues the JWT the rest of the file's calls carry. */
     private String createCompany(String slugPrefix) {
         String slug = slugPrefix + "-" + UUID.randomUUID().toString().substring(0, 8);
-        ResponseEntity<String> r = rest.postForEntity("/api/v1/companies",
-                new HttpEntity<>(Map.of("name", "Co " + slug, "slug", slug), headers(null)), String.class);
+        HttpHeaders signupHeaders = new HttpHeaders();
+        signupHeaders.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> r = rest.postForEntity("/api/v1/auth/signup",
+                new HttpEntity<>(Map.of(
+                        "companyName", "Co " + slug, "companySlug", slug,
+                        "displayName", "Admin", "email", slug + "@test.local", "password", "testpass123"),
+                        signupHeaders),
+                String.class);
         assertThat(r.getStatusCode().value()).as(r.getBody()).isEqualTo(201);
-        return parse(r.getBody()).get("id").asText();
+        JsonNode body = parse(r.getBody());
+        String companyId = body.get("companyId").asText();
+        tokenByCompany.put(companyId, body.get("token").asText());
+        return companyId;
     }
 
     private String hireAgent(String companyId, String skill) {

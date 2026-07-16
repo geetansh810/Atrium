@@ -28,6 +28,12 @@ management:
 atrium:
   product-name: ${PRODUCT_NAME:Atrium}
   base-url: ${APP_BASE_URL:http://localhost:5173}
+  jwt:
+    # HS256 needs >=32 bytes. This dev fallback is intentionally committed and
+    # INSECURE — ATRIUM_JWT_SECRET must be set to a real random secret in any
+    # shared/staging/prod environment (08 §Config).
+    secret: ${ATRIUM_JWT_SECRET:dev-only-insecure-jwt-secret-override-me-in-any-shared-environment}
+    expiry-days: 30
   lease:
     reclaim-ms: 60000       # LeaseReclaimJob sweep interval (03 §reclaim: every minute)
   relay:

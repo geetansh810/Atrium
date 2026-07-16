@@ -500,7 +500,7 @@ public class TaskService {
         switch (view) {
             case "my" -> {
                 UUID userId = TenantContext.userId().orElseThrow(() -> new FieldValidationException(
-                        Map.of("view", "view=my requires the X-User-Id header")));
+                        Map.of("view", "view=my requires an authenticated user")));
                 sql.append(" AND created_by_user_id = :viewUserId");
                 params.put("viewUserId", userId);
             }

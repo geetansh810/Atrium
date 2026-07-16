@@ -6,7 +6,6 @@ import app.atrium.registry.CompanyService;
 import app.atrium.registry.api.AgentDtos.AgentResponse;
 import app.atrium.registry.api.AgentDtos.HireAgentRequest;
 import app.atrium.registry.api.CompanyDtos.CompanyResponse;
-import app.atrium.registry.api.CompanyDtos.CreateCompanyRequest;
 import app.atrium.common.NotFoundException;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Company creation moved to {@link AuthController#signup} (M3.1) — every company needs an owning admin user. */
 @RestController
 @RequestMapping("/api/v1/companies")
 public class CompanyController {
@@ -30,13 +30,6 @@ public class CompanyController {
     public CompanyController(CompanyService companyService, AgentService agentService) {
         this.companyService = companyService;
         this.agentService = agentService;
-    }
-
-    /** Bootstrap call — the one /api route exempt from the X-Company-Id requirement. */
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CompanyResponse create(@Valid @RequestBody CreateCompanyRequest request) {
-        return CompanyResponse.from(companyService.create(request));
     }
 
     @GetMapping("/{id}")

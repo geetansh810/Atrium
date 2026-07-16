@@ -61,6 +61,34 @@
       <artifactId>anthropic-java</artifactId>
       <version>2.34.0</version>
     </dependency>
+    <dependency>
+      <!-- BCrypt only (M3.1) — deliberately not spring-boot-starter-security: the
+           existing auth-adjacent code (TenantContextFilter) is already a hand-rolled
+           OncePerRequestFilter, not a Spring Security filter chain, and pulling in
+           the full framework would mean disabling a lot of default behavior
+           (CSRF, form login, default security filter chain) this project doesn't
+           use. This module is just the crypto helper (BCryptPasswordEncoder). -->
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+    <dependency>
+      <!-- JWT issue/verify (M3.1 auth) -->
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+      <version>0.12.6</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <version>0.12.6</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <version>0.12.6</version>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>

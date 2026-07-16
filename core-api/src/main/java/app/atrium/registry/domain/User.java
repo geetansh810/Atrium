@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Human member. Minimal until Phase 3 auth — dev mode identifies users by X-User-Id header. */
+/** Human member — signs up/logs in for real since M3.1 (04 §Auth). */
 @Entity
 @Table(name = "users")
 public class User {
@@ -32,12 +32,17 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    /** BCrypt — never plaintext, never logged, never returned in any response. */
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
     protected User() {}
 
-    public User(UUID companyId, String displayName, String email) {
+    public User(UUID companyId, String displayName, String email, String passwordHash) {
         this.companyId = companyId;
         this.displayName = displayName;
         this.email = email;
+        this.passwordHash = passwordHash;
     }
 
     public UUID getId() { return id; }
@@ -46,4 +51,5 @@ public class User {
     public String getEmail() { return email; }
     public String getRole() { return role; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getPasswordHash() { return passwordHash; }
 }

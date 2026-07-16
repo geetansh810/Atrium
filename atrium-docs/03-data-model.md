@@ -16,13 +16,14 @@ CREATE TABLE companies (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE users (               -- human members (minimal until Phase 3 auth)
+CREATE TABLE users (               -- human members
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL REFERENCES companies(id),
   display_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','member')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  password_hash TEXT NOT NULL       -- BCrypt, added M3.1 (V8) — signup/login, no plaintext ever stored
 );
 
 CREATE TABLE role_definitions (    -- what makes an agent "deep", versioned

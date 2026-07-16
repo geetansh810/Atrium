@@ -3,8 +3,9 @@
 // calls inside a single component body (which would violate rules-of-hooks
 // the moment either branch's hook set differs).
 import { PRODUCT_NAME } from "../../shared/theme";
-import { USE_MOCKS, API_BASE_URL, DEV_COMPANY_ID } from "../../shared/config";
+import { USE_MOCKS, API_BASE_URL } from "../../shared/config";
 import { useCompany, useModelCatalog } from "../../shared/queries";
+import { useAuthSession, clearAuthSession } from "../../shared/auth";
 import { companyName, currentUser } from "../../shared/mockData";
 import { formatTokens } from "../../shared/format";
 import { StatusPill } from "../../ui/StatusPill";
@@ -28,7 +29,8 @@ function MockCompanyInfoCard() {
 }
 
 function ApiCompanyInfoCard() {
-  const companyQuery = useCompany(DEV_COMPANY_ID);
+  const session = useAuthSession();
+  const companyQuery = useCompany(session?.companyId ?? "");
   return (
     <Card title="Company">
       {companyQuery.isLoading && <p className="about-text">Loading…</p>}
@@ -49,6 +51,17 @@ function ApiCompanyInfoCard() {
           </div>
         </>
       )}
+      {session && (
+        <>
+          <div className="settings-row">
+            <span className="settings-row-label">Signed in as</span>
+            <span>{session.displayName} ({session.role})</span>
+          </div>
+          <button className="btn sm" style={{ marginTop: 8 }} onClick={clearAuthSession}>
+            Log out
+          </button>
+        </>
+      )}
     </Card>
   );
 }
@@ -67,7 +80,8 @@ function MockModelCatalogCard() {
 }
 
 function ApiModelCatalogCard() {
-  const catalogQuery = useModelCatalog(DEV_COMPANY_ID);
+  const session = useAuthSession();
+  const catalogQuery = useModelCatalog(session?.companyId ?? "");
   const models = catalogQuery.data ?? [];
   return (
     <Card title="Model Catalog">

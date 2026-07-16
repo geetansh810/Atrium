@@ -17,6 +17,13 @@ public interface AgentDirectory {
     Optional<Agent> findById(UUID companyId, UUID agentId);
 
     /**
+     * Agent-only lookup, no company known in advance — the Worker API gateway's
+     * {@code X-Agent-Id} auth (04 §Auth, M3.1) resolves its own tenant this way
+     * instead of depending on a human JWT.
+     */
+    Optional<UUID> companyIdOf(UUID agentId);
+
+    /**
      * Hard-cap auto-pause (17 §M0.7, Paperclip): same effect as
      * {@code PATCH paused:true}, minus the request validation an operator
      * hitting the API would go through. No-op if already paused.

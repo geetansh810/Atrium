@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
-import { DEV_COMPANY_ID, USE_MOCKS } from "../../shared/config";
+import { USE_MOCKS } from "../../shared/config";
+import { useAuthSession } from "../../shared/auth";
 import { formatCost, formatTokens } from "../../shared/format";
 import { costPerTask } from "../../shared/mockData";
 import { currentPeriod, useCostPerTask } from "../../shared/queries";
@@ -43,7 +44,8 @@ function MockCostPerTaskSection({ taskById }: CostPerTaskSectionProps) {
 }
 
 function ApiCostPerTaskSection({ period, taskById }: CostPerTaskSectionProps) {
-  const query = useCostPerTask(DEV_COMPANY_ID, period);
+  const companyId = useAuthSession()?.companyId ?? "";
+  const query = useCostPerTask(companyId, period);
   if (query.isLoading) return <p className="about-text">Loading…</p>;
   const rows = query.data ?? [];
   if (rows.length === 0) return <EmptyState title={`No spend recorded for ${period}.`} />;
