@@ -367,4 +367,8 @@ export const api = {
       `/companies/${companyId}/memories?${new URLSearchParams({ agentId }).toString()}`,
       { companyId },
     ),
+  memoryReviewQueue: (companyId: string) =>
+    request<PageEnvelope<MemoryResponse>>(`/companies/${companyId}/memories/review-queue`, { companyId }),
+  reviewMemory: (companyId: string, memoryId: string, body: { action: "approve" | "reject" }) =>
+    request<MemoryResponse>(`/memories/${memoryId}/review`, { method: "POST", body, companyId }),
 };

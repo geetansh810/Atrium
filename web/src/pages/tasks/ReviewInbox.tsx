@@ -2,16 +2,81 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Avatar } from "../../shared/Avatar";
 import { formatTimeAgo } from "../../shared/format";
+import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import { useMemoryReviewQueue, useReviewMemoryMutation } from "../../shared/queries";
 import { useApp } from "../../shared/store";
 import type { Task } from "../../shared/types";
 import { StatusPill } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
+import { Tabs } from "../../ui/Tabs";
+import type { TabItem } from "../../ui/Tabs";
 import "./ReviewInbox.css";
+
+// Memory review-queue (16 §3, M-LN1/M-LN2) is real-API-only — no mock
+// fixture for pending memories has ever existed, same "Live API" precedent
+// EmployeeProfile's Memory tab set (M2.6).
+function MockMemoriesTab() {
+  return (
+    <EmptyState
+      title="Memory review is live-API-only."
+      description="No mock fixture exists for pending memories — switch off VITE_USE_MOCKS to review real learned memories."
+    />
+  );
+}
+
+function ApiMemoriesTab() {
+  const { data: queue = [] } = useMemoryReviewQueue(DEV_COMPANY_ID);
+  const { state } = useApp();
+  const review = useReviewMemoryMutation(DEV_COMPANY_ID);
+  const agentById = new Map(state.agents.map((a) => [a.id, a]));
+
+  if (queue.length === 0) {
+    return <EmptyState title="No memories waiting on review." />;
+  }
+
+  return (
+    <div className="review-inbox-memories">
+      {queue.map((m) => {
+        const agent = m.agentId ? agentById.get(m.agentId) : undefined;
+        const scopeLabel = m.scope === "agent" && agent ? agent.name : m.roleKey ?? m.scope;
+        return (
+          <div className="review-card" key={m.id}>
+            <div className="review-card-top">
+              <span className="review-card-title">{scopeLabel}</span>
+              <span className="chip">{m.kind}</span>
+              <StatusPill label={`scope: ${m.scope}`} tone="neutral" />
+            </div>
+            <p className="review-inbox-memory-content">{m.content}</p>
+            <div className="review-card-actions">
+              <button
+                className="btn accent sm"
+                disabled={review.isPending}
+                onClick={() => review.mutate({ memoryId: m.id, action: "approve" })}
+              >
+                Approve
+              </button>
+              <button
+                className="btn danger sm"
+                disabled={review.isPending}
+                onClick={() => review.mutate({ memoryId: m.id, action: "reject" })}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const MemoriesTab = USE_MOCKS ? MockMemoriesTab : ApiMemoriesTab;
 
 // The two-clicks-from-login escalation surface (01-product-spec §3.9),
 // promoted to a routed page (MF-3) — replaces ApprovalsPanel. Every
 // pending_review + flagged item, newest first; count matches escalationCount
-// so the nav badge and this page never disagree.
+// so the nav badge and this page never disagree. Gained a Memories tab
+// (M-LN2) for the reject→lesson→review→approve learning loop.
 export function ReviewInbox() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
@@ -31,13 +96,8 @@ export function ReviewInbox() {
     setFeedback("");
   };
 
-  return (
-    <div className="review-inbox">
-      <header className="review-inbox-head">
-        <h1>Review Inbox</h1>
-        <p>{queue.length} item{queue.length === 1 ? "" : "s"} waiting on you.</p>
-      </header>
-
+  const tasksTab = (
+    <>
       {queue.length === 0 && (
         <EmptyState title="All clear — nothing needs review." />
       )}
@@ -112,6 +172,22 @@ export function ReviewInbox() {
           </div>
         );
       })}
+    </>
+  );
+
+  const tabs: TabItem[] = [
+    { key: "tasks", label: `Tasks (${queue.length})`, content: tasksTab },
+    { key: "memories", label: "Memories", content: <MemoriesTab /> },
+  ];
+
+  return (
+    <div className="review-inbox">
+      <header className="review-inbox-head">
+        <h1>Review Inbox</h1>
+        <p>{queue.length} item{queue.length === 1 ? "" : "s"} waiting on you.</p>
+      </header>
+
+      <Tabs tabs={tabs} />
     </div>
   );
 }

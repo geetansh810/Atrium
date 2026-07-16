@@ -123,6 +123,27 @@ export function useAgentMemories(companyId: string, agentId: string) {
   });
 }
 
+export function useMemoryReviewQueue(companyId: string) {
+  return useQuery({
+    queryKey: ["memory-review-queue", companyId],
+    queryFn: () => api.memoryReviewQueue(companyId).then((page) => page.data.map(adaptMemory)),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useReviewMemoryMutation(companyId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memoryId, action }: { memoryId: string; action: "approve" | "reject" }) =>
+      api.reviewMemory(companyId, memoryId, { action }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["memory-review-queue", companyId] });
+      qc.invalidateQueries({ queryKey: ["memories", companyId] });
+    },
+  });
+}
+
 export function useCostPerTask(companyId: string, period: string) {
   return useQuery({
     queryKey: ["analytics-cost-per-task", companyId, period],
