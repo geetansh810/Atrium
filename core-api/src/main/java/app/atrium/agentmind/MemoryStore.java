@@ -20,7 +20,13 @@ import java.util.UUID;
  */
 public interface MemoryStore {
 
-    /** Embeds {@code w.content()} and inserts — 14 §2. */
+    /**
+     * Embeds {@code w.content()} and inserts — 14 §2. Same degrade posture as
+     * {@link #recall}: a missing/failing embedding provider still lands the
+     * row (with a NULL {@code embedding}, which the schema allows) rather
+     * than throwing — it just won't surface via {@link #recall} until a
+     * later write/backfill supplies a real vector.
+     */
     UUID ingest(MemoryWrite w);
 
     /**

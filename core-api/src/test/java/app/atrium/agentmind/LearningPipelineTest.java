@@ -7,6 +7,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
@@ -325,5 +327,84 @@ class LearningPipelineTest extends IntegrationTestBase {
         // sanity: the extraction call really carried the task's own title/description
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("Summarize Q2 sales")));
+    }
+
+    // ── M-LN2-fix: a missing embeddings key must not block extraction ───────
+
+    /**
+     * The real gap M-LN2's own session hit: with no embeddings provider configured,
+     * {@code LearningPipeline} used to skip every event outright (an {@code isReady()}
+     * gate in {@code handle()}), so no memory was ever written and the review queue
+     * stayed empty forever. Fixed by making {@code MemoryStore#ingest} degrade to a
+     * NULL-embedding row instead (matching {@code recall}/{@code findDuplicate}'s
+     * existing posture) and removing the gate — this test proves extraction now runs
+     * end-to-end without an embeddings key: the governed writes still land, still get
+     * metered, they just aren't semantically recallable until a real key is set.
+     */
+    @Test
+    void extractionStillWritesGovernedMemoriesWhenEmbeddingsAreNotConfigured() throws Exception {
+        when(embeddingClient.isReady()).thenReturn(false);
+        resetLearningCursorToNow();
+
+        String company = createCompany("ln2fix-noembed");
+        String agentId = hireAgent(company, "coding");
+        String taskId = createTask(company, "Write a landing page blurb", "coding");
+
+        UUID companyId = UUID.fromString(company);
+        UUID agentUuid = UUID.fromString(agentId);
+        UUID taskUuid = UUID.fromString(taskId);
+        workBroker.claim(companyId, taskUuid, agentUuid);
+        taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
+        taskService.complete(companyId, taskUuid, agentUuid, "text", "Welcome to our site.");
+
+        stubExtraction("""
+                {"items":[
+                  {"content":"Avoid passive voice in copy","kind":"lesson","scope":"agent"},
+                  {"content":"our brand name is X-Corp","kind":"fact","scope":"company"}
+                ]}""");
+
+        taskService.reject(companyId, taskUuid, "never use passive voice; our brand name is X-Corp");
+
+        learningPipeline.pollOnce(20);
+
+        // extraction ran and governed writes landed exactly as they would with a real key —
+        // the missing embeddings key never reached the extraction LLM call at all
+        List<Map<String, Object>> lessons = jdbc.queryForList("""
+                SELECT status, embedding FROM memories
+                WHERE company_id = ?::uuid AND agent_id = ?::uuid AND scope = 'agent' AND kind = 'lesson'
+                """, company, agentId);
+        assertThat(lessons).hasSize(1);
+        assertThat(lessons.get(0).get("status")).isEqualTo("active");
+        assertThat(lessons.get(0).get("embedding")).as("lands with no vector, not rejected").isNull();
+
+        List<Map<String, Object>> facts = jdbc.queryForList("""
+                SELECT status, embedding FROM memories WHERE company_id = ?::uuid AND scope = 'company' AND kind = 'fact'
+                """, company);
+        assertThat(facts).hasSize(1);
+        assertThat(facts.get(0).get("status")).isEqualTo("pending_review");
+        assertThat(facts.get(0).get("embedding")).isNull();
+
+        // still metered like any other extraction call
+        Long rejectedEventId = latestOutboxEventId(taskId, "task.rejected");
+        Integer usageRows = jdbc.queryForObject(
+                "SELECT count(*) FROM usage_records WHERE idempotency_key = ?",
+                Integer.class, "learn:" + rejectedEventId);
+        assertThat(usageRows).isEqualTo(1);
+
+        // embed() itself was never called — isReady()==false short-circuits before any attempt
+        verify(embeddingClient, never()).embed(anyString());
+
+        // honest limitation, not silently faked: even once embeddings come back online,
+        // a row written with a NULL vector still can't be found by recall() — the SQL's
+        // own "embedding IS NOT NULL" filter excludes it, independent of the isReady() gate
+        float[] fixedVector = new float[1536];
+        fixedVector[0] = 1f;
+        when(embeddingClient.isReady()).thenReturn(true);
+        when(embeddingClient.embed(anyString())).thenReturn(fixedVector);
+        List<MemoryHit> recalled = memoryStore.recall(
+                new RecallQuery(companyId, agentUuid, null, "passive voice", 10, null));
+        assertThat(recalled).extracting(h -> h.memory().id())
+                .as("not recallable until a real embeddings key backfills a vector for this row")
+                .isEmpty();
     }
 }

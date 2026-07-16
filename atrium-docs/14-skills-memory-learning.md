@@ -79,6 +79,8 @@ Governance policy (12 hard rule 3): **auto-active** = `agent`-scope `lesson`/`su
 
 Duplicate control: before insert, recall top-1 same-scope; similarity ≥0.92 → increment existing memory's `importance` (max 5) instead of inserting.
 
+**M-LN2-fix note (2026-07-16):** extraction no longer gates on `EmbeddingClient.isReady()`. `MemoryStore.ingest` now takes the same degrade posture `recall`/`findDuplicate` already had — a missing or failing embedding provider lands the row with a NULL `embedding` (the schema column is nullable for exactly this) instead of throwing, so the pipeline keeps working (governed writes still land, still metered) with only that memory's *own future semantic recall* deferred until a real embeddings key is configured. `LearningPipeline` no longer holds an `EmbeddingClient` dependency at all — the degrade decision lives solely where the embed call actually happens, in `PgVectorMemoryStore`.
+
 ## 6. ContextAssembler (the single doorway into prompts)
 
 ```java

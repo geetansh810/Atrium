@@ -76,7 +76,6 @@ public class PgVectorMemoryStore implements MemoryStore {
             throw new IllegalArgumentException("Unknown memory scope '" + w.scope() + "'");
         }
         UUID id = UUID.randomUUID();
-        float[] embedding = embeddingClient.embed(w.content());
         jdbc.update("""
                 INSERT INTO memories
                     (id, company_id, scope, agent_id, role_key, task_id, kind, content,
@@ -84,9 +83,33 @@ public class PgVectorMemoryStore implements MemoryStore {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS vector), ?, ?, CAST(? AS jsonb), ?)
                 """,
                 id, w.companyId(), w.scope(), w.agentId(), w.roleKey(), w.taskId(), w.kind(), w.content(),
-                toVectorLiteral(embedding), w.importance(), w.status(), writeJson(w.provenance()),
+                embedOrDegrade(w.companyId(), w.content()), w.importance(), w.status(), writeJson(w.provenance()),
                 w.sourceEventId());
         return id;
+    }
+
+    /**
+     * Same degrade posture {@link #recall}/{@link #findDuplicate} already have: a missing
+     * or failing embedding provider must never block a memory write (the {@code embedding}
+     * column is nullable for exactly this). Returns {@code null} rather than a vector
+     * literal when the provider isn't ready or the live call throws — the row still lands,
+     * it just won't surface via {@link #recall} until a later write/backfill supplies a
+     * real vector.
+     */
+    @Nullable
+    private String embedOrDegrade(UUID companyId, String content) {
+        if (!embeddingClient.isReady()) {
+            log.warn("Memory ingest for company {} landing without an embedding — embeddings not configured",
+                    companyId);
+            return null;
+        }
+        try {
+            return toVectorLiteral(embeddingClient.embed(content));
+        } catch (RuntimeException e) {
+            log.warn("Memory ingest for company {} landing without an embedding — embed call failed",
+                    companyId, e);
+            return null;
+        }
     }
 
     @Override

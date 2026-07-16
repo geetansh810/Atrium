@@ -53,13 +53,17 @@ import org.springframework.stereotype.Component;
  * metering, never on {@code execution.LlmCostCalculator}/{@code
  * ProviderReadiness}/{@code UsageRecorder} directly. Cost math is duplicated
  * (see {@link #costMicroUsd}) rather than shared, to avoid pulling all of
- * {@code execution} in for one 3-line formula. Provider/embeddings readiness
- * isn't checked via a separate pre-dispatch gate the way {@code
- * LlmLoopRuntime} does it (that gate lives in {@code execution} too) —
- * instead {@link #handle} skips cleanly (still "handled", cursor advances)
- * when embeddings aren't configured, and {@link #dispatch} catches {@link
- * LlmException} per-event so one company's misconfigured provider can never
- * block another company's events in the same batch.
+ * {@code execution} in for one 3-line formula. {@link #dispatch} catches
+ * {@link LlmException} per-event so one company's misconfigured LLM provider
+ * can never block another company's events in the same batch.
+ *
+ * <p><b>M-LN2-fix note (2026-07-16):</b> extraction does NOT gate on
+ * embeddings readiness — this class holds no {@code EmbeddingClient}
+ * dependency at all. {@link MemoryStore#ingest} degrades to a NULL-embedding
+ * row when the embeddings provider isn't configured or a live call fails
+ * (same posture {@code recall}/{@code findDuplicate} already had), so a
+ * missing embeddings key no longer silently blocks the whole pipeline —
+ * only that memory's own future semantic recall, until a real key is set.
  *
  * <p><b>Transaction note:</b> {@link EventCursorWorker#pollOnce} wraps the
  * whole batch — including every event's extraction LLM call — in one
@@ -148,7 +152,6 @@ public class LearningPipeline extends EventCursorWorker {
     private final RoleDefinitionLookup roleDefinitions;
     private final ModelCatalogLookup modelCatalog;
     private final MemoryStore memoryStore;
-    private final EmbeddingClient embeddingClient;
     private final UsageLedger usageLedger;
     private final OutboxWriter outboxWriter;
     private final LlmClient llmClient;
@@ -160,7 +163,7 @@ public class LearningPipeline extends EventCursorWorker {
     public LearningPipeline(OutboxEventRepository outbox, EventConsumerCursorRepository cursors,
                             TaskService taskService, AgentDirectory agentDirectory,
                             RoleDefinitionLookup roleDefinitions, ModelCatalogLookup modelCatalog,
-                            MemoryStore memoryStore, EmbeddingClient embeddingClient, UsageLedger usageLedger,
+                            MemoryStore memoryStore, UsageLedger usageLedger,
                             OutboxWriter outboxWriter, LlmClient llmClient, ObjectMapper objectMapper,
                             @Value("${atrium.learning.model-tier:fast}") String modelTier,
                             @Value("${atrium.learning.batch-size:" + BATCH_SIZE + "}") int batchSize,
@@ -171,7 +174,6 @@ public class LearningPipeline extends EventCursorWorker {
         this.roleDefinitions = roleDefinitions;
         this.modelCatalog = modelCatalog;
         this.memoryStore = memoryStore;
-        this.embeddingClient = embeddingClient;
         this.usageLedger = usageLedger;
         this.outboxWriter = outboxWriter;
         this.llmClient = llmClient;
@@ -196,11 +198,6 @@ public class LearningPipeline extends EventCursorWorker {
     @Override
     protected void handle(OutboxEvent event) {
         if (!HANDLED_EVENT_TYPES.contains(event.getEventType())) {
-            return;
-        }
-        if (!embeddingClient.isReady()) {
-            log.debug("Learning pipeline skipped event {} ({}) — embeddings not configured",
-                    event.getId(), event.getEventType());
             return;
         }
         try {

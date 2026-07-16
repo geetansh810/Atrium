@@ -108,6 +108,34 @@ class MemoryApiTest extends IntegrationTestBase {
         assertThat(listed.findValuesAsText("content")).contains("CEO prefers bullet lists");
     }
 
+    // ── M-LN2-fix: seeding must not require an embeddings key ───────────────
+
+    /**
+     * {@code MemoryService.seed} is the one caller of {@code MemoryStore#ingest} that was
+     * never behind any readiness gate — a human seeding a company preference via this
+     * endpoint used to get an unhandled {@code IllegalStateException} the moment
+     * {@code OPENAI_API_KEY} wasn't configured. Fixed alongside the learning pipeline's
+     * fix: the row now lands with a NULL embedding instead.
+     */
+    @Test
+    void seedingSucceedsWithoutAnEmbeddingsProviderConfigured() {
+        when(embeddingClient.isReady()).thenReturn(false);
+        String company = createCompany("mem-seed-noembed");
+
+        ResponseEntity<String> created = seed(company, Map.of(
+                "scope", "company", "kind", "preference", "content", "seeded without embeddings"));
+        assertThat(created.getStatusCode().value()).as(created.getBody()).isEqualTo(201);
+        String memoryId = parse(created.getBody()).get("id").asText();
+
+        String embedding = jdbc.queryForObject(
+                "SELECT embedding::text FROM memories WHERE id = ?::uuid", String.class, memoryId);
+        assertThat(embedding).isNull();
+
+        // still browsable (plain keyset listing never depended on embeddings)
+        JsonNode listed = browse(company, null);
+        assertThat(listed.findValuesAsText("content")).contains("seeded without embeddings");
+    }
+
     // ── forget archives, never hard-deletes ─────────────────────────────────
 
     @Test
