@@ -8,6 +8,7 @@ import { REAL_ROLE_TEMPLATES } from "./roleTemplateDefaults";
 import {
   describeApiError,
   useAddAnnouncementMutation,
+  useAgentPerformance,
   useAnnouncements,
   useApproveTaskMutation,
   useBudgets,
@@ -121,9 +122,17 @@ export function ApiAppProvider({ children }: { children: ReactNode }) {
   const realActiveId = channels.some((c) => c.id === activeChannelId) ? activeChannelId : undefined;
   const messages = useChannelMessages(companyId, realActiveId).data ?? [];
 
-  // core-api's AgentController always returns zeroed stats until M2.3's rollups land.
+  // /agents/{id}/profile still returns ProfileStats.zero() (never wired to M2.3's
+  // rollups) — the real per-agent numbers live in analytics/agent-performance
+  // instead, which M2.3 already built. focusMinutes stays 0: honestly untracked,
+  // not stale, matching ReportsPage's M2.3 precedent.
+  const performance = useAgentPerformance(companyId).data ?? [];
+  const performanceByAgent = new Map(performance.map((p) => [p.agentId, p]));
   const agentStats = Object.fromEntries(
-    agents.map((a) => [a.id, { tasksCompleted: 0, successRate: 0, focusMinutes: 0 }]),
+    agents.map((a) => {
+      const p = performanceByAgent.get(a.id);
+      return [a.id, { tasksCompleted: p?.tasksCompleted ?? 0, successRate: p?.successRate ?? 0, focusMinutes: 0 }];
+    }),
   );
 
   const state: AppState = {

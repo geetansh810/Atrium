@@ -10,6 +10,7 @@ import type {
   BudgetResponse,
   ChannelResponse,
   DayCountResponse,
+  MemoryResponse,
   MessageResponse,
   SkillShareResponse,
   SubtaskResponse,
@@ -29,6 +30,7 @@ import type {
   Channel,
   ChatMessage,
   DayCount,
+  Memory,
   SkillShare,
   Subtask,
   Task,
@@ -137,6 +139,23 @@ export function adaptAgentPerformance(dto: AgentPerformanceResponse): AgentPerfo
 
 export function adaptSkillShare(dto: SkillShareResponse): SkillShare {
   return { skill: dto.skill, sharePct: dto.sharePct, tasksCompleted: dto.tasksCompleted };
+}
+
+export function adaptMemory(dto: MemoryResponse): Memory {
+  return {
+    id: dto.id,
+    scope: dto.scope,
+    agentId: dto.agentId,
+    roleKey: dto.roleKey,
+    taskId: dto.taskId,
+    kind: dto.kind,
+    content: dto.content,
+    importance: dto.importance,
+    status: dto.status,
+    useCount: dto.useCount,
+    lastUsedAt: dto.lastUsedAt,
+    createdAt: dto.createdAt,
+  };
 }
 
 export function adaptTaskCost(dto: TaskCostResponse): TaskCost {

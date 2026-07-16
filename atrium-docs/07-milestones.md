@@ -84,7 +84,7 @@ agent_stats_daily rollups; analytics endpoints (summary, 7d, performance, top-sk
 Escalations page (flagged + pending_review, 2 clicks from anywhere); channels/messages API; chat panel; Atrium Bot notices; agent status lines posted to chat ~~and mirrored as bubbles~~ (bubbles void — office retired).
 ✅ Every flagged task reachable in ≤2 clicks (ReviewInbox + `/escalations`); an agent completing work produces a chat message (live-verified: Priya → "🤖 Priya finished '…' — ready for review" in `#general`).
 
-**M2.6 — Agent Profile & My Workspace panels** · deps: M2.3, M2.5
+**M2.6 — Agent Profile & My Workspace panels** · deps: M2.3, M2.5 · **DONE 2026-07-16 (session 25)** — Workspace/task-detail half was already complete since MF-3's `TaskDrawer`; this session's real work was fixing Profile's three stale tabs: a new Activity tab (task_events scoped to the agent), Performance now reading real M2.3 `agent-performance` data instead of a stuck-at-zero placeholder, and Memory wired to the real M-MEM1/M-LN1 `/memories?agentId=` endpoint instead of a stale "pending" stub. Zero backend code touched.
 Profile panel (stats, skills, current tasks, activity feed from task_events); Workspace tabs + task detail with subtask checklist per reference images.
 ✅ Both panels match reference structure; activity feed shows real events; subtask checks update progress.
 
@@ -151,7 +151,7 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 | M2.4b | Strip & identity wiring | 2 | ✗ retired 2026-07-15 |
 | M2.4c | Agent avatars, real state | 2 | ✗ retired 2026-07-15 |
 | M2.5 | Escalations + chat v1 | 2 | ✅ |
-| M2.6 | Profile & Workspace panels | 2 | ☐ |
+| M2.6 | Profile & Workspace panels | 2 | ✅ |
 | M3.1 | Auth & signup | 3 | ☐ |
 | M3.2 | Isolation hardening | 3 | ☐ |
 | M3.3 | Usage-based billing | 3 | ☐ |

@@ -234,3 +234,19 @@ export interface WorkflowTemplate {
   description: string;
   steps: string[];
 }
+
+// GET /companies/{id}/memories (16 §3, M-MEM1/M-LN1) — real, API-only, no mock fixture.
+export interface Memory {
+  id: string;
+  scope: string;
+  agentId: string | null;
+  roleKey: string | null;
+  taskId: string | null;
+  kind: string;
+  content: string;
+  importance: number;
+  status: string;
+  useCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+}

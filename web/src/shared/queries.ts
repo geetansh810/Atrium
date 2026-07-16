@@ -13,6 +13,7 @@ import {
   adaptBudget,
   adaptChannel,
   adaptDayCount,
+  adaptMemory,
   adaptMessage,
   adaptSkillShare,
   adaptSubtask,
@@ -109,6 +110,15 @@ export function useTopSkills(companyId: string, days = 7) {
     queryKey: ["analytics-top-skills", companyId, days],
     queryFn: () => api.analyticsTopSkills(companyId, days).then((list) => list.map(adaptSkillShare)),
     enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useAgentMemories(companyId: string, agentId: string) {
+  return useQuery({
+    queryKey: ["memories", companyId, agentId],
+    queryFn: () => api.listMemories(companyId, agentId).then((page) => page.data.map(adaptMemory)),
+    enabled: !!companyId && !!agentId,
     refetchInterval: POLL_MS,
   });
 }

@@ -3,7 +3,9 @@ import { Avatar } from "../../shared/Avatar";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
 import { formatFocusTime, formatTimeAgo } from "../../shared/format";
-import { USE_MOCKS } from "../../shared/config";
+import { USE_MOCKS, DEV_COMPANY_ID } from "../../shared/config";
+import { synthesizeFeed, TASK_EVENT_LABEL } from "../../shared/selectors";
+import { useAgentMemories } from "../../shared/queries";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
 import { Tabs } from "../../ui/Tabs";
@@ -11,10 +13,51 @@ import type { TabItem } from "../../ui/Tabs";
 import { StatCard } from "../../ui/StatCard";
 import { StatusPill, taskStatusTone } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
+import { Feed } from "../../ui/Feed";
+import type { FeedEntry } from "../../ui/Feed";
 import { ConversationThread } from "../../ui/ConversationThread";
 import "./EmployeeProfile.css";
 
 const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
+
+// Memory browsing (16 §3) is real-API-only — no mock fixture for it ever
+// existed, same "Live API" precedent SettingsPage's Model Catalog card set.
+function MockMemoryTab(_props: { agentId: string }) {
+  return (
+    <EmptyState
+      title="Memory browsing is live-API-only."
+      description="No mock fixture exists for it — switch off VITE_USE_MOCKS to see real learned memories."
+    />
+  );
+}
+
+function ApiMemoryTab({ agentId }: { agentId: string }) {
+  const memories = useAgentMemories(DEV_COMPANY_ID, agentId).data ?? [];
+  if (memories.length === 0) {
+    return <EmptyState title="No memories yet." description="This agent hasn't learned anything scoped to it yet." />;
+  }
+  return (
+    <div className="employee-profile-memories">
+      {memories.map((m) => (
+        <div key={m.id} className="employee-profile-memory-row">
+          <div className="employee-profile-memory-head">
+            <span className="chip">{m.kind}</span>
+            <StatusPill
+              label={m.status.replace("_", " ")}
+              tone={m.status === "active" ? "success" : m.status === "pending_review" ? "warning" : "neutral"}
+            />
+          </div>
+          <p className="employee-profile-memory-content">{m.content}</p>
+          <span className="employee-profile-meta">
+            Used {m.useCount}× · {m.lastUsedAt ? `last used ${formatTimeAgo(m.lastUsedAt)}` : "never recalled"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const MemoryTab = USE_MOCKS ? MockMemoryTab : ApiMemoryTab;
 
 export function EmployeeProfile() {
   const { id } = useParams();
@@ -39,6 +82,12 @@ export function EmployeeProfile() {
     .filter((t) => t.assignedAgentId === agent.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const workload = agentTasks.filter((t) => ACTIVE_STATUSES.has(t.status)).length;
+  const activityFeed: FeedEntry[] = synthesizeFeed(agentTasks, [agent], 30).map((f) => ({
+    id: f.id,
+    agentName: null,
+    text: `${TASK_EVENT_LABEL[f.eventType] ?? f.eventType} — ${f.taskTitle}`,
+    createdAt: f.createdAt,
+  }));
 
   const tabs: TabItem[] = [
     {
@@ -97,6 +146,11 @@ export function EmployeeProfile() {
         ),
     },
     {
+      key: "activity",
+      label: "Activity",
+      content: <Feed items={activityFeed} emptyLabel="No activity yet." />,
+    },
+    {
       key: "conversation",
       label: "Conversation",
       content: dm ? (
@@ -108,7 +162,7 @@ export function EmployeeProfile() {
     {
       key: "memory",
       label: "Memory",
-      content: <EmptyState title="Memory pending M-MEM1." description="Skills + long-term memory browsing lands with the memory subsystem milestone." />,
+      content: <MemoryTab agentId={agent.id} />,
     },
     {
       key: "performance",
@@ -120,7 +174,7 @@ export function EmployeeProfile() {
           <StatCard label="Focus Time" value={formatFocusTime(stats.focusMinutes)} />
           {!USE_MOCKS && (
             <p className="employee-profile-note">
-              Rollups aren't computed yet in API mode (pending M2.3) — these are honest zeros, not stale data.
+              Focus Time isn't tracked yet — no presence source exists until a future milestone.
             </p>
           )}
         </div>

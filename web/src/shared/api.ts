@@ -265,6 +265,24 @@ export interface AnnouncementResponse {
   createdAt: string;
 }
 
+// GET /companies/{id}/memories (16 §3, M-MEM1/M-LN1)
+export interface MemoryResponse {
+  id: string;
+  companyId: string;
+  scope: string;
+  agentId: string | null;
+  roleKey: string | null;
+  taskId: string | null;
+  kind: string;
+  content: string;
+  importance: number;
+  status: string;
+  provenance: unknown;
+  useCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
 export const api = {
   createCompany: (body: { name: string; slug: string }) =>
     request<CompanyResponse>("/companies", { method: "POST", body, companyId: "" }),
@@ -343,4 +361,10 @@ export const api = {
 
   listEscalations: (companyId: string) =>
     request<TaskResponse[]>(`/companies/${companyId}/escalations`, { companyId }),
+
+  listMemories: (companyId: string, agentId: string) =>
+    request<PageEnvelope<MemoryResponse>>(
+      `/companies/${companyId}/memories?${new URLSearchParams({ agentId }).toString()}`,
+      { companyId },
+    ),
 };
