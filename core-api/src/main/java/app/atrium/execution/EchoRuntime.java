@@ -1,5 +1,6 @@
 package app.atrium.execution;
 
+import app.atrium.common.LogContext;
 import app.atrium.common.TenantContext;
 import app.atrium.registry.AgentDirectory;
 import app.atrium.registry.domain.Agent;
@@ -142,7 +143,12 @@ public class EchoRuntime implements AgentRuntime {
      * {@code LlmLoopRuntime}: a background poll loop, not an HTTP request.
      */
     public void runOnce(UUID companyId, UUID agentId) {
-        TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+        LogContext.putAgent(agentId);
+        try {
+            TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+        } finally {
+            LogContext.clear();
+        }
     }
 
     private void runOnceInternal(UUID companyId, UUID agentId) {
@@ -154,6 +160,7 @@ public class EchoRuntime implements AgentRuntime {
             return;
         }
         Task task = claimed.get();
+        LogContext.putTask(task.getId());
 
         // claimed -> in_progress: TaskStateGuard has no direct claimed -> pending_review edge.
         taskService.progress(companyId, task.getId(), agentId, null, null, null);

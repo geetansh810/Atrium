@@ -96,8 +96,8 @@ Agent "depth" = role definition record: system prompt template, allowed tools, k
 
 ## 7. Deployment
 
-- Dev: `docker compose up` (postgres, redis, core-api, office-realtime, web).
-- Prod (Phase 3): AWS — ECS/Fargate containers, RDS Postgres, ElastiCache Redis, ALB with sticky sessions for Colyseus WebSockets, S3+CloudFront for the web build. One environment first; staging when there are outside users.
+- Dev: `docker compose up` (postgres, redis, core-api). `web` runs via `npm run dev`, not a compose service.
+- Prod (M3.5): AWS — ECS/Fargate for core-api, RDS Postgres, ElastiCache Redis, ALB, S3+CloudFront for the web static build. No sticky sessions needed (Colyseus/office-realtime never shipped — void since the office track retired 2026-07-15). Full architecture + IaC: `10-deployment.md` §3.
 
 ## 8. Non-goals of this architecture (v1)
 - No Kafka/RabbitMQ until throughput demands it (the Postgres queue is the v1 broker; the routing module's interface makes swapping later a contained change).

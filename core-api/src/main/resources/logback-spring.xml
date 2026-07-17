@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M3.5 (10 §6): structured JSON logs under the "prod" profile — the ECS task
+  definition sets SPRING_PROFILES_ACTIVE=prod (never locally), so `docker
+  compose up`/`mvn test`/an IDE run all keep Spring Boot's normal
+  human-readable console output, unchanged from every prior session.
+  companyId/userId/taskId/agentId ride in SLF4J's MDC (common.TenantContext,
+  common.LogContext) and only actually appear in the log line under the JSON
+  encoder — the plain-text appender doesn't render them, by design, to avoid
+  cluttering local dev output that's never needed them.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>companyId</includeMdcKeyName>
+                <includeMdcKeyName>userId</includeMdcKeyName>
+                <includeMdcKeyName>taskId</includeMdcKeyName>
+                <includeMdcKeyName>agentId</includeMdcKeyName>
+                <customFields>{"app":"atrium-core-api"}</customFields>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    </springProfile>
+
+    <!-- AlertingAppender (common.AlertingAppender, M3.5) is a no-op unless
+         atrium.alerting.webhook-url is set — safe to wire in unconditionally.
+         springProperty pulls the values out of application.yml/env the same
+         way any @Value-annotated bean would; a plain Logback appender class
+         (Joran-instantiated, not Spring-managed) has no other way to see them. -->
+    <springProperty scope="context" name="alertWebhookUrl" source="atrium.alerting.webhook-url" defaultValue=""/>
+    <springProperty scope="context" name="alertCooldownSeconds" source="atrium.alerting.cooldown-seconds" defaultValue="30"/>
+    <appender name="ALERT" class="app.atrium.common.AlertingAppender">
+        <webhookUrl>${alertWebhookUrl}</webhookUrl>
+        <cooldownSeconds>${alertCooldownSeconds}</cooldownSeconds>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ALERT"/>
+    </root>
+</configuration>

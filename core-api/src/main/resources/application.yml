@@ -79,6 +79,14 @@ atrium:
     poll-interval-ms: 5000                          # StatsRollupWorker poll cadence (12 §3 durable consumer, M2.3)
     batch-size: 50                                  # no LLM calls in this consumer, safe to batch larger than learning's
     reconcile-cron: "0 15 3 * * *"                  # StatsRollupReconciliationJob: nightly at 3:15am (17 §M2.3)
+  rate-limit:                                       # RateLimitFilter, Redis-backed fixed window (M3.5, 08 §Security rule 7)
+    enabled: ${ATRIUM_RATE_LIMIT_ENABLED:true}
+    default-per-minute: ${ATRIUM_RATE_LIMIT_DEFAULT:300}   # company-scoped, ordinary authenticated /api/** traffic
+    auth-per-minute: ${ATRIUM_RATE_LIMIT_AUTH:10}          # IP-scoped, /auth/signup + /auth/login (no tenant yet)
+    worker-per-minute: ${ATRIUM_RATE_LIMIT_WORKER:240}     # agent-scoped, the Worker API claim/lease-renew gateway
+  alerting:
+    webhook-url: ${ATRIUM_ALERT_WEBHOOK_URL:}         # AlertingAppender (M3.5) — unset = no-op, never throws
+    cooldown-seconds: ${ATRIUM_ALERT_COOLDOWN_SECONDS:30}
 
 ---
 spring:

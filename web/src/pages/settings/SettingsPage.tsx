@@ -8,6 +8,7 @@ import { useCompany, useModelCatalog } from "../../shared/queries";
 import { useAuthSession, clearAuthSession } from "../../shared/auth";
 import { companyName, currentUser } from "../../shared/mockData";
 import { formatTokens } from "../../shared/format";
+import { FRONTEND_CREDITS } from "../../shared/credits";
 import { StatusPill } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
 import { Card } from "../../ui/Card";
@@ -134,6 +135,20 @@ export function SettingsPage() {
               ? `${PRODUCT_NAME} is running entirely on local JSON fixtures (VITE_USE_MOCKS=1) — nothing here talks to core-api.`
               : `${PRODUCT_NAME} is reading and writing real data through core-api. Set VITE_USE_MOCKS=1 to switch to fixtures.`}
           </p>
+        </Card>
+
+        <Card title="Credits">
+          <p className="about-text" style={{ marginBottom: 8 }}>
+            {PRODUCT_NAME} is built with these open-source libraries (this is the
+            frontend's own shipped dependencies — the full list, including the
+            backend, is in the repo's THIRD-PARTY-LICENSES.md).
+          </p>
+          {FRONTEND_CREDITS.map((c) => (
+            <div className="settings-row" key={c.name}>
+              <span className="settings-row-label">{c.name}</span>
+              <span>{c.license}</span>
+            </div>
+          ))}
         </Card>
       </div>
     </div>

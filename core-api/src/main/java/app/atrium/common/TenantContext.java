@@ -3,6 +3,7 @@ package app.atrium.common;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.slf4j.MDC;
 
 /**
  * Per-request tenant identity, populated by {@link TenantContextFilter} from
@@ -18,15 +19,32 @@ public final class TenantContext {
 
     private static final ThreadLocal<Tenant> CURRENT = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>();
+    private static final String MDC_COMPANY_ID = "companyId";
+    private static final String MDC_USER_ID = "userId";
 
     private TenantContext() {}
 
+    /**
+     * The one place tenant binding happens (filter-bound HTTP request or a
+     * background {@link #runAsSystem}/{@link #callAsSystem} call) — also the
+     * one place to bind {@code companyId}/{@code userId} into MDC (M3.5, 10
+     * §6) so every structured JSON log line emitted while a tenant is bound
+     * carries them, with zero changes needed at any of TenantContext's callers.
+     */
     static void set(Tenant tenant) {
         CURRENT.set(tenant);
+        if (tenant.companyId() != null) {
+            MDC.put(MDC_COMPANY_ID, tenant.companyId().toString());
+        }
+        if (tenant.userId() != null) {
+            MDC.put(MDC_USER_ID, tenant.userId().toString());
+        }
     }
 
     static void clear() {
         CURRENT.remove();
+        MDC.remove(MDC_COMPANY_ID);
+        MDC.remove(MDC_USER_ID);
     }
 
     /** Company id of the current request; throws if the request carried no tenant. */

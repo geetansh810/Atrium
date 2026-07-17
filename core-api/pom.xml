@@ -43,6 +43,14 @@
       <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
     <dependency>
+      <!-- Structured JSON console logs under the "prod" profile (M3.5, 10 §6) —
+           ECS's awslogs driver tails container stdout straight into CloudWatch,
+           so the JSON line IS the log event, no shipping agent needed. -->
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>8.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>

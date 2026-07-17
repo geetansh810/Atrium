@@ -2,6 +2,7 @@ package app.atrium.execution;
 
 import app.atrium.agentmind.ContextAssembler;
 import app.atrium.agentmind.ContextBundle;
+import app.atrium.common.LogContext;
 import app.atrium.common.TenantContext;
 import app.atrium.execution.spi.LlmClient;
 import app.atrium.execution.spi.LlmException;
@@ -202,10 +203,17 @@ public class LlmLoopRuntime implements AgentRuntime {
      * {@link TenantContext#runAsSystem} for the whole iteration (M3.2, 08
      * §Security rule 6) — this is a background virtual-thread poll loop, not
      * an HTTP request, so nothing else sets {@code app.company_id} for
-     * Postgres RLS to see.
+     * Postgres RLS to see. Also binds {@link LogContext#putAgent}/{@code
+     * putTask} for the whole iteration (M3.5, 10 §6) — {@code taskId} is
+     * added once {@code runOnceInternal} actually claims something.
      */
     public void runOnce(UUID companyId, UUID agentId) {
-        TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+        LogContext.putAgent(agentId);
+        try {
+            TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+        } finally {
+            LogContext.clear();
+        }
     }
 
     private void runOnceInternal(UUID companyId, UUID agentId) {
@@ -237,6 +245,7 @@ public class LlmLoopRuntime implements AgentRuntime {
             return;
         }
         Task task = claimed.get();
+        LogContext.putTask(task.getId());
         ContextBundle bundle = bundleHolder[0];
 
         RuntimeConfig config = RuntimeConfig.parse(agent.getRuntimeConfig());

@@ -25,3 +25,13 @@ atrium:
     # Same reasoning as relay/learning above (shared Testcontainers context).
     # app.atrium.accountability.StatsRollupTest calls pollOnce() directly.
     poll-interval-ms: 3600000
+  rate-limit:
+    # Same shared-Testcontainers-Redis reasoning as relay/learning/stats-rollup
+    # above: every IntegrationTestBase subclass without its own bean config
+    # shares one Spring context and one Redis, so a tight default limit would
+    # throttle unrelated tests' repeated signup()/createCompany() helper calls
+    # (all from loopback IP) long before RateLimitFilterTest ever gets to
+    # exercise the real 429 path. Disabled by default here;
+    # app.atrium.common.RateLimitFilterTest re-enables it with tight limits
+    # via its own @TestPropertySource.
+    enabled: false

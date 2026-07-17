@@ -1,0 +1,136 @@
+name: Deploy
+
+# 10 §4 points 2-3. Both jobs need real AWS infrastructure + repo secrets
+# that don't exist yet (session 32, M3.5 — infra/terraform/ is written but
+# never applied, see its README) — this workflow is real, complete code,
+# but will not actually run successfully until that infra exists and these
+# repository/environment secrets are set:
+#   AWS_ROLE_ARN, AWS_REGION, ECR_REPOSITORY_URL, ECS_CLUSTER (per env),
+#   ECS_SERVICE (per env), WEB_S3_BUCKET (per env), CLOUDFRONT_DISTRIBUTION_ID
+#   (per env), STAGING_API_URL, PROD_API_URL.
+# AWS auth is via OIDC (aws-actions/configure-aws-credentials + a trust
+# policy on AWS_ROLE_ARN) — no long-lived AWS access keys stored in GitHub.
+
+on:
+  push:
+    branches: [main]
+    tags: ["release-*"]
+
+permissions:
+  id-token: write # required for OIDC -> AWS
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build core-api image, push to ECR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+      - name: "Build + push (10 §2 tag scheme: m<milestone>-<shortsha>)"
+        id: image
+        env:
+          REPO: ${{ steps.ecr-login.outputs.registry }}/atrium-core-api
+        run: |
+          TAG="m3.5-${GITHUB_SHA::7}"
+          docker build -t "$REPO:$TAG" -t "$REPO:latest-staging" core-api
+          docker push "$REPO:$TAG"
+          docker push "$REPO:latest-staging"
+          echo "image=$REPO:$TAG" >> "$GITHUB_OUTPUT"
+
+  build-web:
+    name: Build web, sync to staging S3
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+        env:
+          VITE_USE_MOCKS: "0"
+          VITE_API_BASE_URL: ${{ secrets.STAGING_API_URL }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - run: aws s3 sync web/dist "s3://${{ secrets.WEB_S3_BUCKET }}" --delete
+      - run: aws cloudfront create-invalidation --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"
+
+  deploy-staging:
+    name: Deploy to staging + smoke test
+    needs: [build-and-push, build-web]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Force a new ECS deployment (new task def revision with the fresh image is registered by Terraform separately — this triggers the rollout)
+        run: |
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER }}" \
+            --service "${{ secrets.ECS_SERVICE }}" \
+            --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster "${{ secrets.ECS_CLUSTER }}" \
+            --services "${{ secrets.ECS_SERVICE }}"
+      - name: Smoke test (10 §4 point 2 — signup -> hire -> task -> approve)
+        run: ./.github/scripts/smoke-test.sh
+        env:
+          BASE_URL: ${{ secrets.STAGING_API_URL }}
+
+  deploy-prod:
+    name: Deploy to prod (manual approval)
+    if: startsWith(github.ref, 'refs/tags/release-')
+    runs-on: ubuntu-latest
+    # 10 §4 point 3: "manual approval step... No direct pushes to prod." The
+    # approval gate itself is a GitHub Environment protection rule
+    # (Settings -> Environments -> production -> Required reviewers),
+    # configured once in the repo, not expressible in workflow YAML alone.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+      - name: Promote the already-built+tested staging image to prod (no rebuild)
+        env:
+          REPO: ${{ steps.ecr-login.outputs.registry }}/atrium-core-api
+        run: |
+          docker pull "$REPO:latest-staging"
+          docker tag "$REPO:latest-staging" "$REPO:${{ github.ref_name }}"
+          docker tag "$REPO:latest-staging" "$REPO:latest-prod"
+          docker push "$REPO:${{ github.ref_name }}"
+          docker push "$REPO:latest-prod"
+      - run: |
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER_PROD }}" \
+            --service "${{ secrets.ECS_SERVICE_PROD }}" \
+            --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster "${{ secrets.ECS_CLUSTER_PROD }}" \
+            --services "${{ secrets.ECS_SERVICE_PROD }}"
+      - name: Smoke test prod too — a deploy isn't done until this passes here as well
+        run: ./.github/scripts/smoke-test.sh
+        env:
+          BASE_URL: ${{ secrets.PROD_API_URL }}

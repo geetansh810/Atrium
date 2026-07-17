@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars (gitignored) and fill in. Every var not listed
+# here has a working default — see variables.tf for the full list.
+
+environment     = "staging" # or "prod" — one tfvars file / workspace per environment
+domain_name     = ""        # e.g. "atrium.example.com" — blank until a domain is bought (10 §8)
+container_image = ""        # <account>.dkr.ecr.<region>.amazonaws.com/atrium-core-api:m3.5-abc1234
+
+# Leave blank to auto-generate + store only in Secrets Manager:
+# db_master_password = ""
+# jwt_secret          = ""
+
+# Platform-level LLM keys (10 §5 — per-company BYO-key is a backlog item):
+anthropic_api_key = ""
+google_api_key    = ""
+openai_api_key    = ""
+
+alert_email        = "" # subscribed to the SNS alerts topic
+alert_webhook_url  = "" # optional Slack-incoming-webhook-shaped URL for common.AlertingAppender

@@ -1,5 +1,6 @@
 package app.atrium.routing.api;
 
+import app.atrium.common.LogContext;
 import app.atrium.common.NotFoundException;
 import app.atrium.common.TenantContext;
 import app.atrium.registry.AgentDirectory;
@@ -44,16 +45,28 @@ public class WorkerTaskController {
     public TaskResponse claim(@PathVariable UUID id,
                               @RequestHeader(AGENT_HEADER) UUID agentId) {
         UUID companyId = companyIdOf(agentId);
-        return TenantContext.callAsSystem(companyId,
-                () -> TaskResponse.from(workBroker.claim(companyId, id, agentId)));
+        LogContext.putAgent(agentId);
+        LogContext.putTask(id);
+        try {
+            return TenantContext.callAsSystem(companyId,
+                    () -> TaskResponse.from(workBroker.claim(companyId, id, agentId)));
+        } finally {
+            LogContext.clear();
+        }
     }
 
     @PostMapping("/{id}/lease/renew")
     public TaskResponse renewLease(@PathVariable UUID id,
                                    @RequestHeader(AGENT_HEADER) UUID agentId) {
         UUID companyId = companyIdOf(agentId);
-        return TenantContext.callAsSystem(companyId,
-                () -> TaskResponse.from(workBroker.renewLease(companyId, id, agentId)));
+        LogContext.putAgent(agentId);
+        LogContext.putTask(id);
+        try {
+            return TenantContext.callAsSystem(companyId,
+                    () -> TaskResponse.from(workBroker.renewLease(companyId, id, agentId)));
+        } finally {
+            LogContext.clear();
+        }
     }
 
     /**

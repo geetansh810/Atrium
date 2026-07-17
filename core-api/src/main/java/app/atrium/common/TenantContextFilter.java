@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.regex.Pattern;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,14 +22,20 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *       — a separate axis authenticated by {@code X-Agent-Id} alone (04 §Auth); it
  *       resolves its own tenant from the agent id, never needs a human token</li>
  * </ul>
+ *
+ * <p>{@code @Order(ORDER)} — must run BEFORE {@link RateLimitFilter} (M3.5,
+ * 08 §Security rule 7), which reads the {@link TenantContext} this filter
+ * binds to scope its counters by company id.
  */
 @Component
+@Order(TenantContextFilter.ORDER)
 public class TenantContextFilter extends OncePerRequestFilter {
 
+    public static final int ORDER = 10;
     public static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private static final Pattern WORKER_GATEWAY = Pattern.compile(
+    static final Pattern WORKER_GATEWAY = Pattern.compile(
             "^/api/v1/tasks/[^/]+/(claim|lease/renew)$");
 
     private final JwtService jwtService;

@@ -22,3 +22,12 @@ target/
 .vscode/*
 !.vscode/extensions.json
 .claude/settings.local.json
+
+# Terraform (infra/terraform/) — provider binaries + local plan/state; the
+# real state lives in the S3 backend (10 §3), never committed here.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example

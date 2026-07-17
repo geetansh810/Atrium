@@ -103,9 +103,9 @@ Postgres RLS on all business tables; adversarial cross-tenant test suite (API + 
 2–3 installable templates ("Engineering pod", "Content team"); guided first task.
 ✅ Non-technical tester: signup → first assigned task <10 min, unassisted.
 
-**M3.5 — Production hardening** · deps: M3.1, M3.2, M3.4 (**not** M3.3 — billing deferred, Rev D)
+**M3.5 — Production hardening** · deps: M3.1, M3.2, M3.4 (**not** M3.3 — billing deferred, Rev D) · **PARTIAL 2026-07-17 (session 32)** — everything that lives in the repo is done: `common.RateLimitFilter` (Redis fixed-window, company/agent/IP scoped, 08 §Security rule 7), structured JSON logs (`logstash-logback-encoder` under the `prod` Spring profile, MDC-bound companyId/userId/taskId/agentId), `common.AlertingAppender` (ERROR-log → webhook, cooldown-debounced), a k6 load test (`loadtest/`), full AWS Terraform (`infra/terraform/`, `terraform fmt`+`validate` clean) and GitHub Actions CI/CD (`.github/workflows/`), `THIRD-PARTY-LICENSES.md` + a Settings "Credits" card. **Not done: the actual AWS deploy** — no AWS account/credentials exist in this session's environment, and provisioning real cloud infrastructure (cost, a purchased domain) needs the owner's own account and explicit go-ahead, not a coding session acting alone. See CLAUDE.md session 32 and `infra/terraform/README.md` for exactly what running it for real requires.
 Rate limiting, structured logs, error alerting, load test at realistic early concurrency, AWS deploy per 02 §7, THIRD-PARTY-LICENSES + credits screen. (The LimeZu paid-asset license launch-blocker from 06 §D no longer applies — assets removed with the office-track retirement, 2026-07-15.) **Ships unmetered:** a real hardened prod URL the pilot runs on, with no payment path — no Stripe keys, no billing page, no plan gating. Whoever picks up M3.3 later adds charging on top of this, not into it.
-✅ Load test passes; a triggered error alerts within 1 min; prod URL live.
+🟡 Load test passes (✅ verified live); a triggered error alerts within 1 min (✅ app-level, verified; AWS-level real but unapplied); prod URL live (❌ not done — needs real AWS credentials).
 
 ## PHASE 4 — COMPLIANCE (3)
 
@@ -181,8 +181,8 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | M3.1 | Auth & signup | 3 | ✅ (session 29 — row was stale at ☐ until 2026-07-17) |
 | M3.2 | Isolation hardening | 3 | ✅ |
 | M3.4 | Onboarding & templates | 3 | ✅ |
-| M3.5 | Production hardening | 3 | ☐ ← next |
-| M4.1–M4.3 | Compliance roles & docs | 4 | ☐ |
+| M3.5 | Production hardening | 3 | 🟡 partial (session 32) — code+IaC done, AWS deploy pending real credentials |
+| M4.1–M4.3 | Compliance roles & docs | 4 | ☐ ← next (M3.5's remaining live-deploy step doesn't block these) |
 | | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |
 | M3.3 | Usage-based billing | ~~3~~ backlog | ⏸ deferred 2026-07-17 — post-pilot |
 | M2.4a | SkyOffice vendor & boot | ~~2~~ — | ✗ retired 2026-07-15 |
