@@ -41,10 +41,17 @@ public class RoleDefinition {
     @Column(name = "output_contract")
     private String outputContract;
 
+    /** M4.1 (07 Phase 4) — true structurally blocks any task assigned to an
+     *  agent hired against this role from reaching 'approved' except via a
+     *  named human user; see {@code TaskService.approve}. */
+    @Column(name = "review_required", nullable = false)
+    private boolean reviewRequired;
+
     protected RoleDefinition() {}
 
     public RoleDefinition(UUID companyId, String key, int version, String title,
-                          String systemPrompt, JsonNode allowedTools, String outputContract) {
+                          String systemPrompt, JsonNode allowedTools, String outputContract,
+                          boolean reviewRequired) {
         this.companyId = companyId;
         this.key = key;
         this.version = version;
@@ -52,6 +59,7 @@ public class RoleDefinition {
         this.systemPrompt = systemPrompt;
         this.allowedTools = allowedTools;
         this.outputContract = outputContract;
+        this.reviewRequired = reviewRequired;
     }
 
     public UUID getId() { return id; }
@@ -62,6 +70,7 @@ public class RoleDefinition {
     public String getSystemPrompt() { return systemPrompt; }
     public JsonNode getAllowedTools() { return allowedTools; }
     public String getOutputContract() { return outputContract; }
+    public boolean isReviewRequired() { return reviewRequired; }
 
     public boolean isGlobalTemplate() { return companyId == null; }
 }

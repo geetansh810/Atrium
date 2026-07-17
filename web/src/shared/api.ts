@@ -129,6 +129,7 @@ export interface RoleDefinitionResponse {
   allowedTools: unknown;
   outputContract: string | null;
   globalTemplate: boolean;
+  reviewRequired: boolean;
 }
 
 export interface ModelCatalogResponse {

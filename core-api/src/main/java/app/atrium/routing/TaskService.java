@@ -2,10 +2,13 @@ package app.atrium.routing;
 
 import app.atrium.common.ConflictException;
 import app.atrium.common.FieldValidationException;
+import app.atrium.common.ForbiddenException;
 import app.atrium.common.KeysetCursors;
 import app.atrium.common.NotFoundException;
 import app.atrium.common.TenantContext;
 import app.atrium.registry.AgentDirectory;
+import app.atrium.registry.RoleDefinitionLookup;
+import app.atrium.registry.domain.RoleDefinition;
 import app.atrium.routing.api.TaskDtos.CreateTaskRequest;
 import app.atrium.routing.api.TaskDtos.SubtaskCreate;
 import app.atrium.routing.api.TaskDtos.TaskListQuery;
@@ -58,6 +61,7 @@ public class TaskService {
     private final ArtifactRepository artifacts;
     private final TaskDecompositionRepository decompositions;
     private final AgentDirectory agentDirectory;
+    private final RoleDefinitionLookup roleDefinitionLookup;
     private final TaskEventRecorder recorder;
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
@@ -67,7 +71,8 @@ public class TaskService {
     public TaskService(TaskRepository tasks, SubtaskRepository subtasks,
                        TaskEventRepository taskEvents, ArtifactRepository artifacts,
                        TaskDecompositionRepository decompositions,
-                       AgentDirectory agentDirectory, TaskEventRecorder recorder,
+                       AgentDirectory agentDirectory, RoleDefinitionLookup roleDefinitionLookup,
+                       TaskEventRecorder recorder,
                        ObjectMapper objectMapper, EntityManager entityManager,
                        JdbcTemplate jdbc, Clock clock) {
         this.tasks = tasks;
@@ -76,6 +81,7 @@ public class TaskService {
         this.artifacts = artifacts;
         this.decompositions = decompositions;
         this.agentDirectory = agentDirectory;
+        this.roleDefinitionLookup = roleDefinitionLookup;
         this.recorder = recorder;
         this.objectMapper = objectMapper;
         this.entityManager = entityManager;
@@ -102,6 +108,22 @@ public class TaskService {
     public record FlowEdge(UUID from, UUID to) {}
 
     public record FlowGraph(List<FlowNode> nodes, List<FlowEdge> edges) {}
+
+    /**
+     * M4.2 compliance audit (07 Phase 4, 16 §4): optional extra provenance on
+     * a {@code completed} event so the task's own {@code task_events} row —
+     * not a separate log store — is enough to reconstruct exactly what went
+     * into this attempt. {@code roleDefinitionId}/{@code promptVersion}
+     * address the exact system_prompt/output_contract used (role_definitions
+     * rows are immutable per version — a new version is a new row); {@code
+     * feedbackUsed} is the rejection feedback (if any) that rode into this
+     * attempt's prompt alongside the task's own title/description. Only
+     * {@code LlmLoopRuntime} (a real LLM call, a real role) ever builds one —
+     * {@code EchoRuntime} has nothing real to report and stays on the plain
+     * 5-arg {@link #complete} overload.
+     */
+    public record CompletionAudit(String modelProvider, String modelName, UUID roleDefinitionId,
+                                  int promptVersion, String feedbackUsed) {}
 
     @Transactional
     public TaskDetail create(UUID companyId, CreateTaskRequest request) {
@@ -257,6 +279,13 @@ public class TaskService {
     @Transactional
     public Task complete(UUID companyId, UUID taskId, UUID agentId, String artifactKind,
                          String artifactContent) {
+        return complete(companyId, taskId, agentId, artifactKind, artifactContent, null);
+    }
+
+    /** Same as the 5-arg overload, plus M4.2's optional compliance audit trail. */
+    @Transactional
+    public Task complete(UUID companyId, UUID taskId, UUID agentId, String artifactKind,
+                         String artifactContent, CompletionAudit audit) {
         Task task = requireAssigned(companyId, taskId, agentId);
         Artifact artifact = artifacts.save(new Artifact(companyId, taskId, artifactKind, artifactContent));
         TaskStateGuard.transition(task, "pending_review");
@@ -270,6 +299,19 @@ public class TaskService {
         payload.put("requiredSkill", task.getRequiredSkill());
         payload.put("attempt", task.getAttempt());
         payload.put("title", task.getTitle());   // 16 §4 (M2.5): ChatNoticePipeline reads it off the payload
+        if (audit != null) {
+            payload.put("model", audit.modelProvider() + "/" + audit.modelName());
+            payload.put("roleDefinitionId", audit.roleDefinitionId().toString());
+            payload.put("promptVersion", audit.promptVersion());
+            ObjectNode inputs = payload.putObject("inputs");
+            inputs.put("title", task.getTitle());
+            if (task.getDescription() != null) {
+                inputs.put("description", task.getDescription());
+            }
+            if (audit.feedbackUsed() != null) {
+                inputs.put("feedback", audit.feedbackUsed());
+            }
+        }
         recorder.record(task, "completed", "agent:" + agentId, payload);
         return task;
     }
@@ -286,8 +328,9 @@ public class TaskService {
      */
     @Transactional
     public Task completeWithDecomposition(UUID companyId, UUID taskId, UUID agentId,
-                                          String artifactContent, List<ChildTaskSpec> children) {
-        Task task = complete(companyId, taskId, agentId, "text", artifactContent);
+                                          String artifactContent, List<ChildTaskSpec> children,
+                                          CompletionAudit audit) {
+        Task task = complete(companyId, taskId, agentId, "text", artifactContent, audit);
         Artifact planArtifact = artifacts.findFirstByTaskIdAndCompanyIdOrderByCreatedAtDesc(taskId, companyId)
                 .orElseThrow(() -> new IllegalStateException("complete() did not persist an artifact"));
         decompose(companyId, taskId, agentId, planArtifact.getId(), children);
@@ -409,6 +452,7 @@ public class TaskService {
         if (subtasks.existsOpenScoped(taskId, companyId)) {
             throw new ConflictException("Task " + taskId + " has open subtasks — complete those first");
         }
+        requireHumanSignOffIfGated(companyId, task);
         TaskStateGuard.transition(task, "approved");
         ObjectNode payload = objectMapper.createObjectNode();
         if (task.getAssignedAgentId() != null) {
@@ -417,6 +461,31 @@ public class TaskService {
         payload.put("requiredSkill", task.getRequiredSkill());
         recorder.record(task, "approved", actor(), payload);
         return task;
+    }
+
+    /**
+     * M4.1 compliance gate (03 invariant 6, 07 Phase 4, 08 §Security rule 8):
+     * a role flagged {@code review_required} (the seeded {@code legal}/{@code
+     * hr} templates, or any company-owned role that opts in) can never be
+     * approved by anything but a named human — not the assigned agent, not a
+     * background/system actor. Checked against the ASSIGNED agent's role,
+     * since that's whose work is being signed off on; the approving actor's
+     * own identity is {@link TenantContext#userId()}, independent of who's
+     * assigned. A task with no assigned agent (shouldn't happen at
+     * pending_review in practice) has nothing to gate against.
+     */
+    private void requireHumanSignOffIfGated(UUID companyId, Task task) {
+        if (task.getAssignedAgentId() == null) {
+            return;
+        }
+        boolean gated = agentDirectory.findById(companyId, task.getAssignedAgentId())
+                .flatMap(agent -> roleDefinitionLookup.findById(agent.getRoleDefinitionId()))
+                .map(RoleDefinition::isReviewRequired)
+                .orElse(false);
+        if (gated && TenantContext.userId().isEmpty()) {
+            throw new ForbiddenException("Task " + task.getId() + "'s role requires a named human "
+                    + "user to approve — no agent or system actor may sign off");
+        }
     }
 
     /**

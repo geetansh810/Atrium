@@ -35,7 +35,8 @@ public class RoleDefinitionService {
         RoleDefinition roleDefinition = new RoleDefinition(companyId, request.key(), nextVersion,
                 request.title(), request.systemPrompt(),
                 request.allowedTools() != null ? request.allowedTools() : objectMapper.createArrayNode(),
-                request.outputContract());
+                request.outputContract(),
+                request.reviewRequired() != null && request.reviewRequired());
         return roleDefinitions.save(roleDefinition);
     }
 }

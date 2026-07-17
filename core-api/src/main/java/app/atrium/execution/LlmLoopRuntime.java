@@ -285,6 +285,12 @@ public class LlmLoopRuntime implements AgentRuntime {
             // the corresponding result, same invariant as the non-tool path.
             long costMicroUsd = costCalculator.costMicroUsd(agent.getModelProvider(),
                     agent.getModelName(), result.tokensIn(), result.tokensOut());
+            // M4.2 compliance audit (07 Phase 4, 16 §4): model + exact prompt version + the
+            // task inputs actually fed into this attempt, so task_events alone can
+            // reconstruct what happened — see TaskService.CompletionAudit's javadoc.
+            TaskService.CompletionAudit audit = new TaskService.CompletionAudit(
+                    agent.getModelProvider(), agent.getModelName(), roleDef.getId(),
+                    roleDef.getVersion(), feedback);
             txTemplate.executeWithoutResult(status -> {
                 usageRecorder.record(companyId, agentId, task.getId(), task.getAttempt(),
                         agent.getModelProvider(), agent.getModelName(),
@@ -295,9 +301,9 @@ public class LlmLoopRuntime implements AgentRuntime {
                             ? result.content()
                             : arguments.path("summary").asText("Decomposed into child tasks.");
                     taskService.completeWithDecomposition(companyId, task.getId(), agentId,
-                            artifactContent, parseChildSpecs(arguments));
+                            artifactContent, parseChildSpecs(arguments), audit);
                 } else {
-                    taskService.complete(companyId, task.getId(), agentId, "text", result.content());
+                    taskService.complete(companyId, task.getId(), agentId, "text", result.content(), audit);
                 }
             });
         } catch (LlmException e) {

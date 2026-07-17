@@ -23,7 +23,7 @@ Passwords: BCrypt (`spring-security-crypto`), never logged, never returned. JWT 
 | GET | `/companies/{id}/roster` | → `Agent[]` (with live status, current activity line) |
 | PATCH | `/agents/{id}` | partial update → Agent |
 | GET | `/agents/{id}/profile` | → `{agent, stats:{tasksCompleted, successRate, focusMinutes}, skills[], currentTasks[], activityFeed[]}` |
-| GET/POST | `/role-definitions` | list global+company templates / create custom |
+| GET/POST | `/role-definitions` | list global+company templates / create custom — create body gains optional `reviewRequired` (default false, M4.1: 403s approve unless a named human signs off, see below) |
 
 ## Tasks & workflow
 
@@ -37,7 +37,7 @@ Passwords: BCrypt (`spring-security-crypto`), never logged, never returned. JWT 
 | POST | `/tasks/{id}/progress` | `{progress, etaMinutes?, note?, subtaskUpdates?:[{id,state}]}` |
 | POST | `/tasks/{id}/flag` | `{reason}` → status=flagged |
 | POST | `/tasks/{id}/complete` | `{artifact:{kind,content}}` → status=pending_review |
-| POST | `/tasks/{id}/approve` | human/supervisor; blocked if open children/subtasks |
+| POST | `/tasks/{id}/approve` | human/supervisor; blocked if open children/subtasks; 403 if the assigned agent's role has `reviewRequired=true` and the caller isn't a named human (`TenantContext.userId()` — M4.1, 07 Phase 4) |
 | POST | `/tasks/{id}/reject` | `{feedback}` → back to in_progress |
 | GET | `/tasks/{id}/events` | full audit trail |
 | GET | `/tasks/{id}/flow` | parent/children graph for the Task Flow view — `{id}` may be ANY task in the chain: resolves the root ancestor first, then returns `{nodes:[{taskId,title,status,agent}], edges:[{from,to}]}` for every task reachable from that root (M2.2) |

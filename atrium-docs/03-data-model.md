@@ -35,6 +35,7 @@ CREATE TABLE role_definitions (    -- what makes an agent "deep", versioned
   system_prompt TEXT NOT NULL,
   allowed_tools JSONB NOT NULL DEFAULT '[]',
   output_contract TEXT,
+  review_required BOOLEAN NOT NULL DEFAULT false,  -- M4.1 compliance gate, added V11 — see below
   UNIQUE (company_id, key, version)
 );
 
@@ -275,3 +276,4 @@ lands in that row's payload — see 14 §6's M-CTX1 note for why (append-only
 3. `spent_tokens` only increases via usage_records inserts (same transaction).
 4. No repository method exists without a `company_id` parameter or tenant filter.
 5. A task with open subtasks or open child tasks cannot be approved.
+6. A task whose assigned agent's role has `review_required=true` cannot reach `approved` unless the approving actor is a named human user (`TenantContext.userId()` bound) — never `agent:` or `system` (M4.1, 07 Phase 4). Enforced in `TaskService.approve` regardless of what invariant 2's actor string ends up being.

@@ -298,6 +298,42 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         assertThat(eventTypes).containsExactly("created", "claimed", "progress", "completed");
     }
 
+    // ── M4.2 Done-when: a real completion via the real loop carries the full compliance
+    //    audit payload (model/roleDefinitionId/promptVersion/inputs) — not just the
+    //    TaskService-level mechanism (routing.ComplianceGateTest), but the real wiring. ──
+
+    @Test
+    void hrRoleCompletionCarriesFullComplianceAuditPayloadFromTheRealLoop() {
+        String company = createCompany("m42-hr-loop");
+        // hireAgentAndStopAutoLoop hires against the 'coder' template — this case needs
+        // the 'hr' template instead, so it hires directly rather than reusing that helper.
+        ResponseEntity<String> hireResponse = rest.postForEntity(
+                "/api/v1/companies/" + company + "/agents",
+                new HttpEntity<>(Map.of(
+                        "name", "HrAgent", "roleTemplateKey", "hr", "roleTitle", "HR Specialist",
+                        "skillTags", List.of("hr-review"),
+                        "modelProvider", "anthropic", "modelName", "claude-sonnet-5"),
+                        headers(company)), String.class);
+        assertThat(hireResponse.getStatusCode().value()).as(hireResponse.getBody()).isEqualTo(201);
+        String hrAgentId = parse(hireResponse.getBody()).get("id").asText();
+        runtime.stop(new AgentHandle(UUID.fromString(hrAgentId), UUID.fromString(company)));
+
+        String taskId = createTask(company, "Draft a role posting", "hr-review");
+        stubAnthropicSuccess("Backend Engineer — build and operate the payments service.");
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(hrAgentId));
+
+        List<Map<String, Object>> completedRows = jdbc.queryForList(
+                "SELECT payload FROM task_events WHERE task_id = ?::uuid AND event_type = 'completed'",
+                taskId);
+        assertThat(completedRows).hasSize(1);
+        JsonNode payload = parse(completedRows.get(0).get("payload").toString());
+        assertThat(payload.get("model").asText()).isEqualTo("anthropic/claude-sonnet-5");
+        assertThat(payload.get("promptVersion").asInt()).isEqualTo(1);
+        assertThat(payload.get("roleDefinitionId").asText()).isNotBlank();
+        assertThat(payload.get("inputs").get("title").asText()).isEqualTo("Draft a role posting");
+    }
+
     // ── Done-when: redelivered task doesn't double-record (forced requeue mid-work) ──
 
     @Test

@@ -88,6 +88,13 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ProblemDetail onForbidden(ForbiddenException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+        problem.setTitle("Forbidden");
+        return problem;
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail onIllegalState(IllegalStateException e) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());

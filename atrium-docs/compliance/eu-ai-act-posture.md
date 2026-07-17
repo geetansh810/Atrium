@@ -1,0 +1,36 @@
+# EU AI Act posture note
+
+**Status:** an engineering-authored self-assessment, written 2026-07-17 (M4.3, `07-milestones.md` Phase 4), for internal planning purposes only. **This is not legal advice and is not a compliance certification.** It has not been reviewed by qualified counsel. Before any EU market deployment — especially of the `hr` role described below — get a real legal review against the current text of Regulation (EU) 2024/1689 and any applicable guidance/delegated acts, which continue to evolve.
+
+## Why this matters for Atrium specifically, not generically
+
+Most of what Atrium does — a `coder` agent writing code, a `research` agent summarizing sources — is unremarkable under the Act: general-purpose AI assistance with a human review gate, closer to "limited risk" territory (transparency obligations: people should be able to tell they're dealing with AI output) than anything higher.
+
+The seeded **`hr` role template (M4.1/M4.2)** is different, and worth calling out explicitly rather than lumping in with everything else: its own system prompt scopes it to "hiring (job descriptions, candidate screening notes, interview questions), performance (review drafts, feedback summaries, PIP language), or termination-adjacent work." **Annex III of the EU AI Act lists, as high-risk, AI systems intended to be used for recruitment or selection of natural persons, and for decisions affecting work-related relationships (promotion, termination) or task allocation/monitoring/evaluation of performance.** If Atrium's `hr` role is ever used by a company operating in or targeting the EU to actually inform a real hiring, performance, or termination decision — not just draft language a human independently originates — that usage plausibly falls inside this high-risk category. This note treats that as the realistic case, not an edge case, because it's exactly what the role's own prompt says it's for.
+
+## What "high-risk" would require, and where Atrium stands against it today
+
+| Obligation (Article, paraphrased) | Atrium's current posture |
+|---|---|
+| Human oversight (Art. 14) — a human must be able to meaningfully review and override the system's output before it takes effect | **Partially satisfied, structurally, not just procedurally.** M4.1's `review_required` gate makes it *impossible* for `hr`-role output to reach `approved` without a named, authenticated human — not a checkbox, an enforced code path (`TaskService.approve`, tested in `ComplianceGateTest`). What it does not do: verify the human read carefully or is qualified to judge the content. |
+| Record-keeping / logging (Art. 12, Art. 26(6) for deployers) | **Substantially satisfied.** `task_events` is an append-only audit trail; M4.2 extends every completion with model/prompt-version/inputs, enough to fully reconstruct what happened (see `review-process.md`). Retention today is indefinite for `task_events` (see `retention-policy.md`) — the Act's own minimum for deployer logs is 6 months where applicable, which this already exceeds, but no one has decided a *maximum* retention or a legal basis for indefinite retention of what could include personal data about real candidates/employees. |
+| Risk management system (Art. 9) | **Not built.** No formal, ongoing risk-identification/mitigation process exists for the `hr` role beyond the prompt-level guardrails described in `review-process.md` (bias language refusal, no direct tool access, draft-only output). A real risk management system is a process artifact, not a code artifact, and hasn't been established. |
+| Data governance (Art. 10) — training/input data quality, bias examination | **Not applicable in the usual sense** — Atrium doesn't train models; it calls third-party LLM providers (Anthropic, Google) and doesn't control their training data. Atrium's own responsibility as a *deployer* (not a provider) is narrower here, but input data quality for what gets fed into the `hr` role's prompts (task descriptions, any attached facts) is not independently validated for bias or accuracy anywhere in this codebase. |
+| Transparency to affected persons (Art. 13, and deployer duties under Art. 26) | **Not built.** Nothing in this codebase informs a candidate or employee that AI was involved in drafting material that affects them. This is a deployer-facing gap: it's the *company using Atrium's* obligation to disclose to affected individuals, and Atrium currently gives that company no tooling to do so. |
+| Conformity assessment / CE marking / registration in the EU database, before market placement (Art. 43, Art. 49) | **Not done, and out of scope for a coding session.** This is a formal, typically third-party-involving process. Nothing here should be read as claiming it. |
+
+## Honest summary
+
+Atrium's compliance-relevant *technical measures* — the human-sign-off gate and the full audit trail — are real, tested, and directly map onto two of the harder-to-retrofit high-risk obligations (human oversight, record-keeping). That is deliberate: those are the two obligations that are much easier to build in from the start than to bolt on later, so M4.1/M4.2 built them first. Everything else in the table above — a formal risk management system, data governance documentation, end-user transparency tooling, and any conformity assessment — has not been done and should not be assumed done. **Do not market or represent Atrium's `hr` role as "EU AI Act compliant" or "high-risk certified."** The honest claim is narrower: *the platform has real, tested technical guardrails that would need to sit inside a larger compliance program, not a complete one.*
+
+## General-purpose model obligations (a separate, smaller note)
+
+The Act also places obligations on providers of general-purpose AI models (Art. 53 area — technical documentation, copyright policy, training-content summaries, and additional systemic-risk duties for the largest models). Those obligations sit with Anthropic and Google as the model providers Atrium calls through `execution.spi.LlmProvider` implementations — not with Atrium, which is a downstream deployer of those models, not a provider of them. Atrium's own deployer duties (Art. 26: use the system per its instructions, ensure human oversight, monitor operation, keep logs, inform affected persons where relevant) are the ones addressed, partially, in the table above.
+
+## What would need to happen before a real EU high-risk deployment
+
+1. A real legal review of the current Act text and any delegated/implementing acts against Atrium's actual `hr`-role usage pattern — this note is not that review.
+2. A documented risk management process for the `hr` role (Art. 9), not just the prompt-level guardrails that exist today.
+3. Tooling for the deploying company to disclose AI involvement to affected candidates/employees (Art. 13/26 transparency).
+4. A decision on data governance/retention for personal data that flows through `hr`-role tasks specifically — today it's covered only by the generic policy in `retention-policy.md`, which was not written with candidate/employee personal data in mind.
+5. Whatever conformity assessment and registration Article 43/49 actually require for the finalized use case, which needs real counsel, not an engineering session.

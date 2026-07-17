@@ -109,9 +109,19 @@ Rate limiting, structured logs, error alerting, load test at realistic early con
 
 ## PHASE 4 — COMPLIANCE (3)
 
-**M4.1 — Legal role, gated** — output labeled draft/research; structurally impossible to deliver without named human sign-off. ✅ Proven by test.
-**M4.2 — HR role, audited** — full reconstructable audit on any HR task; mandatory oversight gate on hiring/performance/termination-adjacent tasks. ✅ Sample audit trail readable by an outsider.
-**M4.3 — Compliance docs** — retention policy, review-process explainer, EU AI Act posture note. ✅ Docs exist as artifacts.
+**M4.1 — Legal role, gated** · deps: none · **DONE 2026-07-17 (session 33)** — `role_definitions.review_required` (`V11__compliance_gate.sql`) structurally blocks `TaskService.approve` from shipping a gated role's task unless the approving call carries `TenantContext.userId()` — a named, authenticated human, never an agent or a system/background actor (`common.ForbiddenException`, 403). Seeded global `legal` template (`V12__seed_compliance_roles.sql`): no tool access, output headed `"DRAFT — NOT LEGAL ADVICE — REQUIRES ATTORNEY REVIEW"`, cites sources, flags specialist-review needs. See `08-conventions.md` security rule 8, `03-data-model.md` invariant 6.
+output labeled draft/research; structurally impossible to deliver without named human sign-off.
+✅ Proven by test — `core-api/src/test/java/app/atrium/routing/ComplianceGateTest.java`: a system-actor approve of a `legal`-role task throws `ForbiddenException` and leaves the task `pending_review`; the identical call with a real human JWT bound succeeds; an ungated role (`coder`, `review_required=false` by default) is unaffected, proving the gate is data-driven per role, not blanket.
+
+**M4.2 — HR role, audited** · deps: none · **DONE 2026-07-17 (session 33)** — seeded global `hr` template, same `review_required=true`/no-tool-access/draft-labeled posture as `legal` (output headed `"DRAFT — HR REVIEW REQUIRED BEFORE USE"`), scoped to hiring/performance/termination-adjacent work. `TaskService.complete`'s new `CompletionAudit` overload (built by `LlmLoopRuntime` from the real agent/role/feedback at completion time) adds `model`, `roleDefinitionId`, `promptVersion`, and `inputs:{title,description?,feedback?}` to every real completion's `task_events` payload — applied uniformly to every role (roles are data, no `if (roleKey=="hr")` branch), not specially wired for HR. Combined with the pre-existing `claimed` event's `contextProvenance` (M-CTX1), this makes any completion fully reconstructable from `task_events` alone. See `16-api-contract-delta.md` §4.
+full reconstructable audit on any HR task; mandatory oversight gate on hiring/performance/termination-adjacent tasks.
+✅ Sample audit trail readable by an outsider — `ComplianceGateTest.completedEventCarriesFullAuditPayloadForReconstruction` reads the full payload back via the ordinary `GET /tasks/{id}/events` endpoint (an authenticated read, no DB access, no cross-referencing another table needed) and confirms model/role/prompt-version/inputs are all present and correct; `LlmLoopRuntimeTest.hrRoleCompletionCarriesFullComplianceAuditPayloadFromTheRealLoop` proves the same thing end-to-end through a real (WireMock-backed) LLM call via the real runtime, not just the TaskService-level mechanism in isolation.
+
+**M4.3 — Compliance docs** · deps: none · **DONE 2026-07-17 (session 33)** — `atrium-docs/compliance/retention-policy.md`, `review-process.md`, `eu-ai-act-posture.md`. Written against what's actually built (real config keys, real job names, real retention numbers pulled from `MemoryTtlArchiver`/`OutboxRetentionJob`/`infra/terraform/`), not aspirational claims — each doc names its own real gaps explicitly (no account-deletion path exists; no formal EU AI Act risk-management-system dossier exists; "forget" endpoints archive, they don't hard-delete) rather than glossing over them. Explicitly NOT legal advice or a compliance certification — flagged as such in all three docs' own headers.
+retention policy, review-process explainer, EU AI Act posture note.
+✅ Docs exist as artifacts — `atrium-docs/compliance/*.md`, 3 files.
+
+**Phase 4 (Compliance) is now fully done — every milestone through M4.3 is built and verified.**
 
 ---
 
@@ -182,7 +192,7 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | M3.2 | Isolation hardening | 3 | ✅ |
 | M3.4 | Onboarding & templates | 3 | ✅ |
 | M3.5 | Production hardening | 3 | 🟡 partial (session 32) — code+IaC done, AWS deploy pending real credentials |
-| M4.1–M4.3 | Compliance roles & docs | 4 | ☐ ← next (M3.5's remaining live-deploy step doesn't block these) |
+| M4.1–M4.3 | Compliance roles & docs | 4 | ✅ (session 33 — Phase 4 fully done; M3.5's remaining live-deploy step never blocked these) |
 | | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |
 | M3.3 | Usage-based billing | ~~3~~ backlog | ⏸ deferred 2026-07-17 — post-pilot |
 | M2.4a | SkyOffice vendor & boot | ~~2~~ — | ✗ retired 2026-07-15 |

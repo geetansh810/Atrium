@@ -14,7 +14,8 @@ public final class RoleDefinitionDtos {
             @NotBlank String title,
             @NotBlank String systemPrompt,
             JsonNode allowedTools,
-            String outputContract) {}
+            String outputContract,
+            Boolean reviewRequired) {}
 
     public record RoleDefinitionResponse(
             UUID id,
@@ -25,12 +26,13 @@ public final class RoleDefinitionDtos {
             String systemPrompt,
             JsonNode allowedTools,
             String outputContract,
-            boolean globalTemplate) {
+            boolean globalTemplate,
+            boolean reviewRequired) {
 
         public static RoleDefinitionResponse from(RoleDefinition rd) {
             return new RoleDefinitionResponse(rd.getId(), rd.getCompanyId(), rd.getKey(),
                     rd.getVersion(), rd.getTitle(), rd.getSystemPrompt(), rd.getAllowedTools(),
-                    rd.getOutputContract(), rd.isGlobalTemplate());
+                    rd.getOutputContract(), rd.isGlobalTemplate(), rd.isReviewRequired());
         }
     }
 }
