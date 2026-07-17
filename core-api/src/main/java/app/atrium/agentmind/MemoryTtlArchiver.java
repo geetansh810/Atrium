@@ -33,6 +33,11 @@ public class MemoryTtlArchiver {
     @Scheduled(cron = "${atrium.memory.archive-cron:0 30 3 * * *}")
     @Transactional
     public void archiveUnusedLessonsAndSummaries() {
+        // M3.2: set_config(..., true) applies to every statement issued AFTER
+        // it within this transaction (08 §Security rule 6) — this job is
+        // deliberately cross-tenant (see class javadoc).
+        jdbc.execute("SELECT set_config('app.bypass_rls', 'on', true)");
+
         Boolean lockHeld = jdbc.queryForObject(
                 "SELECT pg_try_advisory_xact_lock(?)", Boolean.class, ADVISORY_LOCK_KEY);
         if (!Boolean.TRUE.equals(lockHeld)) {

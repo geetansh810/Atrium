@@ -52,8 +52,7 @@ class OutboxRelayTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     RedisConnectionFactory redisConnectionFactory;

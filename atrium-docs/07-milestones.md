@@ -95,7 +95,7 @@ Profile panel (stats, skills, current tasks, activity feed from task_events); Wo
 **M3.1 — Auth & self-serve signup** · deps: Phase 2
 ✅ Fresh browser → signup → empty roster, unassisted. Dev headers removed.
 
-**M3.2 — Isolation hardening** · deps: M3.1
+**M3.2 — Isolation hardening** · deps: M3.1 · **DONE 2026-07-17 (session 31)** — `V10__tenant_rls.sql` enables + forces Postgres RLS on every company_id-bearing table, keyed off `app.company_id`/`app.bypass_rls` session GUCs stamped by a new `TenantAwareJpaTransactionManager`; a least-privilege `atrium_app` role (not the bootstrap superuser, which Postgres refuses to demote) is what the app's own datasource connects as. New `IsolationHardeningTest` — company B 404s against every one of company A's resources across ~25 endpoints + the worker gateway + Redis channel isolation; a deliberately planted bypass (dropped tenant filter + forced RLS bypass) confirmed the suite goes red, then reverted. See CLAUDE.md session 31 and `project-graph/data-model.md`/`core-api.md` for the full build + verification evidence.
 Postgres RLS on all business tables; adversarial cross-tenant test suite (API + Redis channel). ~~Colyseus join~~ (void — office track retired 2026-07-15, M2.4a; there is no Colyseus room to join). The migration for this card is **RLS policies only** — `billing_accounts` is deferred with M3.3 (see 15 §0).
 ✅ Suite passes; a deliberately planted bypass attempt fails.
 
@@ -179,9 +179,9 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | M2.5 | Escalations + chat v1 | 2 | ✅ |
 | M2.6 | Profile & Workspace panels | 2 | ✅ |
 | M3.1 | Auth & signup | 3 | ✅ (session 29 — row was stale at ☐ until 2026-07-17) |
-| M3.2 | Isolation hardening | 3 | ☐ ← next |
+| M3.2 | Isolation hardening | 3 | ✅ |
 | M3.4 | Onboarding & templates | 3 | ✅ |
-| M3.5 | Production hardening | 3 | ☐ |
+| M3.5 | Production hardening | 3 | ☐ ← next |
 | M4.1–M4.3 | Compliance roles & docs | 4 | ☐ |
 | | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |
 | M3.3 | Usage-based billing | ~~3~~ backlog | ⏸ deferred 2026-07-17 — post-pilot |

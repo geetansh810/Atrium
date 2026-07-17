@@ -3,6 +3,7 @@ package app.atrium.communication;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.execution.UsageRecorder;
 import app.atrium.registry.runtime.AgentHandle;
@@ -37,7 +38,7 @@ class ChatNoticePipelineTest extends IntegrationTestBase {
 
     @Autowired TestRestTemplate rest;
     @Autowired ObjectMapper json;
-    @Autowired JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
     @Autowired LlmLoopRuntime runtime;
     @Autowired WorkBroker workBroker;
     @Autowired TaskService taskService;
@@ -123,13 +124,17 @@ class ChatNoticePipelineTest extends IntegrationTestBase {
                 """, String.class, companyId);
     }
 
+    // M3.2: bare service calls (no wrapping HTTP request) — bind the tenant
+    // for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
     private void completeTask(UUID companyId, UUID taskId, UUID agentId) {
-        workBroker.claim(companyId, taskId, agentId);
-        taskService.progress(companyId, taskId, agentId, null, null, null);
-        TransactionTemplate tx = new TransactionTemplate(txManager);
-        tx.executeWithoutResult(status -> {
-            usageRecorder.record(companyId, agentId, taskId, 1, "anthropic", "claude-sonnet-5", 60, 40, 40L);
-            taskService.complete(companyId, taskId, agentId, "text", "done");
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, taskId, agentId);
+            taskService.progress(companyId, taskId, agentId, null, null, null);
+            TransactionTemplate tx = new TransactionTemplate(txManager);
+            tx.executeWithoutResult(status -> {
+                usageRecorder.record(companyId, agentId, taskId, 1, "anthropic", "claude-sonnet-5", 60, 40, 40L);
+                taskService.complete(companyId, taskId, agentId, "text", "done");
+            });
         });
     }
 

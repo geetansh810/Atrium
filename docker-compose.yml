@@ -33,6 +33,12 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/atrium
       DATABASE_USER: atrium
       DATABASE_PASSWORD: atrium
+      # M3.2 (08 §Security rule 6): the app's own runtime connection — not
+      # Flyway's — uses the least-privilege role V10__tenant_rls.sql creates,
+      # so Postgres RLS actually applies to it (it can never apply to the
+      # bootstrap DATABASE_USER above). Override both in any shared env.
+      ATRIUM_APP_DB_USER: ${ATRIUM_APP_DB_USER:-atrium_app}
+      ATRIUM_APP_DB_PASSWORD: ${ATRIUM_APP_DB_PASSWORD:-atrium_app}
       REDIS_URL: redis://redis:6379
       # LLM provider keys (13 §1) — read from a root .env file (Compose auto-loads
       # it) or the shell environment. Never set a default here; a blank value is

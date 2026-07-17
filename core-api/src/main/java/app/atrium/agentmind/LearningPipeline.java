@@ -23,6 +23,7 @@ import app.atrium.routing.domain.Task;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.EntityManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -161,6 +162,7 @@ public class LearningPipeline extends EventCursorWorker {
     private final LearningPipeline self;
 
     public LearningPipeline(OutboxEventRepository outbox, EventConsumerCursorRepository cursors,
+                            EntityManager entityManager,
                             TaskService taskService, AgentDirectory agentDirectory,
                             RoleDefinitionLookup roleDefinitions, ModelCatalogLookup modelCatalog,
                             MemoryStore memoryStore, UsageLedger usageLedger,
@@ -168,7 +170,7 @@ public class LearningPipeline extends EventCursorWorker {
                             @Value("${atrium.learning.model-tier:fast}") String modelTier,
                             @Value("${atrium.learning.batch-size:" + BATCH_SIZE + "}") int batchSize,
                             @Lazy LearningPipeline self) {
-        super(CONSUMER_NAME, outbox, cursors);
+        super(CONSUMER_NAME, outbox, cursors, entityManager);
         this.taskService = taskService;
         this.agentDirectory = agentDirectory;
         this.roleDefinitions = roleDefinitions;
@@ -192,7 +194,7 @@ public class LearningPipeline extends EventCursorWorker {
 
     @Scheduled(fixedDelayString = "${atrium.learning.poll-interval-ms:5000}")
     public void poll() {
-        self.pollOnce(batchSize);
+        self.pollOnce(batchSize); // M3.2: bypass is set inside EventCursorWorker.pollOnce (08 §Security rule 6)
     }
 
     @Override

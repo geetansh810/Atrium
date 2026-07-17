@@ -11,6 +11,7 @@ import app.atrium.registry.domain.Company;
 import app.atrium.registry.domain.CompanyRepository;
 import app.atrium.registry.domain.User;
 import app.atrium.registry.domain.UserRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
  * bootstrap. Signup creates the company AND its first admin user atomically;
  * there is no other way to create a company now (registry.CompanyController's
  * old standalone {@code POST /companies} is gone).
+ *
+ * <p>M3.2: both methods set {@code app.bypass_rls} as their first statement
+ * (08 §Security rule 6) — neither has a tenant to bind yet (signup creates
+ * the company; login's {@code findByEmail} is cross-company by construction).
+ * {@code set_config(..., true)} applies to every statement issued after it
+ * within the same transaction, including {@link CompanyService#create}'s
+ * nested call below (it joins this method's already-open transaction).
  */
 @Service
 public class AuthService {
@@ -29,18 +37,21 @@ public class AuthService {
     private final CompanyRepository companies;
     private final UserRepository users;
     private final JwtService jwtService;
+    private final JdbcTemplate jdbc;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(CompanyService companyService, CompanyRepository companies,
-                        UserRepository users, JwtService jwtService) {
+                        UserRepository users, JwtService jwtService, JdbcTemplate jdbc) {
         this.companyService = companyService;
         this.companies = companies;
         this.users = users;
         this.jwtService = jwtService;
+        this.jdbc = jdbc;
     }
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
+        jdbc.execute("SELECT set_config('app.bypass_rls', 'on', true)");
         users.findByEmail(request.email()).ifPresent(existing -> {
             throw new ConflictException("Email '" + request.email() + "' is already registered");
         });
@@ -58,6 +69,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
+        jdbc.execute("SELECT set_config('app.bypass_rls', 'on', true)");
         User user = users.findByEmail(request.email())
                 .filter(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));

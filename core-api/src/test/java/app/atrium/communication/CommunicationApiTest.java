@@ -26,7 +26,7 @@ class CommunicationApiTest extends IntegrationTestBase {
 
     @Autowired TestRestTemplate rest;
     @Autowired ObjectMapper json;
-    @Autowired JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     private final Map<String, String> tokenByCompany = new HashMap<>();
     private final Map<String, String> adminUserIdByCompany = new HashMap<>();

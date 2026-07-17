@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.agentmind.EmbeddingClient;
 import app.atrium.agentmind.MemoryStore;
 import app.atrium.agentmind.MemoryWrite;
@@ -71,8 +72,7 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     LlmLoopRuntime runtime;
@@ -313,10 +313,13 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
 
         // Simulate: claim (attempt=1), step 5 (usage) already ran, then the
         // worker dies before step 6/7 — the lease expires mid-work.
-        workBroker.claim(companyId, taskUuid, agentUuid);
+        // M3.2: bare service calls (no wrapping HTTP request) — bind the
+        // tenant for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
+        TenantContext.runAsSystem(companyId, () -> workBroker.claim(companyId, taskUuid, agentUuid));
         TransactionTemplate tx = new TransactionTemplate(txManager);
-        boolean firstRecord = tx.execute(status -> usageRecorder.record(companyId, agentUuid, taskUuid,
-                1, "anthropic", "claude-sonnet-5", 42, 17, 100L));
+        boolean firstRecord = TenantContext.callAsSystem(companyId, () -> tx.execute(status ->
+                usageRecorder.record(companyId, agentUuid, taskUuid,
+                        1, "anthropic", "claude-sonnet-5", 42, 17, 100L)));
         assertThat(firstRecord).as("first record for attempt 1 succeeds").isTrue();
 
         // Force the lease expired and let the REAL scheduled reclaim job requeue it
@@ -328,8 +331,9 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
 
         // Redelivery: attempt 1's usage call comes again (e.g. a retried step 5) —
         // the idempotency key already exists, so this must be a silent no-op.
-        boolean redelivered = tx.execute(status -> usageRecorder.record(companyId, agentUuid, taskUuid,
-                1, "anthropic", "claude-sonnet-5", 42, 17, 100L));
+        boolean redelivered = TenantContext.callAsSystem(companyId, () -> tx.execute(status ->
+                usageRecorder.record(companyId, agentUuid, taskUuid,
+                        1, "anthropic", "claude-sonnet-5", 42, 17, 100L)));
         assertThat(redelivered).as("redelivered attempt-1 call is a no-op").isFalse();
 
         Integer attempt1Rows = jdbc.queryForObject(
@@ -422,8 +426,9 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         stubAnthropicSuccess("def reverse_string(s):\\n    return s[::-1]");
 
         ObjectNode provenance = json.createObjectNode().put("extractedBy", "user");
-        memoryStore.ingest(new MemoryWrite(UUID.fromString(company), "company", null, null, null,
-                "preference", "CEO prefers bullet lists", (short) 1, "active", provenance, null));
+        TenantContext.runAsSystem(UUID.fromString(company), () -> memoryStore.ingest(
+                new MemoryWrite(UUID.fromString(company), "company", null, null, null,
+                        "preference", "CEO prefers bullet lists", (short) 1, "active", provenance, null)));
 
         runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
         awaitStatus(company, taskId, "pending_review", 10);

@@ -2,14 +2,25 @@ spring:
   application:
     name: atrium-core-api
   datasource:
+    # M3.2 (08 §Security rule 6): the app's own runtime connection uses the
+    # least-privilege atrium_app role V10__tenant_rls.sql creates and grants
+    # everything to — NOT the bootstrap DATABASE_USER, which Postgres refuses
+    # to ever strip SUPERUSER from (RLS never applies to a superuser
+    # regardless of FORCE). Flyway keeps the bootstrap creds below.
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/atrium}
-    username: ${DATABASE_USER:atrium}
-    password: ${DATABASE_PASSWORD:atrium}
+    username: ${ATRIUM_APP_DB_USER:atrium_app}
+    password: ${ATRIUM_APP_DB_PASSWORD:atrium_app}
   jpa:
     hibernate:
       ddl-auto: validate        # schema is Flyway's job, never Hibernate's
     open-in-view: false
   flyway:
+    # Explicit user/password (not just locations) — needs the bootstrap role's
+    # real DDL privileges (CREATE EXTENSION, CREATE ROLE, GRANT) that
+    # atrium_app deliberately doesn't have.
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/atrium}
+    user: ${DATABASE_USER:atrium}
+    password: ${DATABASE_PASSWORD:atrium}
     locations: classpath:db/migration
   data:
     redis:

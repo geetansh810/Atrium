@@ -3,6 +3,7 @@ package app.atrium.accountability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.execution.UsageRecorder;
 import app.atrium.registry.runtime.AgentHandle;
@@ -40,8 +41,7 @@ class StatsRollupTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     LlmLoopRuntime runtime;
@@ -159,23 +159,27 @@ class StatsRollupTest extends IntegrationTestBase {
         UUID task2Id = UUID.fromString(task2);
         TransactionTemplate tx = new TransactionTemplate(txManager);
 
-        // task1: claim → complete (100 tokens, 40 µUSD) → approve
-        workBroker.claim(companyId, task1Id, agentUuid);
-        taskService.progress(companyId, task1Id, agentUuid, null, null, null);
-        tx.executeWithoutResult(status -> {
-            usageRecorder.record(companyId, agentUuid, task1Id, 1, "anthropic", "claude-sonnet-5", 60, 40, 40L);
-            taskService.complete(companyId, task1Id, agentUuid, "text", "done");
-        });
-        taskService.approve(companyId, task1Id);
+        // M3.2: bare service calls (no wrapping HTTP request) — bind the
+        // tenant for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
+        TenantContext.runAsSystem(companyId, () -> {
+            // task1: claim → complete (100 tokens, 40 µUSD) → approve
+            workBroker.claim(companyId, task1Id, agentUuid);
+            taskService.progress(companyId, task1Id, agentUuid, null, null, null);
+            tx.executeWithoutResult(status -> {
+                usageRecorder.record(companyId, agentUuid, task1Id, 1, "anthropic", "claude-sonnet-5", 60, 40, 40L);
+                taskService.complete(companyId, task1Id, agentUuid, "text", "done");
+            });
+            taskService.approve(companyId, task1Id);
 
-        // task2: claim → complete (50 tokens, 15 µUSD) → reject
-        workBroker.claim(companyId, task2Id, agentUuid);
-        taskService.progress(companyId, task2Id, agentUuid, null, null, null);
-        tx.executeWithoutResult(status -> {
-            usageRecorder.record(companyId, agentUuid, task2Id, 1, "anthropic", "claude-sonnet-5", 30, 20, 15L);
-            taskService.complete(companyId, task2Id, agentUuid, "text", "attempt one");
+            // task2: claim → complete (50 tokens, 15 µUSD) → reject
+            workBroker.claim(companyId, task2Id, agentUuid);
+            taskService.progress(companyId, task2Id, agentUuid, null, null, null);
+            tx.executeWithoutResult(status -> {
+                usageRecorder.record(companyId, agentUuid, task2Id, 1, "anthropic", "claude-sonnet-5", 30, 20, 15L);
+                taskService.complete(companyId, task2Id, agentUuid, "text", "attempt one");
+            });
+            taskService.reject(companyId, task2Id, "needs more detail");
         });
-        taskService.reject(companyId, task2Id, "needs more detail");
 
         statsRollupWorker.pollOnce(50);
 
@@ -208,21 +212,25 @@ class StatsRollupTest extends IntegrationTestBase {
         TransactionTemplate tx = new TransactionTemplate(txManager);
 
         UUID task1Id = UUID.fromString(task1);
-        workBroker.claim(companyId, task1Id, UUID.fromString(agentId));
-        taskService.progress(companyId, task1Id, UUID.fromString(agentId), null, null, null);
-        tx.executeWithoutResult(status -> {
-            usageRecorder.record(companyId, UUID.fromString(agentId), task1Id, 1,
-                    "anthropic", "claude-sonnet-5", 10, 10, 5L);
-            taskService.complete(companyId, task1Id, UUID.fromString(agentId), "text", "done");
-        });
-
         UUID task2Id = UUID.fromString(task2);
-        workBroker.claim(companyId, task2Id, UUID.fromString(agent2Id));
-        taskService.progress(companyId, task2Id, UUID.fromString(agent2Id), null, null, null);
-        tx.executeWithoutResult(status -> {
-            usageRecorder.record(companyId, UUID.fromString(agent2Id), task2Id, 1,
-                    "anthropic", "claude-sonnet-5", 20, 20, 8L);
-            taskService.complete(companyId, task2Id, UUID.fromString(agent2Id), "text", "done");
+        // M3.2: bare service calls (no wrapping HTTP request) — bind the
+        // tenant for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, task1Id, UUID.fromString(agentId));
+            taskService.progress(companyId, task1Id, UUID.fromString(agentId), null, null, null);
+            tx.executeWithoutResult(status -> {
+                usageRecorder.record(companyId, UUID.fromString(agentId), task1Id, 1,
+                        "anthropic", "claude-sonnet-5", 10, 10, 5L);
+                taskService.complete(companyId, task1Id, UUID.fromString(agentId), "text", "done");
+            });
+
+            workBroker.claim(companyId, task2Id, UUID.fromString(agent2Id));
+            taskService.progress(companyId, task2Id, UUID.fromString(agent2Id), null, null, null);
+            tx.executeWithoutResult(status -> {
+                usageRecorder.record(companyId, UUID.fromString(agent2Id), task2Id, 1,
+                        "anthropic", "claude-sonnet-5", 20, 20, 8L);
+                taskService.complete(companyId, task2Id, UUID.fromString(agent2Id), "text", "done");
+            });
         });
 
         statsRollupWorker.pollOnce(50);

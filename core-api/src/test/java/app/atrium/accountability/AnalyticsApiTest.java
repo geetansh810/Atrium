@@ -36,8 +36,7 @@ class AnalyticsApiTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     LlmLoopRuntime runtime;

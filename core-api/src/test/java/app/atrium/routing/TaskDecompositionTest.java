@@ -3,6 +3,7 @@ package app.atrium.routing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.registry.runtime.AgentHandle;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,8 +39,7 @@ class TaskDecompositionTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     TaskService taskService;
@@ -121,10 +121,20 @@ class TaskDecompositionTest extends IntegrationTestBase {
                 new HttpEntity<>(headers(companyId)), String.class);
     }
 
+    // M3.2: bare service calls (no wrapping HTTP request) — bind the tenant
+    // for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
     private void driveToPendingReview(UUID companyId, UUID taskId, UUID agentId) {
-        workBroker.claim(companyId, taskId, agentId);
-        taskService.progress(companyId, taskId, agentId, null, null, null);
-        taskService.complete(companyId, taskId, agentId, "text", "decomposition plan");
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, taskId, agentId);
+            taskService.progress(companyId, taskId, agentId, null, null, null);
+            taskService.complete(companyId, taskId, agentId, "text", "decomposition plan");
+        });
+    }
+
+    private TaskService.DecompositionResult decompose(UUID companyId, UUID parentTaskId, UUID agentId,
+            UUID planArtifactId, List<TaskService.ChildTaskSpec> children) {
+        return TenantContext.callAsSystem(companyId,
+                () -> taskService.decompose(companyId, parentTaskId, agentId, planArtifactId, children));
     }
 
     // ── Done-when: PM task spawns coder+designer children; parent approvable
@@ -143,7 +153,7 @@ class TaskDecompositionTest extends IntegrationTestBase {
         driveToPendingReview(companyId, parentUuid, UUID.fromString(pmAgent));
         UUID planArtifactId = UUID.fromString(getTask(company, parentId).get("latestArtifact").get("id").asText());
 
-        TaskService.DecompositionResult result = taskService.decompose(companyId, parentUuid,
+        TaskService.DecompositionResult result = decompose(companyId, parentUuid,
                 UUID.fromString(pmAgent), planArtifactId, List.of(
                         new TaskService.ChildTaskSpec("Build the checkout flow", "Implement it", "coding", 2),
                         new TaskService.ChildTaskSpec("Design the packaging", "Spec it", "design", 2)));
@@ -207,14 +217,14 @@ class TaskDecompositionTest extends IntegrationTestBase {
                 List.of(new TaskService.ChildTaskSpec("Do the thing", null, "coding", null));
 
         TaskService.DecompositionResult first =
-                taskService.decompose(companyId, parentUuid, pmUuid, planArtifactId, specs);
+                decompose(companyId, parentUuid, pmUuid, planArtifactId, specs);
         assertThat(first.created()).isTrue();
         assertThat(first.childTaskIds()).hasSize(1);
 
         // replay with the SAME plan_artifact_id (e.g. a hypothetical outbox/tool retry) —
         // must be a no-op, never a second batch of children.
         TaskService.DecompositionResult replay =
-                taskService.decompose(companyId, parentUuid, pmUuid, planArtifactId, specs);
+                decompose(companyId, parentUuid, pmUuid, planArtifactId, specs);
         assertThat(replay.created()).isFalse();
         assertThat(replay.childTaskIds()).isEqualTo(first.childTaskIds());
 
@@ -243,7 +253,7 @@ class TaskDecompositionTest extends IntegrationTestBase {
         driveToPendingReview(companyId, parentUuid, pmUuid);
         UUID planArtifactId = UUID.fromString(getTask(company, parentId).get("latestArtifact").get("id").asText());
 
-        TaskService.DecompositionResult result = taskService.decompose(companyId, parentUuid, pmUuid,
+        TaskService.DecompositionResult result = decompose(companyId, parentUuid, pmUuid,
                 planArtifactId, List.of(
                         new TaskService.ChildTaskSpec("Code it", null, "coding", null),
                         new TaskService.ChildTaskSpec("Design it", null, "design", null)));

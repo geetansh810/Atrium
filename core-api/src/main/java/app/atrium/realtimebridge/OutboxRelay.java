@@ -56,6 +56,11 @@ public class OutboxRelay {
     @Scheduled(fixedDelayString = "${atrium.relay.interval-ms:250}")
     @Transactional
     public void relayBatch() {
+        // M3.2: set_config(..., true) applies to every statement issued AFTER
+        // it within this transaction (08 §Security rule 6) — this job is
+        // deliberately cross-tenant (see class javadoc).
+        jdbc.execute("SELECT set_config('app.bypass_rls', 'on', true)");
+
         Boolean lockHeld = jdbc.queryForObject(
                 "SELECT pg_try_advisory_xact_lock(?)", Boolean.class, ADVISORY_LOCK_KEY);
         if (!Boolean.TRUE.equals(lockHeld)) {

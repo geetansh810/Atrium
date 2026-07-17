@@ -5,6 +5,7 @@ import app.atrium.eventbus.EventCursorWorker;
 import app.atrium.eventbus.OutboxEvent;
 import app.atrium.eventbus.OutboxEventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.EntityManager;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -51,10 +52,10 @@ public class StatsRollupWorker extends EventCursorWorker {
     private final StatsRollupWorker self;
 
     public StatsRollupWorker(OutboxEventRepository outbox, EventConsumerCursorRepository cursors,
-                             JdbcTemplate jdbc,
+                             EntityManager entityManager, JdbcTemplate jdbc,
                              @Value("${atrium.stats-rollup.batch-size:50}") int batchSize,
                              @Lazy StatsRollupWorker self) {
-        super(CONSUMER_NAME, outbox, cursors);
+        super(CONSUMER_NAME, outbox, cursors, entityManager);
         this.jdbc = jdbc;
         this.batchSize = batchSize;
         // Same @Lazy-self idiom as LearningPipeline/JpaAgentDirectory: pollOnce()
@@ -65,7 +66,7 @@ public class StatsRollupWorker extends EventCursorWorker {
 
     @Scheduled(fixedDelayString = "${atrium.stats-rollup.poll-interval-ms:5000}")
     public void poll() {
-        self.pollOnce(batchSize);
+        self.pollOnce(batchSize); // M3.2: bypass is set inside EventCursorWorker.pollOnce (08 §Security rule 6)
     }
 
     @Override

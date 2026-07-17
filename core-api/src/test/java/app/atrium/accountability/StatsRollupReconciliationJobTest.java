@@ -35,8 +35,7 @@ class StatsRollupReconciliationJobTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     StatsRollupReconciliationJob reconciliationJob;

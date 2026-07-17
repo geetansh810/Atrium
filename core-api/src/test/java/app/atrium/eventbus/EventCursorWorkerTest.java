@@ -3,6 +3,7 @@ package app.atrium.eventbus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,8 +21,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 class EventCursorWorkerTest extends IntegrationTestBase {
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     TestWorker worker;
@@ -68,8 +68,8 @@ class EventCursorWorkerTest extends IntegrationTestBase {
         // and correctly delegates to the target.
         private final List<Long> handledIds = new CopyOnWriteArrayList<>();
 
-        TestWorker(OutboxEventRepository outbox, EventConsumerCursorRepository cursors) {
-            super("test_consumer_" + UUID.randomUUID(), outbox, cursors);
+        TestWorker(OutboxEventRepository outbox, EventConsumerCursorRepository cursors, EntityManager entityManager) {
+            super("test_consumer_" + UUID.randomUUID(), outbox, cursors, entityManager);
         }
 
         @Override
@@ -89,8 +89,9 @@ class EventCursorWorkerTest extends IntegrationTestBase {
     @TestConfiguration
     static class Config {
         @Bean
-        TestWorker testWorker(OutboxEventRepository outbox, EventConsumerCursorRepository cursors) {
-            return new TestWorker(outbox, cursors);
+        TestWorker testWorker(OutboxEventRepository outbox, EventConsumerCursorRepository cursors,
+                              EntityManager entityManager) {
+            return new TestWorker(outbox, cursors, entityManager);
         }
     }
 }

@@ -1,6 +1,7 @@
 package app.atrium.routing.api;
 
 import app.atrium.common.NotFoundException;
+import app.atrium.common.TenantContext;
 import app.atrium.registry.AgentDirectory;
 import app.atrium.routing.WorkBroker;
 import app.atrium.routing.api.TaskDtos.TaskResponse;
@@ -20,6 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
  * external agent runtimes have no human session. Claim 409 = someone else
  * holds it — workers must never retry the same claim. Fat-claim ContextBundle
  * lands whenever a real external (webhook/process) runtime needs it.
+ *
+ * <p>M3.2: binds {@link TenantContext#callAsSystem} around each call so Postgres
+ * RLS (08 §Security rule 6) sees a real {@code app.company_id} on this axis
+ * too — this gateway never goes through {@code TenantContextFilter}.
  */
 @RestController
 @RequestMapping("/api/v1/tasks")
@@ -38,16 +43,26 @@ public class WorkerTaskController {
     @PostMapping("/{id}/claim")
     public TaskResponse claim(@PathVariable UUID id,
                               @RequestHeader(AGENT_HEADER) UUID agentId) {
-        return TaskResponse.from(workBroker.claim(companyIdOf(agentId), id, agentId));
+        UUID companyId = companyIdOf(agentId);
+        return TenantContext.callAsSystem(companyId,
+                () -> TaskResponse.from(workBroker.claim(companyId, id, agentId)));
     }
 
     @PostMapping("/{id}/lease/renew")
     public TaskResponse renewLease(@PathVariable UUID id,
                                    @RequestHeader(AGENT_HEADER) UUID agentId) {
-        return TaskResponse.from(workBroker.renewLease(companyIdOf(agentId), id, agentId));
+        UUID companyId = companyIdOf(agentId);
+        return TenantContext.callAsSystem(companyId,
+                () -> TaskResponse.from(workBroker.renewLease(companyId, id, agentId)));
     }
 
+    /**
+     * Resolving an agent's own company by id is inherently pre-tenant (that's
+     * the whole point) — bypasses RLS for this one lookup, same as
+     * {@code AuthService}'s pre-auth email lookup.
+     */
     private UUID companyIdOf(UUID agentId) {
-        return agentDirectory.companyIdOf(agentId).orElseThrow(() -> NotFoundException.of("Agent", agentId));
+        return TenantContext.callWithBypass(() ->
+                agentDirectory.companyIdOf(agentId).orElseThrow(() -> NotFoundException.of("Agent", agentId)));
     }
 }

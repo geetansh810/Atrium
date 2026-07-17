@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.agentmind.api.KnowledgeDtos.IngestKnowledgeRequest;
 import app.atrium.agentmind.domain.AgentSkill;
 import app.atrium.agentmind.domain.AgentSkillRepository;
@@ -33,6 +34,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import java.util.function.Supplier;
 
 /**
  * M-CTX1 unit-level Done-when: fits-all, item-granular truncation, name+description
@@ -70,6 +74,28 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
 
     @Autowired
     KnowledgeService knowledgeService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
+
+    /**
+     * M3.2: repositories injected directly into a test (no wrapping
+     * {@code @Transactional} service method, unlike everywhere in real app
+     * code) don't reliably open a Spring-managed transaction on their own —
+     * confirmed by instrumentation: {@code SimpleJpaRepository}'s own
+     * class-level {@code @Transactional(readOnly=true)} did not fire {@code
+     * TenantAwareJpaTransactionManager#doBegin} for a bare repository call
+     * from this test's own thread, so the RLS session GUC (08 §Security rule
+     * 6) was never set and every such read/write silently saw zero rows. An
+     * explicit {@link TransactionTemplate} guarantees a real transaction (and
+     * therefore a real {@code doBegin} call) regardless of that gap. Bind the
+     * tenant with {@link TenantContext#callAsSystem} OUTSIDE the transaction
+     * (it must be set before the transaction begins, not during it).
+     */
+    private <T> T inTx(String companyId, Supplier<T> work) {
+        return TenantContext.callAsSystem(UUID.fromString(companyId),
+                () -> new TransactionTemplate(transactionManager).execute(status -> work.get()));
+    }
 
     /**
      * Real HTTP calls are never made in this class — every embed() call
@@ -111,13 +137,19 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         return UUID.fromString(parse(response.getBody()).get("id").asText());
     }
 
+    // M3.2: every direct repo/service-bean call in this file (as opposed to a
+    // real rest.* HTTP call, which already binds TenantContext via
+    // TenantContextFilter) has to bind its own tenant for RLS (08 §Security
+    // rule 6) — this class deliberately never goes through HTTP for the
+    // assemble/seed/direct-repo paths it's testing.
     private UUID ingestKnowledgeDoc(String companyId, String title, String content) {
-        return knowledgeService.ingest(UUID.fromString(companyId),
-                new IngestKnowledgeRequest(title, content, null)).getId();
+        return TenantContext.callAsSystem(UUID.fromString(companyId), () -> knowledgeService.ingest(
+                UUID.fromString(companyId), new IngestKnowledgeRequest(title, content, null)).getId());
     }
 
     private void attachKnowledgeToRole(String companyId, UUID roleDefinitionId, UUID docId) {
-        knowledgeService.attachToRole(UUID.fromString(companyId), roleDefinitionId, docId);
+        TenantContext.runAsSystem(UUID.fromString(companyId),
+                () -> knowledgeService.attachToRole(UUID.fromString(companyId), roleDefinitionId, docId));
     }
 
     private String hireAgentWithCustomRole(String companyId, UUID roleDefinitionId, String skill) {
@@ -137,9 +169,10 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
     private UUID seedMemory(String companyId, String scope, String agentId, String roleKey,
                            String kind, String content, String status) {
         ObjectNode provenance = json.createObjectNode().put("extractedBy", "user");
-        return memoryStore.ingest(new MemoryWrite(UUID.fromString(companyId), scope,
-                agentId != null ? UUID.fromString(agentId) : null, roleKey, null, kind, content,
-                (short) 1, status, provenance, null));
+        return TenantContext.callAsSystem(UUID.fromString(companyId), () -> memoryStore.ingest(
+                new MemoryWrite(UUID.fromString(companyId), scope,
+                        agentId != null ? UUID.fromString(agentId) : null, roleKey, null, kind, content,
+                        (short) 1, status, provenance, null)));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────
@@ -219,24 +252,29 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
     }
 
     private Skill createCompanySkill(String companyId, String name, String description, String bodyMd) {
-        return skillRepository.save(new Skill(UUID.fromString(companyId),
-                "skill-" + UUID.randomUUID().toString().substring(0, 8), 1, name, description, bodyMd,
-                "reference", List.of(), "company", "authored", "system"));
+        return inTx(companyId, () -> skillRepository.save(new Skill(
+                UUID.fromString(companyId), "skill-" + UUID.randomUUID().toString().substring(0, 8), 1, name,
+                description, bodyMd, "reference", List.of(), "company", "authored", "system")));
     }
 
     private Agent agent(String companyId, String agentId) {
-        return agentRepository.findByIdAndCompanyId(UUID.fromString(agentId), UUID.fromString(companyId))
-                .orElseThrow();
+        return inTx(companyId, () -> agentRepository
+                .findByIdAndCompanyId(UUID.fromString(agentId), UUID.fromString(companyId)).orElseThrow());
     }
 
     private Task task(String companyId, String taskId) {
-        return taskRepository.findByIdAndCompanyId(UUID.fromString(taskId), UUID.fromString(companyId))
-                .orElseThrow();
+        return inTx(companyId, () -> taskRepository
+                .findByIdAndCompanyId(UUID.fromString(taskId), UUID.fromString(companyId)).orElseThrow());
     }
 
     private List<UUID> hiredSkillIds(String companyId, String agentId) {
-        return agentSkillRepository.findByAgentId(UUID.fromString(agentId)).stream()
-                .filter(a -> "hired".equals(a.getSource())).map(AgentSkill::getSkillId).toList();
+        return inTx(companyId, () -> agentSkillRepository
+                .findByAgentId(UUID.fromString(agentId)).stream()
+                .filter(a -> "hired".equals(a.getSource())).map(AgentSkill::getSkillId).toList());
+    }
+
+    private ContextBundle assembleAs(String companyId, Agent agentEntity, Task taskEntity) {
+        return TenantContext.callAsSystem(UUID.fromString(companyId), () -> contextAssembler.assemble(agentEntity, taskEntity));
     }
 
     // ── fits-all ─────────────────────────────────────────────────────────
@@ -247,7 +285,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         String agentId = hireAgent(company, "coder", null); // default 4000-token budget, tiny seed skills
         String taskId = createTask(company, "coder");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.skills()).hasSize(2);
         assertThat(bundle.skills()).allSatisfy(s -> assertThat(s.indexOnly()).isFalse());
@@ -274,7 +312,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         Skill skill = createCompanySkill(company, "S".repeat(8), "D".repeat(8), "B".repeat(400));
         attach(company, agentId, skill.getId(), 3);
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.skills()).hasSize(1);
         SkillExcerpt excerpt = bundle.skills().get(0);
@@ -304,7 +342,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         Skill small = createCompanySkill(company, "sm", "ok", "tiny body");
         attach(company, agentId, small.getId(), 1);
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.skills()).hasSize(1);
         assertThat(bundle.skills().get(0).skillId()).isEqualTo(small.getId());
@@ -325,7 +363,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         Skill highProficiency = createCompanySkill(company, "High", "high prof", "body");
         attach(company, agentId, highProficiency.getId(), 5);
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         // first two are the hired pair, in role-position order (V5 seed: 0=code-review-checklist,
         // 1=unified-diff-output); same names asserted in fitsAllSkillsIncludedFullyWithinBudget.
@@ -348,12 +386,14 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
             detach(company, agentId, hiredId);
         }
 
-        Skill proposed = skillRepository.save(new Skill(UUID.fromString(company), "proposed-skill", 1,
-                "Proposed", "Not yet promoted", "body", "reference", List.of(), "agent_proposed",
-                "authored", "agent:" + agentId));
-        agentSkillRepository.save(new AgentSkill(UUID.fromString(agentId), proposed.getId(), "learned", (short) 5));
+        Skill proposed = inTx(company, () -> skillRepository.save(
+                new Skill(UUID.fromString(company), "proposed-skill", 1,
+                        "Proposed", "Not yet promoted", "body", "reference", List.of(), "agent_proposed",
+                        "authored", "agent:" + agentId)));
+        inTx(company, () -> agentSkillRepository.save(
+                new AgentSkill(UUID.fromString(agentId), proposed.getId(), "learned", (short) 5)));
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.skills()).isEmpty();
         assertThat(bundle.provenanceIds()).isEmpty();
@@ -374,7 +414,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         Skill skill = createCompanySkill(company, "abcd", "efgh", "ijklmnop"); // 16 chars -> 4 tokens, fits 20
         attach(company, agentId, skill.getId(), 3);
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.skills()).hasSize(1);
         assertThat(bundle.skills().get(0).indexOnly()).isFalse();
@@ -391,8 +431,8 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
 
         Agent agentEntity = agent(company, agentId);
         Task taskEntity = task(company, taskId);
-        ContextBundle first = contextAssembler.assemble(agentEntity, taskEntity);
-        ContextBundle second = contextAssembler.assemble(agentEntity, taskEntity);
+        ContextBundle first = assembleAs(company, agentEntity, taskEntity);
+        ContextBundle second = assembleAs(company, agentEntity, taskEntity);
 
         assertThat(first).isEqualTo(second);
     }
@@ -408,7 +448,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         UUID memoryId = seedMemory(company, "company", null, null, "preference",
                 "CEO prefers bullet lists", "active");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.memories()).extracting(h -> h.memory().content())
                 .contains("CEO prefers bullet lists");
@@ -424,7 +464,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
 
         seedMemory(company, "agent", agentA, null, "fact", "Agent A's private memory", "active");
 
-        ContextBundle bundleForB = contextAssembler.assemble(agent(company, agentB), task(company, taskForB));
+        ContextBundle bundleForB = assembleAs(company, agent(company, agentB), task(company, taskForB));
 
         assertThat(bundleForB.memories()).extracting(h -> h.memory().content())
                 .doesNotContain("Agent A's private memory");
@@ -440,7 +480,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         seedMemory(companyA, "company", null, null, "fact", "Company A's secret fact", "active");
 
         ContextBundle bundleForB =
-                contextAssembler.assemble(agent(companyB, agentInB), task(companyB, taskInB));
+                assembleAs(companyB, agent(companyB, agentInB), task(companyB, taskInB));
 
         assertThat(bundleForB.memories()).extracting(h -> h.memory().content())
                 .doesNotContain("Company A's secret fact");
@@ -457,7 +497,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         seedMemory(company, "company", null, null, "fact", "rejected content", "rejected");
         seedMemory(company, "company", null, null, "fact", "the active one", "active");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.memories()).extracting(h -> h.memory().content())
                 .containsExactly("the active one");
@@ -473,7 +513,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         when(embeddingClient.embed(eq("unrelated content"))).thenReturn(DISSIMILAR_VECTOR);
         seedMemory(company, "company", null, null, "fact", "unrelated content", "active");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.memories()).isEmpty();
     }
@@ -488,7 +528,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         seedMemory(company, "company", null, null, "fact", "M".repeat(200), "active"); // way over 7 tokens
         seedMemory(company, "company", null, null, "fact", "tiny", "active"); // 1 token, fits
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.memories()).extracting(h -> h.memory().content()).containsExactly("tiny");
     }
@@ -502,7 +542,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         seedMemory(company, "company", null, null, "fact", "a plain fact", "active");
         seedMemory(company, "company", null, null, "preference", "a strong preference", "active");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.memories()).extracting(h -> h.memory().content())
                 .containsExactly("a strong preference", "a plain fact");
@@ -519,7 +559,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         String agentId = hireAgentWithCustomRole(company, roleId, "content");
         String taskId = createTask(company, "content");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.knowledge()).extracting(KnowledgeHit::content)
                 .containsExactly("Our brand voice is friendly and concise.");
@@ -538,7 +578,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         String agentId = hireAgent(company, "coder", null);
         String taskId = createTask(company, "coder");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.knowledge()).isEmpty();
     }
@@ -556,7 +596,7 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         String agentId = hireAgentWithCustomRole(company, roleId, "content");
         String taskId = createTask(company, "content");
 
-        ContextBundle bundle = contextAssembler.assemble(agent(company, agentId), task(company, taskId));
+        ContextBundle bundle = assembleAs(company, agent(company, agentId), task(company, taskId));
 
         assertThat(bundle.knowledge()).isEmpty();
     }

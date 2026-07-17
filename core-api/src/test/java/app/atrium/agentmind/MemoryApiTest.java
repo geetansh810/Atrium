@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -38,8 +39,7 @@ class MemoryApiTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     MemoryStore memoryStore;
@@ -200,11 +200,14 @@ class MemoryApiTest extends IntegrationTestBase {
 
     // ── M-LN1: review-queue + review action ──────────────────────────────────
 
+    // M3.2: a bare service call (no wrapping HTTP request) — bind the tenant
+    // for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
     private UUID seedPendingReview(String companyId, String scope, String kind, String content) {
         ObjectNode provenance = json.createObjectNode();
         provenance.put("extractedBy", "pipeline");
-        return memoryStore.ingest(new MemoryWrite(UUID.fromString(companyId), scope, null, null, null,
-                kind, content, (short) 1, "pending_review", provenance, null));
+        return TenantContext.callAsSystem(UUID.fromString(companyId), () -> memoryStore.ingest(
+                new MemoryWrite(UUID.fromString(companyId), scope, null, null, null,
+                        kind, content, (short) 1, "pending_review", provenance, null)));
     }
 
     @Test

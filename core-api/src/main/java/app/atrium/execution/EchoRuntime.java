@@ -1,5 +1,6 @@
 package app.atrium.execution;
 
+import app.atrium.common.TenantContext;
 import app.atrium.registry.AgentDirectory;
 import app.atrium.registry.domain.Agent;
 import app.atrium.registry.runtime.AgentHandle;
@@ -136,9 +137,15 @@ public class EchoRuntime implements AgentRuntime {
     /**
      * Claim next + complete with a canned artifact — public so tests can drive
      * it deterministically instead of racing the poll timer, same convention
-     * as {@link LlmLoopRuntime#runOnce}.
+     * as {@link LlmLoopRuntime#runOnce}. Binds {@link TenantContext#runAsSystem}
+     * for the whole iteration (M3.2, 08 §Security rule 6) — same reasoning as
+     * {@code LlmLoopRuntime}: a background poll loop, not an HTTP request.
      */
     public void runOnce(UUID companyId, UUID agentId) {
+        TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+    }
+
+    private void runOnceInternal(UUID companyId, UUID agentId) {
         Agent agent = agentDirectory.findById(companyId, agentId)
                 .orElseThrow(() -> new IllegalStateException("Agent vanished mid-loop: " + agentId));
 

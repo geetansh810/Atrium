@@ -7,6 +7,7 @@ import app.atrium.eventbus.OutboxEvent;
 import app.atrium.eventbus.OutboxEventRepository;
 import app.atrium.registry.AgentDirectory;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.EntityManager;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +45,10 @@ public class ChatNoticePipeline extends EventCursorWorker {
     private final ChatNoticePipeline self;
 
     public ChatNoticePipeline(OutboxEventRepository outbox, EventConsumerCursorRepository cursors,
-                              ChannelService channels, AgentDirectory agents,
+                              EntityManager entityManager, ChannelService channels, AgentDirectory agents,
                               @Value("${atrium.chat-notice.batch-size:50}") int batchSize,
                               @Lazy ChatNoticePipeline self) {
-        super(CONSUMER_NAME, outbox, cursors);
+        super(CONSUMER_NAME, outbox, cursors, entityManager);
         this.channels = channels;
         this.agents = agents;
         this.batchSize = batchSize;
@@ -59,7 +60,7 @@ public class ChatNoticePipeline extends EventCursorWorker {
 
     @Scheduled(fixedDelayString = "${atrium.chat-notice.poll-interval-ms:5000}")
     public void poll() {
-        self.pollOnce(batchSize);
+        self.pollOnce(batchSize); // M3.2: bypass is set inside EventCursorWorker.pollOnce (08 §Security rule 6)
     }
 
     @Override

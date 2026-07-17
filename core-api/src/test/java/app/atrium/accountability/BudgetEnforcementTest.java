@@ -3,6 +3,7 @@ package app.atrium.accountability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.execution.UsageRecorder;
 import app.atrium.registry.runtime.AgentHandle;
@@ -39,8 +40,7 @@ class BudgetEnforcementTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     LlmLoopRuntime runtime;
@@ -209,12 +209,16 @@ class BudgetEnforcementTest extends IntegrationTestBase {
         UUID taskUuid = UUID.fromString(taskId);
         TransactionTemplate tx = new TransactionTemplate(txManager);
 
-        // 85/100 crosses the default 80% alert_pct — first call fires the event.
-        tx.executeWithoutResult(status -> usageRecorder.record(companyId, agentUuid, taskUuid, 1,
-                "anthropic", "claude-sonnet-5", 50, 35, 10L));
-        // still over threshold, but already alerted this period — must be a no-op.
-        tx.executeWithoutResult(status -> usageRecorder.record(companyId, agentUuid, taskUuid, 2,
-                "anthropic", "claude-sonnet-5", 10, 5, 5L));
+        // M3.2: bare TransactionTemplate calls (no wrapping HTTP request) —
+        // bind the tenant for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
+        TenantContext.runAsSystem(companyId, () -> {
+            // 85/100 crosses the default 80% alert_pct — first call fires the event.
+            tx.executeWithoutResult(status -> usageRecorder.record(companyId, agentUuid, taskUuid, 1,
+                    "anthropic", "claude-sonnet-5", 50, 35, 10L));
+            // still over threshold, but already alerted this period — must be a no-op.
+            tx.executeWithoutResult(status -> usageRecorder.record(companyId, agentUuid, taskUuid, 2,
+                    "anthropic", "claude-sonnet-5", 10, 5, 5L));
+        });
 
         Integer thresholdEvents = jdbc.queryForObject(
                 "SELECT count(*) FROM outbox_events WHERE event_type = 'budget.threshold' "

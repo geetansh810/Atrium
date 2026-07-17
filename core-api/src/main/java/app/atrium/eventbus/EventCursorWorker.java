@@ -1,5 +1,6 @@
 package app.atrium.eventbus;
 
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,12 +21,14 @@ public abstract class EventCursorWorker {
     private final String consumerName;
     private final OutboxEventRepository outbox;
     private final EventConsumerCursorRepository cursors;
+    private final EntityManager entityManager;
 
     protected EventCursorWorker(String consumerName, OutboxEventRepository outbox,
-                                EventConsumerCursorRepository cursors) {
+                                EventConsumerCursorRepository cursors, EntityManager entityManager) {
         this.consumerName = consumerName;
         this.outbox = outbox;
         this.cursors = cursors;
+        this.entityManager = entityManager;
     }
 
     /** Exposed for tests that need to seed/inspect this consumer's cursor row directly. */
@@ -39,9 +42,23 @@ public abstract class EventCursorWorker {
      * nothing new. Runs in one transaction: a failure mid-batch rolls the
      * cursor back too, so the next poll re-delivers from the same point
      * (subclasses must make {@link #handle} idempotent).
+     *
+     * <p>M3.2: the first statement sets {@code app.bypass_rls} for the rest of
+     * this transaction — a batch spans every company's outbox rows by
+     * construction (that's the whole point of a durable consumer), so this is
+     * genuinely cross-tenant system infra, same as {@code LeaseReclaimJob}/
+     * {@code OutboxRelay} (08 §Security rule 6). {@code set_config(..., true)}
+     * takes effect for every statement issued AFTER it within the current
+     * transaction (unlike the tenant-bound path, which stamps {@code
+     * app.company_id} once at transaction-begin via {@code
+     * TenantAwareJpaTransactionManager} — there's no self-reference/ordering
+     * trap here since this method sets its own GUC directly, not through
+     * another proxied call). Each {@link #handle} call still writes only to
+     * the rows its own event's {@code companyId} names.
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void pollOnce(int batchSize) {
+        entityManager.createNativeQuery("SELECT set_config('app.bypass_rls', 'on', true)").getSingleResult();
         long cursor = cursors.findById(consumerName).map(EventConsumerCursor::getLastEventId).orElse(0L);
         List<OutboxEvent> batch = outbox.findByIdGreaterThanOrderByIdAsc(cursor, PageRequest.of(0, batchSize));
         if (batch.isEmpty()) {

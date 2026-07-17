@@ -39,8 +39,7 @@ class ClaimApiTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     // ── helpers ────────────────────────────────────────────────────────────
 

@@ -204,9 +204,23 @@ CREATE INDEX idx_agent_stats_daily_company_day ON agent_stats_daily(company_id, 
 -- auth: credentials/OAuth identities on users; sessions or JWT (no table if stateless JWT)
 --   → shipped at M3.1 (V8__users_auth.sql): users.password_hash, stateless JWT, no session table.
 
--- M3.2 — the whole of V3 as it stands today:
--- ALTER tables to enable Postgres ROW LEVEL SECURITY with a
--- company_id = current_setting('app.company_id')::uuid policy on every business table.
+-- M3.2 (V10__tenant_rls.sql, done) — the whole of V3 as it stands today:
+-- ALTER tables to enable + FORCE Postgres ROW LEVEL SECURITY with a
+-- company_id = current_setting('app.company_id', true)::uuid policy (plus a
+-- current_setting('app.bypass_rls', true)='on' escape hatch for the handful
+-- of genuinely cross-tenant system components — see 08 §Security rule 6 for
+-- the full mechanism and the dev/test superuser-bypass caveat).
+--   Strict equality (company_id NOT NULL): users, agents, tasks, task_events,
+--     budgets, usage_records, artifacts, outbox_events, task_decompositions,
+--     memories, knowledge_docs, knowledge_chunks, agent_stats_daily, channels,
+--     messages, announcements.
+--   NULL-or-match (company_id nullable = global template): role_definitions, skills.
+--   Special: companies (policy on id, not company_id); subtasks (no company_id
+--     column — policy is an EXISTS join through tasks); role_definition_skills/
+--     agent_skills/role_definition_knowledge (join tables, no company_id column —
+--     EXISTS join through the owning agents/role_definitions row).
+--   Deliberately NOT under RLS: model_catalog (fully global, no company_id at
+--     all), event_consumers (a system cursor table, no company_id).
 ```
 
 ### Deferred — billing (M3.3, post-pilot)

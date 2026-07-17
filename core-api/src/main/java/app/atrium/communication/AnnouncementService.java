@@ -32,6 +32,7 @@ public class AnnouncementService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<Announcement> list(UUID companyId) {
         return announcements.findByCompanyIdOrderByCreatedAtDesc(companyId);
     }

@@ -3,6 +3,7 @@ package app.atrium.routing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.execution.UsageRecorder;
 import app.atrium.registry.runtime.AgentHandle;
@@ -91,12 +92,18 @@ class EscalationsApiTest extends IntegrationTestBase {
         return parse(r.getBody()).get("task").get("id").asText();
     }
 
+    // M3.2: these are bare service calls (no wrapping HTTP request, unlike
+    // everywhere else in this file) — TenantContext.runAsSystem binds the
+    // tenant for RLS (08 §Security rule 6) the same way LlmLoopRuntime does
+    // for its own background poll loop.
     private void completeTask(UUID companyId, UUID taskId, UUID agentId) {
-        workBroker.claim(companyId, taskId, agentId);
-        taskService.progress(companyId, taskId, agentId, null, null, null);
-        new TransactionTemplate(txManager).executeWithoutResult(s -> {
-            usageRecorder.record(companyId, agentId, taskId, 1, "anthropic", "claude-sonnet-5", 10, 10, 5L);
-            taskService.complete(companyId, taskId, agentId, "text", "done");
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, taskId, agentId);
+            taskService.progress(companyId, taskId, agentId, null, null, null);
+            new TransactionTemplate(txManager).executeWithoutResult(s -> {
+                usageRecorder.record(companyId, agentId, taskId, 1, "anthropic", "claude-sonnet-5", 10, 10, 5L);
+                taskService.complete(companyId, taskId, agentId, "text", "done");
+            });
         });
     }
 
@@ -114,12 +121,14 @@ class EscalationsApiTest extends IntegrationTestBase {
 
         completeTask(companyId, UUID.fromString(pending), agent);            // → pending_review
 
-        workBroker.claim(companyId, UUID.fromString(flagged), agent);
-        taskService.progress(companyId, UUID.fromString(flagged), agent, null, null, null);
-        taskService.flag(companyId, UUID.fromString(flagged), agent, "stuck");  // → flagged
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, UUID.fromString(flagged), agent);
+            taskService.progress(companyId, UUID.fromString(flagged), agent, null, null, null);
+            taskService.flag(companyId, UUID.fromString(flagged), agent, "stuck");  // → flagged
+        });
 
         completeTask(companyId, UUID.fromString(approved), agent);
-        taskService.approve(companyId, UUID.fromString(approved));           // → approved
+        TenantContext.runAsSystem(companyId, () -> taskService.approve(companyId, UUID.fromString(approved)));  // → approved
 
         ResponseEntity<String> resp = rest.exchange("/api/v1/companies/" + company + "/escalations",
                 HttpMethod.GET, new HttpEntity<>(headers(company)), String.class);

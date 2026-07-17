@@ -12,8 +12,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /** M0.1 Done-when: migrations apply, health is UP, a company can be inserted and read back. */
 class CompanySmokeTest extends IntegrationTestBase {
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     TestRestTemplate rest;

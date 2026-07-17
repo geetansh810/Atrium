@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +25,7 @@ class MemoryRecallPerformanceTest extends IntegrationTestBase {
     private static final int ROW_COUNT = 10_000;
     private static final int DIMENSIONS = 1536;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     MemoryStore memoryStore;
@@ -78,12 +78,16 @@ class MemoryRecallPerformanceTest extends IntegrationTestBase {
                         CAST(? AS vector), 'active', '{}'::jsonb)
                 """, companyId, vectorLiteral(queryVector));
 
+        // M3.2: bare service calls (no wrapping HTTP request) — bind the
+        // tenant for RLS the same way LlmLoopRuntime does (08 §Security rule
+        // 6); ThreadLocal set/clear overhead is negligible against the 100ms budget.
         // warm-up call (JIT/connection/HNSW graph traversal) — not part of the timed assertion
-        memoryStore.recall(new RecallQuery(companyId, UUID.randomUUID(), null, "warmup query", 12, null));
+        TenantContext.runAsSystem(companyId, () ->
+                memoryStore.recall(new RecallQuery(companyId, UUID.randomUUID(), null, "warmup query", 12, null)));
 
         long start = System.nanoTime();
-        List<MemoryHit> hits = memoryStore.recall(
-                new RecallQuery(companyId, UUID.randomUUID(), null, "a real task query", 12, null));
+        List<MemoryHit> hits = TenantContext.callAsSystem(companyId, () -> memoryStore.recall(
+                new RecallQuery(companyId, UUID.randomUUID(), null, "a real task query", 12, null)));
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
         assertThat(hits).extracting(h -> h.memory().content()).contains("the relevant one");

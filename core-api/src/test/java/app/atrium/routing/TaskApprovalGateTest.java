@@ -3,6 +3,7 @@ package app.atrium.routing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.registry.runtime.AgentHandle;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,8 +36,7 @@ class TaskApprovalGateTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     TaskService taskService;
@@ -115,9 +115,13 @@ class TaskApprovalGateTest extends IntegrationTestBase {
         UUID cid = UUID.fromString(companyId);
         UUID tid = UUID.fromString(taskId);
         UUID aid = UUID.fromString(agentId);
-        workBroker.claim(cid, tid, aid);
-        taskService.progress(cid, tid, aid, null, null, null);
-        taskService.complete(cid, tid, aid, "text", "artifact body");
+        // M3.2: bare service calls (no wrapping HTTP request) — bind the
+        // tenant for RLS the same way LlmLoopRuntime does (08 §Security rule 6).
+        TenantContext.runAsSystem(cid, () -> {
+            workBroker.claim(cid, tid, aid);
+            taskService.progress(cid, tid, aid, null, null, null);
+            taskService.complete(cid, tid, aid, "text", "artifact body");
+        });
     }
 
     private JsonNode getTask(String companyId, String taskId) {
@@ -232,9 +236,9 @@ class TaskApprovalGateTest extends IntegrationTestBase {
         UUID cid = UUID.fromString(company);
         UUID tid = UUID.fromString(taskId);
         UUID aid = UUID.fromString(agentId);
-        var reclaimed = workBroker.claim(cid, tid, aid);
+        var reclaimed = TenantContext.callAsSystem(cid, () -> workBroker.claim(cid, tid, aid));
         assertThat(reclaimed.getAttempt()).isEqualTo(2);
-        assertThat(taskService.latestRejectionFeedback(cid, tid))
+        assertThat(TenantContext.callAsSystem(cid, () -> taskService.latestRejectionFeedback(cid, tid)))
                 .contains("Use bullet points, not prose");
     }
 

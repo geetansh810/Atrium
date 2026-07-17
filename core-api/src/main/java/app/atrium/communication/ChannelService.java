@@ -45,6 +45,7 @@ public class ChannelService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<Channel> listChannels(UUID companyId) {
         return channels.findByCompanyIdOrderByCreatedAtAsc(companyId);
     }
@@ -74,6 +75,7 @@ public class ChannelService {
     }
 
     /** History, newest-first, keyset-paginated by an opaque {@code before} cursor. */
+    @Transactional(readOnly = true)
     public MessagePage listMessages(UUID companyId, UUID channelId, String before, Integer limit) {
         channels.findByIdAndCompanyId(channelId, companyId)
                 .orElseThrow(() -> NotFoundException.of("Channel", channelId));

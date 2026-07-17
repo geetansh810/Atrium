@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.atrium.IntegrationTestBase;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.LlmLoopRuntime;
 import app.atrium.registry.runtime.AgentHandle;
 import app.atrium.routing.TaskService;
@@ -77,8 +78,7 @@ class LearningPipelineTest extends IntegrationTestBase {
     @Autowired
     ObjectMapper json;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    JdbcTemplate jdbc = adminJdbc();
 
     @Autowired
     LearningPipeline learningPipeline;
@@ -219,9 +219,11 @@ class LearningPipelineTest extends IntegrationTestBase {
         UUID companyId = UUID.fromString(company);
         UUID agentUuid = UUID.fromString(agentId);
         UUID taskUuid = UUID.fromString(taskId);
-        workBroker.claim(companyId, taskUuid, agentUuid);
-        taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
-        taskService.complete(companyId, taskUuid, agentUuid, "text", "Welcome to our site.");
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, taskUuid, agentUuid);
+            taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
+            taskService.complete(companyId, taskUuid, agentUuid, "text", "Welcome to our site.");
+        });
 
         stubExtraction("""
                 {"items":[
@@ -229,8 +231,8 @@ class LearningPipelineTest extends IntegrationTestBase {
                   {"content":"our brand name is X-Corp","kind":"fact","scope":"company"}
                 ]}""");
 
-        Task rejected = taskService.reject(companyId, taskUuid,
-                "never use passive voice; our brand name is X-Corp");
+        Task rejected = TenantContext.callAsSystem(companyId, () -> taskService.reject(companyId, taskUuid,
+                "never use passive voice; our brand name is X-Corp"));
         assertThat(rejected.getStatus()).isEqualTo("queued");
 
         learningPipeline.pollOnce(20);
@@ -320,12 +322,15 @@ class LearningPipelineTest extends IntegrationTestBase {
         UUID companyId = UUID.fromString(company);
         UUID agentUuid = UUID.fromString(agentId);
         UUID taskUuid = UUID.fromString(taskId);
-        workBroker.claim(companyId, taskUuid, agentUuid);
-        taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
+        TenantContext.runAsSystem(companyId, () ->
+                workBroker.claim(companyId, taskUuid, agentUuid));
+        TenantContext.runAsSystem(companyId, () ->
+                taskService.progress(companyId, taskUuid, agentUuid, null, null, null));
 
         stubExtraction("""
                 {"summary":"Wrote a Q2 sales summary covering revenue and top accounts."}""");
-        taskService.complete(companyId, taskUuid, agentUuid, "text", "Q2 revenue rose 12%...");
+        TenantContext.runAsSystem(companyId, () ->
+                taskService.complete(companyId, taskUuid, agentUuid, "text", "Q2 revenue rose 12%..."));
 
         learningPipeline.pollOnce(20);
 
@@ -366,9 +371,11 @@ class LearningPipelineTest extends IntegrationTestBase {
         UUID companyId = UUID.fromString(company);
         UUID agentUuid = UUID.fromString(agentId);
         UUID taskUuid = UUID.fromString(taskId);
-        workBroker.claim(companyId, taskUuid, agentUuid);
-        taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
-        taskService.complete(companyId, taskUuid, agentUuid, "text", "Welcome to our site.");
+        TenantContext.runAsSystem(companyId, () -> {
+            workBroker.claim(companyId, taskUuid, agentUuid);
+            taskService.progress(companyId, taskUuid, agentUuid, null, null, null);
+            taskService.complete(companyId, taskUuid, agentUuid, "text", "Welcome to our site.");
+        });
 
         stubExtraction("""
                 {"items":[
@@ -376,7 +383,8 @@ class LearningPipelineTest extends IntegrationTestBase {
                   {"content":"our brand name is X-Corp","kind":"fact","scope":"company"}
                 ]}""");
 
-        taskService.reject(companyId, taskUuid, "never use passive voice; our brand name is X-Corp");
+        TenantContext.runAsSystem(companyId, () ->
+                taskService.reject(companyId, taskUuid, "never use passive voice; our brand name is X-Corp"));
 
         learningPipeline.pollOnce(20);
 

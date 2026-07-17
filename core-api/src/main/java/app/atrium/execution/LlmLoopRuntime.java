@@ -2,6 +2,7 @@ package app.atrium.execution;
 
 import app.atrium.agentmind.ContextAssembler;
 import app.atrium.agentmind.ContextBundle;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.spi.LlmClient;
 import app.atrium.execution.spi.LlmException;
 import app.atrium.execution.spi.LlmProvider;
@@ -197,9 +198,17 @@ public class LlmLoopRuntime implements AgentRuntime {
 
     /**
      * One full iteration for one agent — 13 §3.2 steps 0–7. Public so tests can
-     * drive it deterministically instead of racing the poll timer.
+     * drive it deterministically instead of racing the poll timer. Binds
+     * {@link TenantContext#runAsSystem} for the whole iteration (M3.2, 08
+     * §Security rule 6) — this is a background virtual-thread poll loop, not
+     * an HTTP request, so nothing else sets {@code app.company_id} for
+     * Postgres RLS to see.
      */
     public void runOnce(UUID companyId, UUID agentId) {
+        TenantContext.runAsSystem(companyId, () -> runOnceInternal(companyId, agentId));
+    }
+
+    private void runOnceInternal(UUID companyId, UUID agentId) {
         Agent agent = agentDirectory.findById(companyId, agentId)
                 .orElseThrow(() -> new IllegalStateException("Agent vanished mid-loop: " + agentId));
 
