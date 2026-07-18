@@ -1,15 +1,19 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, ApiError } from "../../shared/api";
 import { setAuthSession } from "../../shared/auth";
 import { markSignupNeedsOnboarding } from "../../shared/onboarding";
 import { PRODUCT_NAME } from "../../shared/theme";
 import "./AuthPage.css";
 
-// M3.1: the fresh-browser entry point — signup creates the company + admin
+// M3.1: the signed-in-session entry point — signup creates the company + admin
 // user atomically, login re-authenticates an existing one. No dashboard
 // chrome renders until a session exists (see AuthGate in App.tsx).
-export function AuthPage() {
-  const [mode, setMode] = useState<"signup" | "login">("signup");
+// M-LP1: reached via the marketing LandingPage's /signup and /login routes,
+// which set initialMode — the internal toggle still switches modes in place
+// without a route change, same as before.
+export function AuthPage({ initialMode = "signup" }: { initialMode?: "signup" | "login" }) {
+  const [mode, setMode] = useState<"signup" | "login">(initialMode);
   const [companyName, setCompanyName] = useState("");
   const [companySlug, setCompanySlug] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -56,6 +60,9 @@ export function AuthPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <Link to="/" className="auth-home-link">
+          ← Back to home
+        </Link>
         <h1 className="auth-title">{PRODUCT_NAME}</h1>
         <p className="auth-subtitle">
           {mode === "signup" ? "Create your company" : "Welcome back"}

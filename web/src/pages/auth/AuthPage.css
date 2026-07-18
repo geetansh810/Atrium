@@ -18,6 +18,18 @@
   box-sizing: border-box;
 }
 
+.auth-home-link {
+  display: inline-block;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+
+.auth-home-link:hover {
+  color: var(--text);
+}
+
 .auth-title {
   font-family: var(--font-display);
   font-size: 24px;
