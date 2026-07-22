@@ -1,3 +1,12 @@
+# LOCAL full-stack, one command: `docker compose up`. Clones run with zero extra
+# setup — Postgres (pgvector), Redis, the Spring Boot core-api, and the web dev
+# server all come up together. Add a GOOGLE_API_KEY to a root .env (copy from
+# .env.example) if you want agents to actually run work; without any LLM key they
+# park idle, which is the correct "not configured" state.
+#
+# PROD is a different shape entirely: backend on Render (render.yaml), frontend on
+# Netlify (netlify.toml). Same core-api Docker image — behavior differs by env
+# (SPRING_PROFILES_ACTIVE, DB/Redis/CORS URLs). See DEPLOYMENT.md.
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -40,6 +49,10 @@ services:
       ATRIUM_APP_DB_USER: ${ATRIUM_APP_DB_USER:-atrium_app}
       ATRIUM_APP_DB_PASSWORD: ${ATRIUM_APP_DB_PASSWORD:-atrium_app}
       REDIS_URL: redis://redis:6379
+      # Local uses the default profile (human-readable logs). Prod (Render) sets
+      # this to `prod` for structured JSON logs — see render.yaml. Overridable
+      # from a root .env if you want to test prod logging locally.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
       # LLM provider keys (13 §1) — read from a root .env file (Compose auto-loads
       # it) or the shell environment. Never set a default here; a blank value is
       # the correct "not configured" state (ProviderReadiness.isReady()=false).
@@ -51,6 +64,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  # Web frontend — Vite dev server with hot reload (LOCAL only; prod is Netlify).
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      # The browser runs on the host, so it reaches core-api via the published
+      # host port below. These match web/src/shared/config.ts defaults; set
+      # explicitly so a fresh clone needs no web/.env.local.
+      VITE_API_BASE_URL: http://localhost:8080/api/v1
+      VITE_USE_MOCKS: "0"
+    volumes:
+      - ./web:/app          # live-edit source → HMR
+      - /app/node_modules   # keep the image's node_modules; don't shadow with the host's
+    depends_on:
+      - core-api
 
 volumes:
   pgdata:

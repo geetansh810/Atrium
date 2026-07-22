@@ -125,7 +125,7 @@ cd web && npx tsc -b         # typecheck
 cd web && npm run lint       # oxlint — same PATH prefix needed
 cd web && npm run seed:dev   # signs up a demo company + hires 3 real agents, prints login credentials (M3.1: no more .env.local company id — log in at / with the printed email/password)
 cd core-api && ./mvnw test   # backend tests (Docker must be running — Testcontainers)
-docker compose up -d --build # pgvector + redis + core-api on :8080 — --build matters, plain `up -d` reuses a stale image
+docker compose up -d --build # FULL local stack: pgvector + redis + core-api (:8080) + web dev server (:5173) — one command, no Node/JDK needed. --build matters, plain `up -d` reuses a stale image. Prod = Render (render.yaml) + Netlify (netlify.toml); see DEPLOYMENT.md
 make check                   # web typecheck+lint + core-api verify — same PATH prefix needed for the web half
 docker run --rm --add-host=host.docker.internal:host-gateway -e BASE_URL=http://host.docker.internal:8080/api/v1 -v "$(pwd)/loadtest:/scripts" grafana/k6 run /scripts/atrium-load-test.js   # M3.5 load test against local docker-compose
 BASE_URL=http://localhost:8080/api/v1 ./.github/scripts/smoke-test.sh   # M3.5 smoke test — signup→hire→task→approve

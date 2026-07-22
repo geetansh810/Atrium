@@ -1,0 +1,17 @@
+# LOCAL development image for the web frontend — Vite dev server with hot reload.
+# Used only by the root docker-compose.yml. Production builds go through Netlify
+# (../netlify.toml) or the production ./Dockerfile.
+FROM node:22-alpine
+WORKDIR /app
+
+# Install deps first so this layer caches unless the lockfile changes.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Source is bind-mounted by docker-compose at runtime (live editing / HMR);
+# copying it here too keeps the image runnable on its own.
+COPY . .
+
+EXPOSE 5173
+# --host 0.0.0.0 makes the dev server reachable from the host browser.
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

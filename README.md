@@ -14,45 +14,62 @@ view where every agent's status is derived from real task state.
 | `project-graph/` | Wiki-linked knowledge graph; start at `_Atrium.md` |
 | `infra/terraform/` | AWS deploy (written and validated, not yet applied to a live account) |
 | `loadtest/` | k6 load test |
+| `docker-compose.yml` | Local full-stack (Postgres + Redis + core-api + web) |
+| `render.yaml` / `netlify.toml` | Prod deploy config — backend on Render, frontend on Netlify |
+| `DEPLOYMENT.md` | Local vs prod: how to run and how the two environments differ |
 
 ## Run locally
 
-Prerequisites: **Docker** (Compose) and **Node ≥20.19 or ≥22** for the web dashboard. No local JDK/Maven needed to run the app — `core-api` builds and runs entirely inside its own Docker image.
+**The only prerequisite is Docker.** Nothing else to install — no JDK, Maven, or
+Node needed. If you fork or clone this repo, one command brings up the entire app
+(Postgres with pgvector, Redis, the Spring Boot backend, and the web frontend):
 
 ```bash
-# 1. Env vars — the defaults work out of the box; a free Google Gemini key
-#    (https://aistudio.google.com, no card needed) lets agents actually do work.
-cp .env.example .env
-# edit .env and set GOOGLE_API_KEY= if you want a working agent
+# Optional: a free Google Gemini key (https://aistudio.google.com, no card)
+# lets agents actually run work. Without any LLM key they park idle — that's
+# the correct "not configured" state, everything else still works.
+cp .env.example .env      # then set GOOGLE_API_KEY= if you want a working agent
 
-# 2. Backend: Postgres (pgvector) + Redis + core-api on :8080.
-#    --build matters — a plain `up -d` can reuse a stale image.
-docker compose up -d --build
-
-# check it actually came up before moving on
-docker compose ps                        # all 3 containers should show Up (postgres/redis "healthy")
-curl http://localhost:8080/actuator/health   # {"status":"UP"}
-
-# 3. Frontend
-cd web
-npm install
-npm run seed:dev     # signs up a demo company, hires 3 agents, prints login credentials — SAVE THAT OUTPUT, it's the only place they're shown
-npm run dev           # dev server on :5173 — log in at / with the printed email/password
+docker compose up         # add --build after pulling new changes
 ```
 
-Flyway applies every migration automatically on `core-api` startup — no manual DB setup.
+Then open:
 
-If step 2 doesn't come up clean: `docker compose logs -f core-api` to watch startup, and confirm the Docker daemon (Docker Desktop) is actually running before anything else — `docker compose up` fails immediately if it isn't.
+- **Web:**    http://localhost:5173
+- **API:**    http://localhost:8080/api/v1
+- **Health:** http://localhost:8080/actuator/health → `{"status":"UP"}`
 
-### Mock mode — no backend needed
+Flyway applies every migration automatically on `core-api` startup — no manual DB
+setup. First run builds the images, so give it a few minutes.
 
-The dashboard can also run entirely off local JSON fixtures, with no Docker/API required:
+Sign up through the web UI at http://localhost:5173, **or** seed a demo company +
+agents from the command line:
 
 ```bash
-cd web
-npm install
-VITE_USE_MOCKS=1 npm run dev -- --port 5199
+docker compose exec web npm run seed:dev   # prints login credentials — save that output
 ```
+
+If it doesn't come up clean: `docker compose logs -f core-api` to watch startup,
+and make sure the Docker daemon (Docker Desktop) is actually running first.
+
+### Mock mode — frontend only, no backend
+
+To demo the dashboard off local JSON fixtures with no backend at all, run the web
+container with mocks on (or `VITE_USE_MOCKS=1 npm run dev` if you have Node):
+
+```bash
+docker compose run --rm --no-deps -e VITE_USE_MOCKS=1 -p 5199:5173 web
+# → http://localhost:5199   (--no-deps = don't start the backend)
+```
+
+## Deploy
+
+Prod runs split: **backend on Render**, **frontend on Netlify** — both auto-deploy
+on push from their GitHub integration, with all build config committed
+([`render.yaml`](render.yaml), [`netlify.toml`](netlify.toml)). The same core-api
+Docker image is used locally and in prod; only its environment differs. Full setup
+steps and an environment-by-environment comparison are in
+[`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ### Everyday commands
 
