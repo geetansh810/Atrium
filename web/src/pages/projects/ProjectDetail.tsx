@@ -15,6 +15,7 @@ import type { TabItem } from "../../ui/Tabs";
 import { StatusPill } from "../../ui/StatusPill";
 import type { PillTone } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
+import { Markdown } from "../../ui/Markdown";
 import { Timeline } from "../../ui/Timeline";
 import type { TimelineItem } from "../../ui/Timeline";
 import { KanbanBoard } from "../../ui/Kanban";
@@ -249,7 +250,9 @@ export function ProjectDetail() {
             {withArtifacts.map((task) => (
               <div key={task.id}>
                 <div className="section-title">{task.title}</div>
-                <div className="artifact-box">{task.artifact?.content}</div>
+                <div className="artifact-box">
+                  <Markdown>{task.artifact?.content ?? ""}</Markdown>
+                </div>
               </div>
             ))}
           </div>

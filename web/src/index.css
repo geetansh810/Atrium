@@ -334,7 +334,10 @@ input {
   font-size: 12.5px;
   color: var(--text-muted);
   line-height: 1.5;
+  white-space: pre-wrap;
 }
+
+.artifact-box:has(.md) { white-space: normal; }
 
 .artifact-box.flag { border-left-color: var(--status-flagged); }
 .artifact-box.feedback { border-left-color: var(--status-away); }

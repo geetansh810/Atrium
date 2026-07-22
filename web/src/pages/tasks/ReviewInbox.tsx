@@ -9,6 +9,7 @@ import { useApp } from "../../shared/store";
 import type { Task } from "../../shared/types";
 import { StatusPill } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
+import { Markdown } from "../../ui/Markdown";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import "./ReviewInbox.css";
@@ -121,7 +122,11 @@ export function ReviewInbox() {
             )}
 
             {isFlagged && task.flagReason && <div className="artifact-box flag">{task.flagReason}</div>}
-            {!isFlagged && task.artifact && <div className="artifact-box">{task.artifact.content}</div>}
+            {!isFlagged && task.artifact && (
+              <div className="artifact-box">
+                <Markdown>{task.artifact.content}</Markdown>
+              </div>
+            )}
 
             {feedbackFor === task.id ? (
               <>

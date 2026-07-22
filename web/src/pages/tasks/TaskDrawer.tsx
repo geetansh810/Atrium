@@ -10,6 +10,7 @@ import { StatusPill, taskStatusTone } from "../../ui/StatusPill";
 import { Timeline } from "../../ui/Timeline";
 import type { TimelineItem } from "../../ui/Timeline";
 import { EmptyState } from "../../ui/EmptyState";
+import { Markdown } from "../../ui/Markdown";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { ConversationThread } from "../../ui/ConversationThread";
 import "./TaskDrawer.css";
@@ -176,7 +177,9 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
       key: "output",
       label: "Output",
       content: task.artifact ? (
-        <div className="artifact-box">{task.artifact.content}</div>
+        <div className="artifact-box">
+          <Markdown>{task.artifact.content}</Markdown>
+        </div>
       ) : (
         <EmptyState title="No output yet." description="The agent's artifact will appear here once produced." />
       ),
