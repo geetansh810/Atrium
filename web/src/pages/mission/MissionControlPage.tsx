@@ -98,7 +98,7 @@ export function MissionControlPage() {
 
       <div className="mission-grid">
         <div className="mission-col-main">
-          <Card title="Live Mission">
+          <Card title="Live Mission" className="mission-hero-card">
             {hero ? (
               <button className="mission-hero" onClick={() => nav.openTask(hero.id)}>
                 <div className="mission-hero-top">
@@ -115,7 +115,7 @@ export function MissionControlPage() {
                   )}
                   <StatusPill label={hero.status.replace("_", " ")} tone={taskStatusTone(hero.status)} />
                 </div>
-                <ProgressBar value={hero.progress} />
+                <ProgressBar value={hero.progress} live />
               </button>
             ) : (
               <EmptyState title="Nothing in progress right now." description="Create a task to get agents working." />

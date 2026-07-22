@@ -13,10 +13,16 @@
   fill: var(--surface-3);
   stroke: var(--border-subtle);
   stroke-width: 1;
+  transition: fill var(--dur-1) var(--ease-out), stroke var(--dur-1) var(--ease-out);
 }
 
 .graph-node-clickable {
   cursor: pointer;
+}
+
+.graph-node-clickable:hover rect {
+  fill: var(--border-subtle);
+  stroke: var(--border-hi);
 }
 
 .graph-node-label {
@@ -29,16 +35,27 @@
 .graph-node-sublabel {
   font-size: 9.5px;
   fill: var(--text-faint);
-  font-family: var(--font-body);
+  font-family: var(--font-mono);
 }
 
 .graph-node-pending rect {
   stroke: var(--node-pending);
 }
 
+/* Running node is live — its glow breathes. */
 .graph-node-running rect {
   stroke: var(--node-running);
-  filter: drop-shadow(0 0 4px var(--glow-running));
+  animation: graph-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes graph-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px var(--glow-running));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px var(--glow-running));
+  }
 }
 
 .graph-node-completed rect {

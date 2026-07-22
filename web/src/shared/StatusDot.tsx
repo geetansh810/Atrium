@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react";
 import type { AgentStatus } from "./types";
+import "./StatusDot.css";
 
 const STATUS_VAR: Record<AgentStatus, string> = {
   online: "var(--status-online)",
@@ -18,17 +20,21 @@ export const STATUS_LABEL: Record<AgentStatus, string> = {
   offline: "Offline",
 };
 
-export function StatusDot({ status, size = 8 }: { status: AgentStatus; size?: number }) {
+interface StatusDotProps {
+  status: AgentStatus;
+  size?: number;
+  // Live state breathes. Defaults on for "working" — an agent actively doing
+  // something right now — and off for everything else, so the pulse stays a
+  // signal rather than ambient noise.
+  pulse?: boolean;
+}
+
+export function StatusDot({ status, size = 8, pulse }: StatusDotProps) {
+  const live = pulse ?? status === "working";
   return (
     <span
-      style={{
-        display: "inline-block",
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: STATUS_VAR[status],
-        flexShrink: 0,
-      }}
+      className={`status-dot${live ? " status-dot-live" : ""}`}
+      style={{ width: size, height: size, "--dot-color": STATUS_VAR[status] } as CSSProperties}
       aria-label={STATUS_LABEL[status]}
     />
   );

@@ -17,7 +17,9 @@
 
 .notifications-page-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -103,4 +105,9 @@
   color: var(--text-faint);
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* Page-entrance reveal (shared motion vocabulary — see index.css). */
+.notifications-page-head {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }

@@ -17,7 +17,9 @@
 
 .knowledge-page-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -98,4 +100,9 @@
   color: var(--text-muted);
   line-height: 1.6;
   white-space: pre-line;
+}
+
+/* Page-entrance reveal (shared motion vocabulary — see index.css). */
+.knowledge-page-head {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }

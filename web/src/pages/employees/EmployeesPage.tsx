@@ -1,10 +1,7 @@
-import { Avatar } from "../../shared/Avatar";
-import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
-import { skillColor } from "../../shared/skillColor";
+import { PersonAvatar } from "../../shared/PersonAvatar";
 import { agentWorkload } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
-import { StatusPill } from "../../ui/StatusPill";
 import "./EmployeesPage.css";
 
 // Real (not a placeholder): card grid with role/skills/model/live workload/
@@ -28,20 +25,17 @@ export function EmployeesPage() {
           return (
             <button key={agent.id} className="employee-card" onClick={() => nav.openAgent(agent.id)}>
               <div className="employee-card-top">
-                <Avatar name={agent.name} seed={agent.id} size={36} />
+                <PersonAvatar name={agent.name} seed={agent.id} status={agent.status} size={36} />
                 <div className="employee-card-info">
                   <div className="employee-card-name">{agent.name}</div>
                   <div className="employee-card-role">{agent.roleTitle}</div>
                 </div>
-                <span className="employee-card-status">
-                  <StatusDot status={agent.status} />
-                  {STATUS_LABEL[agent.status]}
-                </span>
+                {agent.paused && <span className="employee-card-paused">Paused</span>}
               </div>
 
               <div className="employee-card-skills">
                 {agent.skillTags.slice(0, 3).map((skill) => (
-                  <span key={skill} className="employee-card-skill" style={{ background: skillColor(skill) }}>
+                  <span key={skill} className="chip">
                     {skill}
                   </span>
                 ))}
@@ -57,7 +51,6 @@ export function EmployeesPage() {
                 <span className="employee-card-workload">
                   {workload} active
                 </span>
-                {agent.paused && <StatusPill label="Paused" tone="warning" />}
               </div>
             </button>
           );

@@ -4,27 +4,55 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.global-header-left {
+  /* flex:1 (not the right side) absorbs the squeeze first, so a long page
+     title truncates gracefully with ellipsis instead of the icon/button row
+     on the right deforming — that row keeps its natural size until the
+     tiered rules below actually remove items from it. */
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Combined-class selector so this reliably beats .global-header-icon-btn's
+   own `display: inline-flex` regardless of source order (equal-specificity
+   single-class rules would otherwise let whichever comes later in the file
+   silently win). */
+.global-header-icon-btn.global-header-menu-btn {
+  display: none;
+  flex-shrink: 0;
 }
 
 .global-header-title {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .global-header-right {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .global-header-clock {
   font-size: 12.5px;
   color: var(--text-muted);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .global-header-online {
@@ -35,11 +63,14 @@
   color: var(--text-muted);
 }
 
+/* Live headcount — the dot breathes while anyone is online. */
 .global-header-online-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--status-online);
+  --dot-color: var(--status-online);
+  animation: dot-pulse 2.4s var(--ease-out) infinite;
 }
 
 .global-header-icon-btn {
@@ -54,6 +85,7 @@
   color: var(--text-muted);
   border-radius: 8px;
   text-decoration: none;
+  transition: color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
 }
 
 .global-header-icon-btn:hover {
@@ -71,11 +103,12 @@
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 7px;
+  transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
 
 .global-header-cmdk-hint:hover {
   color: var(--text-muted);
-  border-color: var(--border);
+  border-color: var(--border-hi);
 }
 
 .global-header-cmdk-hint kbd {
@@ -102,3 +135,67 @@
   justify-content: center;
   padding: 0 3px;
 }
+
+/* --- responsive tiers -------------------------------------------------
+   Three widths, each shedding the least-essential chrome first so the header
+   never hard-clips: hamburger appears once the sidebar goes off-canvas
+   (matches NavSidebar.css's 900px), then the clock/cmdk text/button labels
+   fold away in turn as the viewport keeps shrinking. Every action stays
+   reachable — icon-only buttons keep their aria-label and a title tooltip. */
+
+@media (max-width: 900px) {
+  .global-header-icon-btn.global-header-menu-btn {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .global-header-clock {
+    display: none;
+  }
+
+  .global-header-cmdk-hint-label,
+  .global-header-cmdk-hint kbd {
+    display: none;
+  }
+
+  .global-header-cmdk-hint {
+    padding: 7px;
+  }
+}
+
+@media (max-width: 560px) {
+  .global-header-online-label {
+    display: none;
+  }
+
+  .global-header-right .btn-label {
+    display: none;
+  }
+
+  .global-header-right .btn {
+    padding: 7px 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Narrowest tier: title legibility wins over two low-value affordances —
+     ⌘K has no meaning on a device with no physical keyboard, and the online
+     count is a nice-to-have, not an action. Every page/agent the palette
+     would jump to is still reachable via nav + Team, so nothing is lost,
+     just relocated. */
+  .global-header {
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .global-header-right {
+    gap: 6px;
+  }
+
+  .global-header-cmdk-hint,
+  .global-header-online {
+    display: none;
+  }
+}
+

@@ -9,7 +9,9 @@
 
 .organization-page-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -19,88 +21,188 @@
   margin: 0 0 20px;
 }
 
-.org-chart {
+/* --- org chart: a minimal top-down hierarchy tree -----------------------
+   Connector lines are pure CSS, thin and quiet (1px, --border-subtle) — no
+   SVG/canvas geometry to keep in sync. Each .org-tree-children gets a
+   "trunk" stub down from its parent, and each .org-tree-node contributes
+   half a horizontal bar (its own left/right half) plus a vertical "drop"
+   into its own card — adjacent halves join into one continuous line across
+   the row. First/last child just trims the bar so it doesn't run off the
+   outer edges; an only-child naturally gets no bar at all (both trims
+   apply) and just the straight drop, reading as one clean line down. Cards
+   themselves carry identity only (avatar, name, role) — no chrome, no
+   metadata, no color beyond the presence dot — so the lines and shape of
+   the hierarchy are what the eye actually reads. */
+
+.org-tree-scroll {
+  overflow-x: auto;
+  padding: 4px 4px 20px;
+}
+
+.org-tree,
+.org-tree-children {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+.org-tree {
+  gap: 32px;
+  min-width: min-content;
+}
+
+.org-tree-children {
+  padding-top: 22px;
+  position: relative;
+}
+
+.org-tree-children::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 22px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.org-tree-node {
   display: flex;
   flex-direction: column;
-}
-
-.org-row {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 22px 12px 0;
+  position: relative;
 }
 
-.org-toggle {
-  width: 18px;
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  font-size: 11px;
-  text-align: center;
+/* Root-level nodes sit directly under .org-tree (not .org-tree-children) —
+   no incoming line, so no reserved space for one either. */
+.org-tree > .org-tree-node {
+  padding-top: 0;
 }
 
-.org-toggle-empty {
-  cursor: default;
+.org-tree-children > .org-tree-node::before,
+.org-tree-children > .org-tree-node::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 50%;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.org-agent {
+.org-tree-children > .org-tree-node::before {
+  right: 50%;
+}
+
+.org-tree-children > .org-tree-node::after {
+  left: 50%;
+  height: 22px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.org-tree-children > .org-tree-node:first-child::before {
+  display: none;
+}
+
+.org-tree-children > .org-tree-node:last-child::after {
+  border-top: none;
+}
+
+.org-card {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: none;
-  color: var(--text);
+  width: 164px;
+  background: var(--panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 7px 10px;
   text-align: left;
-  padding: 4px 0;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
 }
 
-.org-agent:hover .org-agent-name {
-  text-decoration: underline;
+.org-card:hover,
+.org-card:focus-visible {
+  border-color: var(--border-hi);
+  background: var(--panel-alt);
+  outline: none;
 }
 
-.org-agent-name {
-  font-size: 12.5px;
+.org-card-info {
+  min-width: 0;
+}
+
+.org-card-name {
+  font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
-}
-
-.org-agent-role {
-  font-size: 11px;
-  color: var(--text-faint);
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.org-agent-status {
+.org-card-role {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+/* The expand/collapse control: a small quiet ring on the connector line
+   itself. Expanded state is just a chevron — the tree is already open, so
+   there's nothing to summarize; the report count only appears once
+   collapsed, exactly when it's the one useful piece of information. */
+.org-tree-toggle {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  width: 90px;
-}
-
-.org-agent-workload {
-  font-size: 10.5px;
+  justify-content: center;
+  gap: 3px;
+  width: 18px;
+  height: 18px;
+  background: var(--panel);
+  border: 1px solid var(--border-subtle);
   color: var(--text-faint);
   font-family: var(--font-mono);
-  flex-shrink: 0;
-  width: 60px;
+  font-size: 9.5px;
+  padding: 0;
+  border-radius: 999px;
+  transition:
+    width var(--dur-2) var(--ease-out),
+    padding var(--dur-2) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out);
 }
 
-.org-agent-reports {
-  font-size: 10.5px;
-  color: var(--text-faint);
+.org-tree-toggle.collapsed {
+  width: auto;
+  padding: 0 7px 0 5px;
+}
+
+.org-tree-toggle:hover {
+  color: var(--text-muted);
+  border-color: var(--border-hi);
+}
+
+.org-tree-toggle svg {
   flex-shrink: 0;
-  width: 70px;
-  text-align: right;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.org-tree-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.org-tree-toggle-count {
+  display: none;
+}
+
+.org-tree-toggle.collapsed .org-tree-toggle-count {
+  display: inline;
 }
 
 .org-payroll {
@@ -205,4 +307,9 @@
 
 .ledger-period-input:focus {
   border-color: var(--accent);
+}
+
+/* Page-entrance reveal (shared motion vocabulary — see index.css). */
+.organization-page-head {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }

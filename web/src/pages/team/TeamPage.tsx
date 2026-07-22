@@ -129,7 +129,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
         >
           <span className="team-card-task-title">{activeTask.title}</span>
           <span className="team-card-task-meta">
-            <ProgressBar value={activeTask.progress} height={4} />
+            <ProgressBar value={activeTask.progress} height={4} live={zone === "working"} />
             {sinceLabel && <span className="team-card-task-since">{sinceLabel}</span>}
           </span>
         </button>

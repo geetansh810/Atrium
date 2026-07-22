@@ -6,16 +6,17 @@ export const PRODUCT_TAGLINE = "Build. Automate. Scale.";
 
 export const theme = {
   color: {
-    bg: "#0E1525",
-    panel: "#1A2233",
-    panelAlt: "#171F30",
-    sidebar: "#131A2B",
-    border: "#26314A",
-    borderSubtle: "#212A40",
+    bg: "#0B1120",
+    panel: "#161E31",
+    panelAlt: "#131A2C",
+    sidebar: "#0E1526",
+    border: "#283352",
+    borderSubtle: "#1E2740",
+    borderHi: "#35426B",
 
-    text: "#EAEEF6",
-    textMuted: "#8D97AC",
-    textFaint: "#5C687F",
+    text: "#EDF1F9",
+    textMuted: "#939DB3",
+    textFaint: "#5D6982",
 
     accent: "#17B3A3",
     accentHover: "#1ECBB9",
@@ -40,11 +41,15 @@ export const theme = {
       failed: "#E0574C",
     },
 
-    surface1: "#131A2B",
-    surface2: "#1A2233",
-    surface3: "#212A40",
+    surface1: "#10182A",
+    surface2: "#161E31",
+    surface3: "#1E2740",
 
-    botBubble: "#1A2233",
+    botBubble: "#161E31",
+
+    // Reserved for live/primary signals only (brand mark, active-nav rail,
+    // tab underline, default progress fill) — mirrors --grad-brand.
+    gradBrand: "linear-gradient(120deg, #1ECBB9 0%, #4C7DEE 100%)",
 
     avatar: ["#3D6FE0", "#17B3A3", "#9B7CE0", "#E0574C", "#F5A623", "#4FA8E0"],
   },
@@ -57,6 +62,14 @@ export const theme = {
     sm: "4px",
     md: "8px",
     lg: "12px",
+  },
+  // Motion vocabulary — mirrors --dur-*/--ease-* in index.css.
+  motion: {
+    dur1: "120ms",
+    dur2: "220ms",
+    dur3: "360ms",
+    easeOut: "cubic-bezier(0.16, 1, 0.3, 1)",
+    easeSpring: "cubic-bezier(0.34, 1.45, 0.64, 1)",
   },
   layout: {
     sidebarWidth: "240px",

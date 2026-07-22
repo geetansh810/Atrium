@@ -13,17 +13,24 @@
   padding: 4px 8px 18px;
 }
 
+/* The one place the brand gradient paints type. */
 .nav-sidebar-brand-title {
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .nav-sidebar-brand-sub {
-  font-size: 11px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--text-faint);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .nav-sidebar-nav {
@@ -34,6 +41,7 @@
 }
 
 .nav-sidebar-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -46,7 +54,22 @@
   border-radius: 8px;
   text-align: left;
   text-decoration: none;
-  position: relative;
+  transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+/* Active rail — grows in when a section becomes "you are here". */
+.nav-sidebar-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--grad-brand);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
 }
 
 .nav-sidebar-item:hover {
@@ -58,6 +81,21 @@
   background: var(--panel-alt);
   color: var(--text);
   font-weight: 600;
+}
+
+.nav-sidebar-item.active::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.nav-sidebar-item svg {
+  opacity: 0.75;
+  transition: opacity var(--dur-1) var(--ease-out);
+}
+
+.nav-sidebar-item:hover svg,
+.nav-sidebar-item.active svg {
+  opacity: 1;
 }
 
 .nav-sidebar-item span:first-of-type {
@@ -77,3 +115,41 @@
   justify-content: center;
   padding: 0 4px;
 }
+
+/* --- responsive: off-canvas drawer below 900px ---------------------------
+   Fixed positioning takes the sidebar out of the flex flow entirely, so the
+   content column reclaims the width automatically — no change needed on
+   AppShell's side. Above 900px both the overlay and the transform below are
+   inert, so NavSidebar's open/onClose props cost nothing on desktop. */
+.nav-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .nav-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 9, 18, 0.55);
+    backdrop-filter: blur(2px);
+    z-index: 65;
+    animation: fade-in var(--dur-2) var(--ease-out) both;
+  }
+
+  .nav-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 70;
+    width: min(280px, 84vw);
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-3);
+    transition: transform var(--dur-3) var(--ease-out);
+  }
+
+  .nav-sidebar.open {
+    transform: translateX(0);
+  }
+}
+

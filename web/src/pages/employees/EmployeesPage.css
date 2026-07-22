@@ -9,7 +9,9 @@
 
 .employees-page-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -31,14 +33,21 @@
   gap: 10px;
   background: var(--panel);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px;
   text-align: left;
   color: var(--text);
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+  transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
 }
 
+.employee-card:nth-child(1) { animation-delay: 40ms; }
+.employee-card:nth-child(2) { animation-delay: 80ms; }
+.employee-card:nth-child(3) { animation-delay: 120ms; }
+.employee-card:nth-child(n + 4) { animation-delay: 160ms; }
+
 .employee-card:hover {
-  border-color: var(--border);
+  border-color: var(--border-hi);
   background: var(--panel-alt);
 }
 
@@ -66,12 +75,10 @@
   color: var(--text-faint);
 }
 
-.employee-card-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-muted);
+.employee-card-paused {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--status-away);
   flex-shrink: 0;
 }
 
@@ -79,14 +86,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-}
-
-.employee-card-skill {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text);
-  border-radius: 5px;
-  padding: 2px 7px;
 }
 
 .employee-card-skill-more {
@@ -114,4 +113,9 @@
 
 .employee-card-workload {
   flex-shrink: 0;
+}
+
+/* Page-entrance reveal (shared motion vocabulary — see index.css). */
+.employees-page-head {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }

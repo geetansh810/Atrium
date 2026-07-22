@@ -1,0 +1,10 @@
+.status-dot {
+  display: inline-block;
+  border-radius: 50%;
+  background: var(--dot-color, var(--status-offline));
+  flex-shrink: 0;
+}
+
+.status-dot-live {
+  animation: dot-pulse 2.4s var(--ease-out) infinite;
+}

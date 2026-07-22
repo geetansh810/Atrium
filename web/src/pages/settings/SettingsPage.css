@@ -9,7 +9,9 @@
 
 .settings-page-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -47,4 +49,9 @@
 .mono {
   font-family: var(--font-mono);
   font-size: 12px;
+}
+
+/* Page-entrance reveal (shared motion vocabulary — see index.css). */
+.settings-page-head {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }

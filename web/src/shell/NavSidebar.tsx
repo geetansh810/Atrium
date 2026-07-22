@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { NavLink } from "react-router";
 import { PRODUCT_NAME } from "../shared/theme";
 import { escalationCount, useApp } from "../shared/store";
@@ -26,31 +27,59 @@ const PRIMARY_NAV = [
   { to: "/team", label: "Team", icon: TeamIcon },
 ];
 
-export function NavSidebar() {
+interface NavSidebarProps {
+  // Below the 900px breakpoint (see NavSidebar.css) the sidebar becomes an
+  // off-canvas drawer driven by these — above it, both are effectively inert
+  // since the desktop media query never applies the transform they control.
+  open: boolean;
+  onClose: () => void;
+}
+
+export function NavSidebar({ open, onClose }: NavSidebarProps) {
   const { state } = useApp();
   const escalations = escalationCount(state.tasks);
 
-  return (
-    <aside className="nav-sidebar">
-      <div className="nav-sidebar-brand">
-        <div className="nav-sidebar-brand-title">{PRODUCT_NAME.toUpperCase()}</div>
-        <div className="nav-sidebar-brand-sub">AI Operating System</div>
-      </div>
+  // Escape closes the mobile drawer, and the background must not scroll
+  // behind it — both harmless no-ops at desktop widths where it's never open.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
 
-      <nav className="nav-sidebar-nav">
-        {PRIMARY_NAV.map(({ to, label, icon: ItemIcon, end, badge }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) => `nav-sidebar-item${isActive ? " active" : ""}`}
-          >
-            <ItemIcon />
-            <span>{label}</span>
-            {badge && escalations > 0 && <span className="nav-sidebar-count">{escalations}</span>}
-          </NavLink>
-        ))}
-      </nav>
-    </aside>
+  return (
+    <>
+      {open && <div className="nav-sidebar-overlay" onClick={onClose} aria-hidden="true" />}
+      <aside className={`nav-sidebar${open ? " open" : ""}`}>
+        <div className="nav-sidebar-brand">
+          <div className="nav-sidebar-brand-title">{PRODUCT_NAME.toUpperCase()}</div>
+          <div className="nav-sidebar-brand-sub">AI Operating System</div>
+        </div>
+
+        <nav className="nav-sidebar-nav">
+          {PRIMARY_NAV.map(({ to, label, icon: ItemIcon, end, badge }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={onClose}
+              className={({ isActive }) => `nav-sidebar-item${isActive ? " active" : ""}`}
+            >
+              <ItemIcon />
+              <span>{label}</span>
+              {badge && escalations > 0 && <span className="nav-sidebar-count">{escalations}</span>}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 }

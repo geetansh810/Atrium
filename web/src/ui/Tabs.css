@@ -6,13 +6,28 @@
 }
 
 .tabs-tab {
+  position: relative;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
   color: var(--text-muted);
   font-size: 12.5px;
   font-weight: 600;
   padding: 8px 10px;
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.tabs-tab::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--grad-brand);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--dur-2) var(--ease-out);
 }
 
 .tabs-tab:hover {
@@ -20,6 +35,9 @@
 }
 
 .tabs-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.tabs-tab.active::after {
+  transform: scaleX(1);
 }

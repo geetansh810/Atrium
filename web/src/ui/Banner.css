@@ -1,9 +1,12 @@
 .banner {
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--border);
   background: var(--surface-2);
   padding: 10px 14px;
   margin-bottom: 16px;
+  box-shadow: var(--edge-highlight);
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }
 
 .banner-title {
@@ -22,12 +25,15 @@
 
 .banner-info {
   border-left-color: var(--status-in-focus);
+  background: linear-gradient(90deg, var(--info-soft), var(--surface-2) 55%);
 }
 
 .banner-warning {
   border-left-color: var(--status-away);
+  background: linear-gradient(90deg, var(--warn-soft), var(--surface-2) 55%);
 }
 
 .banner-danger {
   border-left-color: var(--status-flagged);
+  background: linear-gradient(90deg, var(--danger-soft), var(--surface-2) 55%);
 }

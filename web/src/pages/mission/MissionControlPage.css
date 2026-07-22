@@ -5,11 +5,23 @@
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
+  width: 100%;
 }
+
+/* Entrance choreography — header, banner, KPIs, then the two columns. */
+.mission-page > * {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+}
+
+.mission-page > *:nth-child(2) { animation-delay: 50ms; }
+.mission-page > *:nth-child(3) { animation-delay: 100ms; }
+.mission-page > *:nth-child(n + 4) { animation-delay: 150ms; }
 
 .mission-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
 
@@ -17,6 +29,21 @@
   color: var(--text-muted);
   font-size: 13px;
   margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The company pulse literally pulses — the page's one ambient live signal. */
+.mission-pulse::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-online);
+  --dot-color: var(--status-online);
+  animation: dot-pulse 2.4s var(--ease-out) infinite;
+  flex-shrink: 0;
 }
 
 .mission-kpi-row {
@@ -25,6 +52,15 @@
   gap: 12px;
   margin-bottom: 16px;
 }
+
+.mission-kpi-row > * {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+}
+
+.mission-kpi-row > *:nth-child(1) { animation-delay: 80ms; }
+.mission-kpi-row > *:nth-child(2) { animation-delay: 120ms; }
+.mission-kpi-row > *:nth-child(3) { animation-delay: 160ms; }
+.mission-kpi-row > *:nth-child(n + 4) { animation-delay: 200ms; }
 
 .mission-grid {
   display: grid;
@@ -41,6 +77,28 @@
   min-width: 0;
 }
 
+.mission-col-main > *,
+.mission-col-side > * {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+}
+
+.mission-col-main > *:nth-child(1) { animation-delay: 180ms; }
+.mission-col-main > *:nth-child(2) { animation-delay: 240ms; }
+.mission-col-main > *:nth-child(n + 3) { animation-delay: 300ms; }
+.mission-col-side > *:nth-child(1) { animation-delay: 210ms; }
+.mission-col-side > *:nth-child(2) { animation-delay: 270ms; }
+.mission-col-side > *:nth-child(n + 3) { animation-delay: 330ms; }
+
+/* The live mission is the room's focal point — it alone gets an ambient
+   wash of the two brand hues. */
+.mission-hero-card {
+  border-color: var(--border);
+  background:
+    radial-gradient(560px 240px at 10% -20%, rgba(30, 203, 185, 0.08), transparent 60%),
+    radial-gradient(560px 240px at 90% 120%, rgba(76, 125, 238, 0.07), transparent 60%),
+    var(--surface-2);
+}
+
 .mission-hero {
   display: flex;
   flex-direction: column;
@@ -51,6 +109,7 @@
   border: none;
   color: inherit;
   padding: 0;
+  cursor: pointer;
 }
 
 .mission-hero-top {
@@ -61,8 +120,10 @@
 }
 
 .mission-hero-title {
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .mission-hero-desc {
@@ -98,6 +159,11 @@
   word-break: break-word;
   max-height: 220px;
   overflow-y: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  line-height: 1.55;
 }
 
 .mission-agent-grid {
@@ -106,7 +172,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   max-height: 360px;
   overflow-y: auto;
 }
@@ -115,6 +181,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: 8px;
+  transition: background var(--dur-1) var(--ease-out);
+}
+
+.mission-agent-row:hover {
+  background: var(--surface-1);
 }
 
 .mission-agent-info {
@@ -146,6 +220,7 @@
 
 .mission-budget-nums {
   font-size: 12px;
+  font-family: var(--font-mono);
   color: var(--text-muted);
   margin-top: 8px;
 }

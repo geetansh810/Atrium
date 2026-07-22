@@ -1,12 +1,24 @@
 .status-pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  gap: 5px;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   line-height: 1.6;
+}
+
+/* Leading dot — reads the pill's own color, so tone stays visible even where
+   the tinted background is subtle (and adds a non-color cue). */
+.status-pill::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
 .status-pill-neutral {
@@ -15,26 +27,32 @@
 }
 
 .status-pill-info {
-  background: rgba(79, 168, 224, 0.14);
+  background: var(--info-soft);
   color: var(--status-in-focus);
 }
 
 .status-pill-running {
-  background: rgba(79, 168, 224, 0.14);
+  background: var(--info-soft);
   color: var(--node-running);
 }
 
+/* Running is live state — the dot breathes. */
+.status-pill-running::before {
+  --dot-color: var(--node-running);
+  animation: dot-pulse 2.4s var(--ease-out) infinite;
+}
+
 .status-pill-success {
-  background: rgba(62, 207, 142, 0.14);
+  background: var(--success-soft);
   color: var(--status-online);
 }
 
 .status-pill-warning {
-  background: rgba(245, 166, 35, 0.16);
+  background: var(--warn-soft);
   color: var(--status-in-meeting);
 }
 
 .status-pill-danger {
-  background: rgba(224, 87, 76, 0.16);
+  background: var(--danger-soft);
   color: var(--status-flagged);
 }

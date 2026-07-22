@@ -1,0 +1,16 @@
+.person-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.person-avatar-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  background: var(--panel);
+  border-radius: 50%;
+  padding: 2px;
+}

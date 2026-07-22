@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import "./Kanban.css";
 
 export interface KanbanColumnData<T> {
@@ -50,12 +50,29 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ title, count, onDrop, children }: KanbanColumnProps) {
+  // dragEnter/dragLeave fire for every child the drag passes over, so a bare
+  // boolean flickers — track nesting depth and only clear at zero.
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepth = useRef(0);
   return (
     <div
-      className="kanban-column"
+      className={`kanban-column${dragOver ? " drag-over" : ""}`}
       onDragOver={(e) => e.preventDefault()}
+      onDragEnter={() => {
+        dragDepth.current += 1;
+        setDragOver(true);
+      }}
+      onDragLeave={() => {
+        dragDepth.current -= 1;
+        if (dragDepth.current <= 0) {
+          dragDepth.current = 0;
+          setDragOver(false);
+        }
+      }}
       onDrop={(e) => {
         e.preventDefault();
+        dragDepth.current = 0;
+        setDragOver(false);
         const itemId = e.dataTransfer.getData("text/kanban-item-id");
         const fromColumnKey = e.dataTransfer.getData("text/kanban-from-column");
         if (itemId) onDrop(itemId, fromColumnKey);

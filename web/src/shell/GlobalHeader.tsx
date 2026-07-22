@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { BellIcon, ChatIcon, PlusIcon, SearchIcon, SettingsIcon } from "../shared/icons";
+import { BellIcon, ChatIcon, MenuIcon, PlusIcon, SearchIcon, SettingsIcon } from "../shared/icons";
 import { useApp } from "../shared/store";
 import { useAppNav } from "../shared/nav";
 import { useNotifications } from "../shared/notifications";
@@ -31,7 +31,13 @@ function useClock() {
   return now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export function GlobalHeader() {
+interface GlobalHeaderProps {
+  // Hamburger toggle for the off-canvas nav below 900px (NavSidebar.css) —
+  // the button itself only renders visibly under that same breakpoint.
+  onMenuClick: () => void;
+}
+
+export function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   const { state, dispatch } = useApp();
   const location = useLocation();
   const nav = useAppNav();
@@ -48,19 +54,29 @@ export function GlobalHeader() {
 
   return (
     <header className="global-header">
-      <h1 className="global-header-title">{title}</h1>
+      <div className="global-header-left">
+        <button className="global-header-icon-btn global-header-menu-btn" aria-label="Open menu" onClick={onMenuClick}>
+          <MenuIcon />
+        </button>
+        <h1 className="global-header-title">{title}</h1>
+      </div>
 
       <div className="global-header-right">
-        <button className="global-header-cmdk-hint" onClick={openCommandPalette} aria-label="Open command palette">
+        <button
+          className="global-header-cmdk-hint"
+          onClick={openCommandPalette}
+          aria-label="Open command palette"
+          title="Jump to… (⌘K)"
+        >
           <SearchIcon width={13} height={13} />
-          <span>Jump to…</span>
+          <span className="global-header-cmdk-hint-label">Jump to…</span>
           <kbd>⌘K</kbd>
         </button>
 
         <span className="global-header-clock">{time}</span>
-        <span className="global-header-online">
+        <span className="global-header-online" title={`${onlineCount} online`}>
           <span className="global-header-online-dot" />
-          {onlineCount} online
+          <span className="global-header-online-label">{onlineCount} online</span>
         </span>
 
         <button className="global-header-icon-btn" aria-label="Chat" onClick={() => nav.openChat()}>
@@ -76,15 +92,17 @@ export function GlobalHeader() {
 
         <button
           className="btn"
+          title="New Task"
           onClick={() => dispatch({ type: "setNewTaskOpen", open: true })}
         >
-          <PlusIcon width={13} height={13} /> New Task
+          <PlusIcon width={13} height={13} /> <span className="btn-label">New Task</span>
         </button>
         <button
           className="btn primary"
+          title="Hire Agent"
           onClick={() => dispatch({ type: "setInviteOpen", open: true })}
         >
-          + Hire Agent
+          <PlusIcon width={13} height={13} /> <span className="btn-label">Hire Agent</span>
         </button>
       </div>
     </header>

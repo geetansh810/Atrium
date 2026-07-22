@@ -1,7 +1,9 @@
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useState } from "react";
 import { Avatar } from "../../shared/Avatar";
+import { PersonAvatar } from "../../shared/PersonAvatar";
 import { ProgressBar } from "../../shared/ProgressBar";
-import { StatusDot, STATUS_LABEL } from "../../shared/StatusDot";
+import { ChevronDownIcon } from "../../shared/icons";
 import { USE_MOCKS } from "../../shared/config";
 import { useAuthSession } from "../../shared/auth";
 import { formatCost, formatTokens } from "../../shared/format";
@@ -11,7 +13,7 @@ import { orgTree } from "../../shared/selectors";
 import type { OrgNode } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
-import type { Task } from "../../shared/types";
+import type { Agent, Task } from "../../shared/types";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { EmptyState } from "../../ui/EmptyState";
@@ -65,70 +67,83 @@ function ApiCostPerTaskSection({ period, taskById }: CostPerTaskSectionProps) {
 
 const CostPerTaskSection = USE_MOCKS ? MockCostPerTaskSection : ApiCostPerTaskSection;
 
-const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
-
 function spendColor(pct: number): string {
   if (pct >= 90) return "var(--status-flagged)";
   if (pct >= 75) return "var(--status-away)";
   return "var(--accent)";
 }
 
-interface OrgChartRowProps {
+interface OrgCardProps {
+  agent: Agent;
+  onOpen: () => void;
+}
+
+// The card itself is a plain div, not a button: OrgTreeNode nests a second,
+// independently-clickable control (the expand/collapse toggle) right below
+// it, and a <button> inside a <button> is invalid HTML — same reasoning
+// TeamPage's card/task-row split already documents. Deliberately minimal —
+// identity (avatar + presence dot, name, role) only. A tree's job is to
+// show reporting lines at a glance; workload/status detail lives one click
+// away on the agent's own profile.
+function OrgCard({ agent, onOpen }: OrgCardProps) {
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpen();
+    }
+  };
+  return (
+    <div className="org-card" role="button" tabIndex={0} onClick={onOpen} onKeyDown={onKeyDown}>
+      <PersonAvatar name={agent.name} seed={agent.id} status={agent.status} size={32} />
+      <div className="org-card-info">
+        <div className="org-card-name">{agent.name}</div>
+        <div className="org-card-role">{agent.roleTitle}</div>
+      </div>
+    </div>
+  );
+}
+
+interface OrgTreeNodeProps {
   node: OrgNode;
-  depth: number;
   collapsed: Set<string>;
   onToggle: (id: string) => void;
-  workloadByAgent: Map<string, number>;
   onOpen: (id: string) => void;
 }
 
-// Live status dots + workload counts, expand/collapse per node — a plain
-// indented tree reads clearer here than forcing this into the generic
-// left-to-right ui/Graph (built for task DAGs, not strict org hierarchies).
-function OrgChartRow({ node, depth, collapsed, onToggle, workloadByAgent, onOpen }: OrgChartRowProps) {
+// A real top-down hierarchy tree: cards connected by thin CSS-drawn lines
+// (no canvas/SVG geometry to keep in sync), each level's siblings joined by
+// one continuous bar that drops a stem into every card below it. Deliberately
+// not the generic left-to-right ui/Graph — that's built for task DAGs with
+// arbitrary edges, not a strict single-parent org hierarchy, and a top-down
+// tree is the shape everyone already recognizes as "org chart".
+function OrgTreeNode({ node, collapsed, onToggle, onOpen }: OrgTreeNodeProps) {
   const { agent, children } = node;
   const hasChildren = children.length > 0;
   const isCollapsed = collapsed.has(agent.id);
-  const workload = workloadByAgent.get(agent.id) ?? 0;
+  const reportWord = children.length === 1 ? "report" : "reports";
 
   return (
-    <>
-      <div className="org-row" style={{ paddingLeft: depth * 24 }}>
+    <li className="org-tree-node">
+      <OrgCard agent={agent} onOpen={() => onOpen(agent.id)} />
+      {hasChildren && (
         <button
-          className={`org-toggle${hasChildren ? "" : " org-toggle-empty"}`}
-          onClick={() => hasChildren && onToggle(agent.id)}
-          aria-label={hasChildren ? (isCollapsed ? "Expand" : "Collapse") : undefined}
+          className={`org-tree-toggle${isCollapsed ? " collapsed" : ""}`}
+          onClick={() => onToggle(agent.id)}
+          aria-expanded={!isCollapsed}
+          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${agent.name}'s ${children.length} direct ${reportWord}`}
         >
-          {hasChildren ? (isCollapsed ? "▸" : "▾") : ""}
+          <ChevronDownIcon width={10} height={10} />
+          <span className="org-tree-toggle-count">{children.length}</span>
         </button>
-        <button className="org-agent" onClick={() => onOpen(agent.id)}>
-          <Avatar name={agent.name} seed={agent.id} size={26} />
-          <span className="org-agent-name">{agent.name}</span>
-          <span className="org-agent-role">{agent.roleTitle}</span>
-        </button>
-        <span className="org-agent-status">
-          <StatusDot status={agent.status} />
-          {STATUS_LABEL[agent.status]}
-        </span>
-        <span className="org-agent-workload">{workload} active</span>
-        {hasChildren && <span className="org-agent-reports">{children.length} report{children.length === 1 ? "" : "s"}</span>}
-      </div>
-      {hasChildren && !isCollapsed && (
-        <>
-          {children.map((child) => (
-            <OrgChartRow
-              key={child.agent.id}
-              node={child}
-              depth={depth + 1}
-              collapsed={collapsed}
-              onToggle={onToggle}
-              workloadByAgent={workloadByAgent}
-              onOpen={onOpen}
-            />
-          ))}
-        </>
       )}
-    </>
+      {hasChildren && !isCollapsed && (
+        <ul className="org-tree-children">
+          {children.map((child) => (
+            <OrgTreeNode key={child.agent.id} node={child} collapsed={collapsed} onToggle={onToggle} onOpen={onOpen} />
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
 
@@ -148,12 +163,6 @@ export function OrganizationPage() {
       return next;
     });
   };
-
-  const workloadByAgent = new Map<string, number>();
-  for (const task of state.tasks) {
-    if (!task.assignedAgentId || !ACTIVE_STATUSES.has(task.status)) continue;
-    workloadByAgent.set(task.assignedAgentId, (workloadByAgent.get(task.assignedAgentId) ?? 0) + 1);
-  }
 
   const tree = orgTree(state.agents);
 
@@ -199,18 +208,12 @@ export function OrganizationPage() {
         tree.length === 0 ? (
           <EmptyState title="No agents on the roster yet." />
         ) : (
-          <div className="org-chart">
-            {tree.map((root) => (
-              <OrgChartRow
-                key={root.agent.id}
-                node={root}
-                depth={0}
-                collapsed={collapsed}
-                onToggle={toggle}
-                workloadByAgent={workloadByAgent}
-                onOpen={nav.openAgent}
-              />
-            ))}
+          <div className="org-tree-scroll">
+            <ul className="org-tree">
+              {tree.map((root) => (
+                <OrgTreeNode key={root.agent.id} node={root} collapsed={collapsed} onToggle={toggle} onOpen={nav.openAgent} />
+              ))}
+            </ul>
           </div>
         ),
     },

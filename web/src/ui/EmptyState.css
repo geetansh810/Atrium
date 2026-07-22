@@ -1,7 +1,10 @@
 .empty-state {
-  padding: 24px 12px;
+  padding: 24px 16px;
   text-align: center;
   color: var(--text-muted);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 10px;
+  animation: fade-in var(--dur-3) var(--ease-out) both;
 }
 
 .empty-state-title {

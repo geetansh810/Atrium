@@ -1,0 +1,27 @@
+.progress-track {
+  display: block;
+  width: 100%;
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: relative;
+  display: block;
+  height: 100%;
+  background: var(--grad-brand);
+  overflow: hidden;
+  transition: width var(--dur-3) var(--ease-out);
+}
+
+/* Moving sheen — only on live (in-flight) work. */
+.progress-fill-live::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(237, 241, 249, 0.28), transparent);
+  animation: sheen-slide 2.2s var(--ease-out) infinite;
+}
