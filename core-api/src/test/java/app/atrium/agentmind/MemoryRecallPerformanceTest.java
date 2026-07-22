@@ -9,6 +9,7 @@ import app.atrium.common.TenantContext;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +21,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * mocked) rather than through 10k real ingest() calls — this test is about
  * the pgvector HNSW-indexed query, not about exercising the ingest path at scale.
  */
+// Tagged `performance`: the <100ms assertion is a wall-clock budget, meaningful
+// only on predictable hardware. CI excludes this group (-DexcludedGroups=
+// performance) since shared 2-vCPU runners blow it under contention — run locally.
+@Tag("performance")
 class MemoryRecallPerformanceTest extends IntegrationTestBase {
 
     private static final int ROW_COUNT = 10_000;

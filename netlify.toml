@@ -1,0 +1,33 @@
+# Netlify config — the FRONTEND half of Atrium's split deploy.
+# (Backend deploys to Render via ./render.yaml.)
+#
+# `base = "web"` is how the monorepo is disambiguated on Netlify's side: the
+# build runs inside web/, so no base-directory setting is needed in the UI.
+#
+# ── One-time setup ──────────────────────────────────────────────────────────
+#   1. Netlify → Add new site → Import from Git → connect this repo.
+#   2. Netlify reads this file — build command/publish dir/Node version are all
+#      set here, nothing to configure in the UI.
+#   3. Set VITE_API_BASE_URL (Site settings → Environment variables) to your
+#      Render backend URL + /api/v1, e.g.
+#        https://atrium-core-api.onrender.com/api/v1
+#   4. Back on Render, set ATRIUM_CORS_ALLOWED_ORIGINS to this site's URL.
+
+[build]
+  base = "web"
+  command = "npm run build"     # tsc -b && vite build → outputs to web/dist
+  publish = "dist"              # relative to base (web/dist)
+  # Skip a frontend rebuild when a push only touched the backend. Runs in `base`
+  # (web/), so this exits 0 — "no changes, skip build" — for core-api-only commits.
+  ignore = "git diff --quiet HEAD^ HEAD ."
+
+[build.environment]
+  NODE_VERSION = "22"           # vite 8 / react 19 need Node 20.19+ or 22+
+  VITE_USE_MOCKS = "0"          # 0 = talk to the real Render backend; 1 = static mock demo
+
+# react-router runs in library mode (client-side routing), so every path must
+# resolve to index.html or a hard refresh on /tasks/:id etc. would 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -7,7 +7,11 @@ spring:
     # everything to — NOT the bootstrap DATABASE_USER, which Postgres refuses
     # to ever strip SUPERUSER from (RLS never applies to a superuser
     # regardless of FORCE). Flyway keeps the bootstrap creds below.
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/atrium}
+    # A full DATABASE_URL still wins (docker-compose, local dev). When it's
+    # absent, compose a jdbc: URL from discrete parts — managed hosts like
+    # Render hand out libpq-style postgresql:// URLs, not jdbc:, and their
+    # blueprint env vars can't string-compose one, so the app builds it here.
+    url: ${DATABASE_URL:jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:atrium}}
     username: ${ATRIUM_APP_DB_USER:atrium_app}
     password: ${ATRIUM_APP_DB_PASSWORD:atrium_app}
   jpa:
@@ -18,7 +22,11 @@ spring:
     # Explicit user/password (not just locations) — needs the bootstrap role's
     # real DDL privileges (CREATE EXTENSION, CREATE ROLE, GRANT) that
     # atrium_app deliberately doesn't have.
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/atrium}
+    # A full DATABASE_URL still wins (docker-compose, local dev). When it's
+    # absent, compose a jdbc: URL from discrete parts — managed hosts like
+    # Render hand out libpq-style postgresql:// URLs, not jdbc:, and their
+    # blueprint env vars can't string-compose one, so the app builds it here.
+    url: ${DATABASE_URL:jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:atrium}}
     user: ${DATABASE_USER:atrium}
     password: ${DATABASE_PASSWORD:atrium}
     locations: classpath:db/migration

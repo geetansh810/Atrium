@@ -1,0 +1,93 @@
+# Render Blueprint — the BACKEND half of Atrium's split deploy.
+# (Frontend deploys to Netlify via ./netlify.toml.)
+#
+# What this declares: the Spring Boot core-api (Docker), a managed Postgres
+# with pgvector, and a Key Value (Redis) store. Render auto-deploys core-api
+# on every push that touches core-api/** (rootDir scopes the build trigger,
+# which is how the monorepo stays disambiguated on Render's side).
+#
+# ── One-time setup ──────────────────────────────────────────────────────────
+#   1. Render Dashboard → New → Blueprint → connect this GitHub repo.
+#   2. Render provisions all three services from this file.
+#   3. Fill the four `sync: false` values in the core-api service's Environment
+#      tab (at least one LLM key + your Netlify URL). See the notes on each.
+#   4. After Netlify is live, set ATRIUM_CORS_ALLOWED_ORIGINS + APP_BASE_URL to
+#      the Netlify site URL and redeploy core-api.
+#
+# ⚠️ FREE-TIER CAVEATS (fine for a demo, not for an unattended pilot):
+#   • Free Postgres is DELETED 30 days after creation, no grace period.
+#   • Free web services SLEEP after 15 min idle — that suspends the background
+#     agent poll loops, outbox relay, and lease reclaim, so agents stop working
+#     until the next HTTP request wakes the service (~30–60s JVM cold start).
+#   • Free web = 512 MB RAM; this JVM app can run tight under load.
+#   Upgrade core-api + Postgres to a paid plan before relying on it unattended.
+
+databases:
+  - name: atrium-postgres
+    plan: free
+    databaseName: atrium
+    postgresMajorVersion: "16"
+    # pgvector is allowlisted and preinstalled. V2__agent_platform.sql runs
+    # CREATE EXTENSION vector; V10__tenant_rls.sql runs CREATE ROLE atrium_app —
+    # both work as Render's default admin user (has CREATEROLE + extensions).
+
+services:
+  # ── Redis / Key Value: event-relay pub/sub + rate-limit counters ──────────
+  - name: atrium-redis
+    type: keyvalue
+    plan: free
+    ipAllowList: []              # empty = private-network access only
+    maxmemoryPolicy: allkeys-lru # rate-limit keys are disposable; pub/sub holds nothing
+
+  # ── Spring Boot core-api (built from core-api/Dockerfile) ─────────────────
+  - name: atrium-core-api
+    type: web
+    runtime: docker
+    plan: free
+    rootDir: core-api            # Render finds ./Dockerfile here, builds with this as context
+    region: oregon              # match the DB/Redis region; change all three together
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      # Prod behavior: structured JSON logs (logback-spring.xml keys off this
+      # profile). Local docker-compose leaves it unset → human-readable logs.
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Postgres connection — discrete parts (Render URLs aren't jdbc:); the app
+      # composes jdbc:postgresql://HOST:PORT/NAME itself (application.yml).
+      - key: DATABASE_HOST
+        fromDatabase: { name: atrium-postgres, property: host }
+      - key: DATABASE_PORT
+        fromDatabase: { name: atrium-postgres, property: port }
+      - key: DATABASE_NAME
+        fromDatabase: { name: atrium-postgres, property: database }
+      # Flyway connects as Render's admin user — needs DDL, CREATE EXTENSION,
+      # CREATE ROLE. (The app itself connects as atrium_app, below.)
+      - key: DATABASE_USER
+        fromDatabase: { name: atrium-postgres, property: user }
+      - key: DATABASE_PASSWORD
+        fromDatabase: { name: atrium-postgres, property: password }
+      # The app's runtime connection uses the least-privilege atrium_app role
+      # that V10 creates so Postgres RLS actually applies to it. Its password is
+      # hard-coded in V10 (a documented pre-launch gap), so these MUST be exact.
+      - key: ATRIUM_APP_DB_USER
+        value: atrium_app
+      - key: ATRIUM_APP_DB_PASSWORD
+        value: atrium_app
+      # Redis. If the blueprint rejects `type: keyvalue` here, use `type: redis`.
+      - key: REDIS_URL
+        fromService: { name: atrium-redis, type: keyvalue, property: connectionString }
+      # Auth signing key — Render generates a real random 256-bit value.
+      - key: ATRIUM_JWT_SECRET
+        generateValue: true
+      # ── Set these in the dashboard (sync:false keeps them out of git) ──
+      - key: GOOGLE_API_KEY
+        sync: false   # at least ONE LLM key, or every agent parks idle at the pre-dispatch gate
+      - key: ANTHROPIC_API_KEY
+        sync: false   # optional second provider
+      - key: OPENAI_API_KEY
+        sync: false   # only used for memory embeddings (M-MEM1); leave blank to disable
+      - key: ATRIUM_CORS_ALLOWED_ORIGINS
+        sync: false   # your Netlify URL, e.g. https://your-site.netlify.app (no trailing slash)
+      - key: APP_BASE_URL
+        sync: false   # same Netlify URL

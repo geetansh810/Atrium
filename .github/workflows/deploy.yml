@@ -1,10 +1,14 @@
-name: Deploy
+name: Deploy (AWS — manual only)
 
-# 10 §4 points 2-3. Both jobs need real AWS infrastructure + repo secrets
-# that don't exist yet (session 32, M3.5 — infra/terraform/ is written but
-# never applied, see its README) — this workflow is real, complete code,
-# but will not actually run successfully until that infra exists and these
-# repository/environment secrets are set:
+# ⚠️ DISABLED as an auto-trigger. Deployment now runs through Render (backend,
+# see ./render.yaml) + Netlify (frontend, see ./netlify.toml), which auto-deploy
+# natively from their own GitHub integration — no GitHub Actions deploy job is
+# needed for that path. This AWS workflow is kept only as a reference for a
+# possible future ECS/S3 deployment; it is `workflow_dispatch` (manual-run) only
+# so it no longer fails on every push.
+#
+# It still needs real AWS infrastructure + repo secrets that don't exist yet
+# (M3.5 — infra/terraform/ is written but never applied, see its README):
 #   AWS_ROLE_ARN, AWS_REGION, ECR_REPOSITORY_URL, ECS_CLUSTER (per env),
 #   ECS_SERVICE (per env), WEB_S3_BUCKET (per env), CLOUDFRONT_DISTRIBUTION_ID
 #   (per env), STAGING_API_URL, PROD_API_URL.
@@ -12,9 +16,7 @@ name: Deploy
 # policy on AWS_ROLE_ARN) — no long-lived AWS access keys stored in GitHub.
 
 on:
-  push:
-    branches: [main]
-    tags: ["release-*"]
+  workflow_dispatch:
 
 permissions:
   id-token: write # required for OIDC -> AWS
