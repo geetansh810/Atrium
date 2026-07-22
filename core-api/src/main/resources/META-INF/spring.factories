@@ -1,0 +1,4 @@
+# EnvironmentPostProcessors run before the ApplicationContext is created, so they
+# can't be ordinary @Components — they're registered here.
+org.springframework.boot.env.EnvironmentPostProcessor=\
+app.atrium.common.DatabaseUrlEnvironmentPostProcessor
