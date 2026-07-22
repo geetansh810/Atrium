@@ -36,6 +36,18 @@ spring:
     user: ${DATABASE_USER:atrium}
     password: ${DATABASE_PASSWORD:atrium}
     locations: classpath:db/migration
+    # Migrations run outside any tenant and legitimately write rows no tenant
+    # transaction may write — global (company_id NULL) role_definitions/skills
+    # templates, which V10's WITH CHECK rejects by design. Locally this never
+    # surfaced: the postgres image's bootstrap role is a SUPERUSER, and RLS
+    # never applies to a superuser regardless of FORCE. A managed Postgres
+    # (RDS, Render) hands out a non-superuser owner, so FORCE genuinely bites
+    # and a seed migration like V12 fails with "new row violates row-level
+    # security policy". Set the bypass GUC on Flyway's own connection — this
+    # is the escape hatch V10 documents, applied to every migration rather
+    # than edited into an already-applied migration file.
+    init-sqls:
+      - SET app.bypass_rls = 'on'
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
