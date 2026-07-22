@@ -1,3 +1,9 @@
+server:
+  # Managed hosts (Render, Heroku, Cloud Run) inject the port to bind as PORT.
+  # Spring only reads SERVER_PORT natively, so bridge it here — locally PORT is
+  # unset and this stays 8080, matching docker-compose and the Dockerfile.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: atrium-core-api

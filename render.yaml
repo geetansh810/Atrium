@@ -53,14 +53,13 @@ services:
       # profile). Local docker-compose leaves it unset → human-readable logs.
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      # Postgres connection — discrete parts (Render URLs aren't jdbc:); the app
-      # composes jdbc:postgresql://HOST:PORT/NAME itself (application.yml).
-      - key: DATABASE_HOST
-        fromDatabase: { name: atrium-postgres, property: host }
-      - key: DATABASE_PORT
-        fromDatabase: { name: atrium-postgres, property: port }
-      - key: DATABASE_NAME
-        fromDatabase: { name: atrium-postgres, property: database }
+      # Postgres. Render hands out a libpq-style postgresql:// connection string,
+      # not a jdbc: URL, and Blueprint env vars can't string-compose one — so
+      # common.DatabaseUrlEnvironmentPostProcessor converts it at startup.
+      # NOTE: `host`/`port` are NOT valid fromDatabase properties (they belong to
+      # fromService); only connectionString/user/password/database are.
+      - key: DATABASE_URL
+        fromDatabase: { name: atrium-postgres, property: connectionString }
       # Flyway connects as Render's admin user — needs DDL, CREATE EXTENSION,
       # CREATE ROLE. (The app itself connects as atrium_app, below.)
       - key: DATABASE_USER
