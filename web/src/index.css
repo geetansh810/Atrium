@@ -443,6 +443,8 @@ input {
 
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+.field-hint { font-size: 11px; color: var(--text-muted); }
+
 .template-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
