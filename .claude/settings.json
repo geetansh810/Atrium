@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(./mvnw *)",
+      "Bash(make check)",
+      "Bash(make test)",
+      "Bash(npm run lint)",
+      "Bash(npx tsc *)",
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff*)",
+      "Bash(git show *)",
+      "Bash(git branch)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs *)",
+      "Bash(curl -s localhost:8080/*)",
+      "Bash(curl -s -X POST localhost:8080/*)"
+    ]
+  }
+}
