@@ -11,7 +11,7 @@ import type { ModelProvider } from "../../shared/types";
 // Anthropic/OpenAI stay listed but disabled so the roster is visible without
 // letting anyone hire an agent whose loop would just park at the pre-dispatch gate.
 const DEFAULT_PROVIDER: ModelProvider = "google";
-const DEFAULT_MODEL = "gemini-3.1-flash-lite";
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
 const PROVIDER_OPTIONS: { value: ModelProvider; label: string; available: boolean }[] = [
   { value: "google", label: "Google", available: true },
@@ -25,17 +25,23 @@ const MODEL_OPTIONS: {
   available: boolean;
   knowledgeCutoff?: string;
 }[] = [
-  {
-    value: "gemini-3.1-flash-lite",
-    label: "Gemini 3.1 Flash-Lite",
-    available: true,
-    knowledgeCutoff: "January 2025",
-  },
-  { value: "claude-fable-5", label: "Claude Fable 5", available: false },
-  { value: "claude-sonnet-5", label: "Claude Sonnet 5", available: false },
-  { value: "claude-haiku-4-5", label: "Claude Haiku 4.5", available: false },
-  { value: "gpt-5", label: "GPT-5", available: false },
-];
+    {
+      value: "gemini-3.5-flash-lite",
+      label: "Gemini 3.5 Flash-Lite",
+      available: true,
+      knowledgeCutoff: "March 2026",
+    },
+    {
+      value: "gemini-3.1-flash-lite",
+      label: "Gemini 3.1 Flash-Lite",
+      available: true,
+      knowledgeCutoff: "January 2025",
+    },
+    { value: "claude-fable-5", label: "Claude Fable 5", available: false },
+    { value: "claude-sonnet-5", label: "Claude Sonnet 5", available: false },
+    { value: "claude-haiku-4-5", label: "Claude Haiku 4.5", available: false },
+    { value: "gpt-5", label: "GPT-5", available: false },
+  ];
 
 export function InviteAgentModal() {
   const { state, dispatch } = useApp();

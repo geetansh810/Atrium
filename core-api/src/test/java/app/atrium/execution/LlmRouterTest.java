@@ -42,7 +42,8 @@ class LlmRouterTest {
                         List.of(Duration.ZERO, Duration.ZERO)),
                 new LlmProperties.Anthropic("http://unused", ""),
                 new LlmProperties.Google("http://unused", ""));
-        return new LlmRouter(List.of(provider), catalog, properties);
+        return new LlmRouter(List.of(provider), catalog, properties,
+                mock(LlmRequestLogService.class));
     }
 
     /** Provider that fails {@code failures} times with {@code kind}, then succeeds. */

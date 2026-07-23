@@ -591,4 +591,93 @@ class LlmLoopRuntimeTest extends IntegrationTestBase {
         wiremock.verify(1, postRequestedFor(urlEqualTo("/v1/messages"))
                 .withRequestBody(containing("create_child_tasks")));
     }
+
+    // ── V14 Done-when: every LLM call is logged with its full prompt, readable via the API ──
+
+    @Test
+    void llmRequestIsLoggedWithFullPromptAndReadableViaTheApi() {
+        String company = createCompany("v14-log");
+        String agentId = hireAgentAndStopAutoLoop(company, "coding");
+        String taskId = createTask(company, "Write a function that reverses a string", "coding");
+        stubAnthropicSuccess("def reverse_string(s):\\n    return s[::-1]");
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+
+        // one row, fully attributed, with the exact prompt sent and text returned
+        List<Map<String, Object>> logs = jdbc.queryForList(
+                "SELECT company_id, agent_id, task_id, provider, model, system_prompt, "
+                        + "messages::text AS messages, response_text, status, tokens_in, tokens_out, latency_ms "
+                        + "FROM llm_request_logs WHERE task_id = ?::uuid", taskId);
+        assertThat(logs).hasSize(1);
+        Map<String, Object> row = logs.get(0);
+        assertThat(row.get("company_id").toString()).isEqualTo(company);
+        assertThat(row.get("agent_id").toString()).isEqualTo(agentId);
+        assertThat(row.get("provider")).isEqualTo("anthropic");
+        assertThat(row.get("model")).isEqualTo("claude-sonnet-5");
+        assertThat(row.get("status")).isEqualTo("ok");
+        assertThat((String) row.get("system_prompt")).isNotBlank();
+        assertThat((String) row.get("messages")).contains("Write a function that reverses a string");
+        assertThat((String) row.get("response_text")).contains("def reverse_string");
+        assertThat(row.get("tokens_in")).isEqualTo(42L);
+        assertThat(row.get("tokens_out")).isEqualTo(17L);
+
+        // list endpoint: newest-first compact rows
+        JsonNode list = parse(rest.exchange("/api/v1/companies/" + company + "/llm-logs",
+                HttpMethod.GET, new HttpEntity<>(headers(company)), String.class).getBody());
+        assertThat(list.get("data")).hasSize(1);
+        JsonNode listRow = list.get("data").get(0);
+        assertThat(listRow.get("status").asText()).isEqualTo("ok");
+        assertThat(listRow.get("model").asText()).isEqualTo("claude-sonnet-5");
+        String logId = listRow.get("id").asText();
+
+        // detail endpoint: the full prompt + response
+        JsonNode detail = parse(rest.exchange("/api/v1/companies/" + company + "/llm-logs/" + logId,
+                HttpMethod.GET, new HttpEntity<>(headers(company)), String.class).getBody());
+        assertThat(detail.get("systemPrompt").asText()).isNotBlank();
+        assertThat(detail.get("messages").get(0).get("content").asText())
+                .contains("Write a function that reverses a string");
+        assertThat(detail.get("responseText").asText()).contains("def reverse_string");
+    }
+
+    @Test
+    void failedLlmCallIsLoggedAsAnError() {
+        String company = createCompany("v14-err");
+        String agentId = hireAgentAndStopAutoLoop(company, "coding");
+        String taskId = createTask(company, "This one will fail", "coding");
+        // 400 → INVALID_REQUEST (fail-fast, no retry) → the loop flags the task.
+        wiremock.stubFor(post(urlEqualTo("/v1/messages")).willReturn(
+                aResponse().withStatus(400).withHeader("Content-Type", "application/json")
+                        .withBody("{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\","
+                                + "\"message\":\"bad request\"}}")));
+
+        runtime.runOnce(UUID.fromString(company), UUID.fromString(agentId));
+
+        List<Map<String, Object>> logs = jdbc.queryForList(
+                "SELECT status, error_kind, response_text FROM llm_request_logs WHERE task_id = ?::uuid",
+                taskId);
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).get("status")).isEqualTo("error");
+        assertThat((String) logs.get(0).get("error_kind")).isNotBlank();
+        assertThat(logs.get(0).get("response_text")).isNull();
+    }
+
+    @Test
+    void llmLogsAreTenantIsolated() {
+        String companyA = createCompany("v14-iso-a");
+        String companyB = createCompany("v14-iso-b");
+        String agentId = hireAgentAndStopAutoLoop(companyA, "coding");
+        createTask(companyA, "A private task", "coding");
+        stubAnthropicSuccess("done");
+        runtime.runOnce(UUID.fromString(companyA), UUID.fromString(agentId));
+
+        // Company B sees none of A's logs through its own token.
+        JsonNode listB = parse(rest.exchange("/api/v1/companies/" + companyB + "/llm-logs",
+                HttpMethod.GET, new HttpEntity<>(headers(companyB)), String.class).getBody());
+        assertThat(listB.get("data")).isEmpty();
+
+        // B pointing its token at A's company id 404s (tenant mismatch), not a data leak.
+        ResponseEntity<String> crossTenant = rest.exchange("/api/v1/companies/" + companyA + "/llm-logs",
+                HttpMethod.GET, new HttpEntity<>(headers(companyB)), String.class);
+        assertThat(crossTenant.getStatusCode().value()).isEqualTo(404);
+    }
 }

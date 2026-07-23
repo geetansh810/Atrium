@@ -235,6 +235,19 @@ export interface WorkflowTemplate {
   steps: string[];
 }
 
+// GET /companies/{id}/knowledge (16 §3, M-KN1) — real, API-only, no mock
+// fixture. Distinct from the mock-only KnowledgeDoc above: ingest never
+// returns content back (it's chunked straight into embeddings, no doc-level
+// body column), so there's no excerpt/body/tags to show, only metadata.
+export interface KnowledgeDocRecord {
+  id: string;
+  title: string;
+  sourceUri: string | null;
+  mime: string;
+  status: string;
+  createdAt: string;
+}
+
 // GET /companies/{id}/memories (16 §3, M-MEM1/M-LN1) — real, API-only, no mock fixture.
 export interface Memory {
   id: string;

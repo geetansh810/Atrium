@@ -298,6 +298,61 @@ export interface MemoryResponse {
   createdAt: string;
 }
 
+// GET /companies/{id}/knowledge (16 §3, M-KN1) — content itself is never
+// returned: ingest chunks it straight into knowledge_chunks for embeddings,
+// and there's no doc-level body column, so this DTO is metadata-only.
+export interface KnowledgeDocResponse {
+  id: string;
+  companyId: string;
+  title: string;
+  sourceUri: string | null;
+  mime: string;
+  status: string;
+  createdAt: string;
+}
+
+// GET /companies/{id}/llm-logs (V14) — one row per LLM call sent to a provider.
+// The list row is compact; fetch the full prompt/response via the detail endpoint.
+export interface LlmLogRow {
+  id: string;
+  agentId: string | null;
+  taskId: string | null;
+  provider: string;
+  model: string;
+  tokensIn: number | null;
+  tokensOut: number | null;
+  stopReason: string | null;
+  status: "ok" | "error";
+  errorKind: string | null;
+  latencyMs: number;
+  createdAt: string;
+}
+
+export interface LlmLogMessage {
+  role: string;
+  content: string;
+  toolCallId: string | null;
+}
+
+export interface LlmLogDetail extends LlmLogRow {
+  systemPrompt: string | null;
+  messages: LlmLogMessage[];
+  tools: unknown[] | null;
+  responseText: string | null;
+  toolCalls: unknown[] | null;
+  errorMessage: string | null;
+  providerRequestId: string | null;
+}
+
+export interface LlmLogQuery {
+  agentId?: string;
+  taskId?: string;
+  status?: "ok" | "error";
+  provider?: string;
+  cursor?: string;
+  limit?: number;
+}
+
 export const api = {
   // M3.1: the only two pre-auth calls — everything else authenticates via the
   // stored session's bearer token (shared/auth.ts), never a companyId header.
@@ -378,4 +433,26 @@ export const api = {
     request<PageEnvelope<MemoryResponse>>(`/companies/${companyId}/memories/review-queue`),
   reviewMemory: (_companyId: string, memoryId: string, body: { action: "approve" | "reject" }) =>
     request<MemoryResponse>(`/memories/${memoryId}/review`, { method: "POST", body }),
+
+  listKnowledge: (companyId: string, status?: string) =>
+    request<KnowledgeDocResponse[]>(
+      `/companies/${companyId}/knowledge${status ? `?status=${status}` : ""}`,
+    ),
+  ingestKnowledge: (companyId: string, body: { title: string; content: string; sourceUri?: string }) =>
+    request<KnowledgeDocResponse>(`/companies/${companyId}/knowledge`, { method: "POST", body }),
+  archiveKnowledge: (_companyId: string, docId: string) =>
+    request<void>(`/knowledge/${docId}`, { method: "DELETE" }),
+
+  llmLogs: (companyId: string, query: LlmLogQuery = {}) => {
+    const params = new URLSearchParams();
+    if (query.agentId) params.set("agentId", query.agentId);
+    if (query.taskId) params.set("taskId", query.taskId);
+    if (query.status) params.set("status", query.status);
+    if (query.provider) params.set("provider", query.provider);
+    if (query.cursor) params.set("cursor", query.cursor);
+    params.set("limit", String(query.limit ?? 50));
+    return request<PageEnvelope<LlmLogRow>>(`/companies/${companyId}/llm-logs?${params.toString()}`);
+  },
+  llmLog: (companyId: string, logId: string) =>
+    request<LlmLogDetail>(`/companies/${companyId}/llm-logs/${logId}`),
 };

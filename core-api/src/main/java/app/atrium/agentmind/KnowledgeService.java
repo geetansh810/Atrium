@@ -13,6 +13,7 @@ import jakarta.persistence.EntityManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,13 +34,14 @@ import org.springframework.transaction.annotation.Transactional;
  * this one class both validates requests and does the raw-JDBC chunk work,
  * called directly by {@link SkillContextAssembler} (no interface indirection).
  *
- * <p><b>Ingest is all-or-nothing.</b> {@code knowledge_docs.status} allows
- * {@code ingesting}/{@code failed} (15 §4.3 CHECK) for a future async pipeline,
- * but v1 is synchronous and minimal (14 §3): the doc row and its chunk rows are
- * written in one transaction, so a failed embedding call (e.g. no
- * {@code OPENAI_API_KEY}) rolls back the whole insert rather than leaving a
- * half-ingested doc behind — no separate failure-visibility mechanism is built
- * this milestone.
+ * <p><b>Ingest never fails on account of embeddings.</b> {@code knowledge_docs.status}
+ * allows {@code ingesting}/{@code failed} (15 §4.3 CHECK) for a future async pipeline,
+ * but v1 is synchronous and minimal (14 §3): the doc row and its chunk rows are always
+ * written in one transaction. A missing/failing embeddings provider (e.g. no {@code
+ * OPENAI_API_KEY} — the environment default) degrades to landing chunks with a NULL
+ * {@code embedding} instead of blocking the ingest (see {@link #embedOrDegrade}, the
+ * same fix applied to {@code PgVectorMemoryStore} at M-LN2-fix) — the doc still lands
+ * and browses, it just isn't recallable via {@link #recall} until a real key exists.
  */
 @Service
 public class KnowledgeService {
@@ -76,7 +78,7 @@ public class KnowledgeService {
         if (chunks.isEmpty()) {
             throw new FieldValidationException(Map.of("content", "must contain non-blank text"));
         }
-        List<float[]> embeddings = embeddingClient.embed(chunks);
+        List<String> embeddings = embedOrDegrade(companyId, chunks);
 
         KnowledgeDoc doc = docs.save(new KnowledgeDoc(companyId, request.title(), request.sourceUri(),
                 "text/markdown", "active"));
@@ -90,13 +92,36 @@ public class KnowledgeService {
         List<Object[]> batchArgs = new ArrayList<>(chunks.size());
         for (int seq = 0; seq < chunks.size(); seq++) {
             batchArgs.add(new Object[] {UUID.randomUUID(), companyId, doc.getId(), seq, chunks.get(seq),
-                    toVectorLiteral(embeddings.get(seq))});
+                    embeddings.get(seq)});
         }
         jdbc.batchUpdate("""
                 INSERT INTO knowledge_chunks (id, company_id, doc_id, seq, content, embedding)
                 VALUES (?, ?, ?, ?, ?, CAST(? AS vector))
                 """, batchArgs);
         return doc;
+    }
+
+    /**
+     * Same degrade posture {@code PgVectorMemoryStore.embedOrDegrade} established for
+     * memories (M-LN2-fix): a missing/failing embeddings provider must never block an
+     * ingest — the {@code embedding} column is nullable for exactly this. Returns a
+     * vector literal per chunk, or {@code null} for every chunk when the provider isn't
+     * ready or the batch call throws; the doc still lands, it just isn't recallable via
+     * {@link #recall} until a later re-ingest supplies real vectors.
+     */
+    private List<String> embedOrDegrade(UUID companyId, List<String> chunks) {
+        if (!embeddingClient.isReady()) {
+            log.warn("Knowledge ingest for company {} landing without embeddings — embeddings not configured",
+                    companyId);
+            return Collections.nCopies(chunks.size(), null);
+        }
+        try {
+            return embeddingClient.embed(chunks).stream().map(KnowledgeService::toVectorLiteral).toList();
+        } catch (RuntimeException e) {
+            log.warn("Knowledge ingest for company {} landing without embeddings — embed call failed",
+                    companyId, e);
+            return Collections.nCopies(chunks.size(), null);
+        }
     }
 
     /** GET /companies/{id}/knowledge (16 §3). */

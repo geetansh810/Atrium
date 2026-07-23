@@ -4,6 +4,7 @@
 // shapes via shared/adapters.ts so components never see a raw API response.
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
+import type { LlmLogQuery } from "./api";
 import {
   adaptAgent,
   adaptAgentPerformance,
@@ -13,6 +14,7 @@ import {
   adaptBudget,
   adaptChannel,
   adaptDayCount,
+  adaptKnowledgeDoc,
   adaptMemory,
   adaptMessage,
   adaptSkillShare,
@@ -141,6 +143,33 @@ export function useReviewMemoryMutation(companyId: string) {
       qc.invalidateQueries({ queryKey: ["memory-review-queue", companyId] });
       qc.invalidateQueries({ queryKey: ["memories", companyId] });
     },
+  });
+}
+
+// GET/POST/DELETE /companies/{id}/knowledge (16 §3, M-KN1) — real, page-scoped
+// (same "net-new data outside the store" precedent as analytics/memories above).
+export function useKnowledgeDocs(companyId: string) {
+  return useQuery({
+    queryKey: ["knowledge", companyId],
+    queryFn: () => api.listKnowledge(companyId).then((list) => list.map(adaptKnowledgeDoc)),
+    enabled: !!companyId,
+  });
+}
+
+export function useIngestKnowledgeMutation(companyId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { title: string; content: string; sourceUri?: string }) =>
+      api.ingestKnowledge(companyId, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge", companyId] }),
+  });
+}
+
+export function useArchiveKnowledgeMutation(companyId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (docId: string) => api.archiveKnowledge(companyId, docId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge", companyId] }),
   });
 }
 
@@ -344,6 +373,26 @@ export function usePatchAgentMutation(companyId: string) {
     mutationFn: ({ agentId, status, paused }: { agentId: string; status?: string; paused?: boolean }) =>
       api.patchAgent(companyId, agentId, { status, paused }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["roster", companyId] }),
+  });
+}
+
+// V14: LLM request log. Live-API-only (no mock fixture) — the page reads these
+// hooks directly rather than going through the store, same as SettingsPage's
+// model-catalog card.
+export function useLlmLogs(companyId: string, query: LlmLogQuery = {}) {
+  return useQuery({
+    queryKey: ["llm-logs", companyId, query],
+    queryFn: () => api.llmLogs(companyId, query),
+    enabled: !!companyId,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useLlmLog(companyId: string, logId: string | null) {
+  return useQuery({
+    queryKey: ["llm-log", companyId, logId],
+    queryFn: () => api.llmLog(companyId, logId as string),
+    enabled: !!companyId && !!logId,
   });
 }
 

@@ -6,6 +6,7 @@ import {
   EmployeesIcon,
   FlowIcon,
   KnowledgeIcon,
+  LogsIcon,
   MissionControlIcon,
   OrganizationIcon,
   ProjectsIcon,
@@ -24,6 +25,7 @@ const PRIMARY_NAV = [
   { to: "/projects", label: "Projects", icon: ProjectsIcon },
   { to: "/knowledge", label: "Knowledge", icon: KnowledgeIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
+  { to: "/logs", label: "LLM Logs", icon: LogsIcon },
   { to: "/team", label: "Team", icon: TeamIcon },
 ];
 

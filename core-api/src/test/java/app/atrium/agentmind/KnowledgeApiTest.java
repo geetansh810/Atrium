@@ -119,6 +119,26 @@ class KnowledgeApiTest extends IntegrationTestBase {
         assertThat(listed.findValuesAsText("title")).contains("Brand guide");
     }
 
+    // ── ingest degrades gracefully with no embeddings provider (M-KN1-fix) ──
+
+    @Test
+    void ingestSucceedsWithoutAnEmbeddingsProviderConfigured() {
+        when(embeddingClient.isReady()).thenReturn(false);
+        String company = createCompany("kn-ingest-noembed");
+
+        ResponseEntity<String> created = ingest(company, Map.of(
+                "title", "Ingested without embeddings", "content", "This should still land."));
+        assertThat(created.getStatusCode().value()).as(created.getBody()).isEqualTo(201);
+        String docId = parse(created.getBody()).get("id").asText();
+
+        JsonNode listed = list(company, null);
+        assertThat(listed.findValuesAsText("title")).contains("Ingested without embeddings");
+
+        String embedding = adminJdbc().queryForObject(
+                "SELECT embedding::text FROM knowledge_chunks WHERE doc_id = ?::uuid", String.class, docId);
+        assertThat(embedding).isNull();
+    }
+
     // ── archive never hard-deletes ───────────────────────────────────────────
 
     @Test

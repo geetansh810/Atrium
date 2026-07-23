@@ -1,5 +1,7 @@
 package app.atrium.execution;
 
+import app.atrium.common.LogContext;
+import app.atrium.common.TenantContext;
 import app.atrium.execution.spi.LlmClient;
 import app.atrium.execution.spi.LlmException;
 import app.atrium.execution.spi.LlmProvider;
@@ -9,6 +11,7 @@ import app.atrium.registry.ModelCatalogLookup;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -36,35 +41,46 @@ public class LlmRouter implements LlmClient {
     private final Map<String, LlmProvider> providers;
     private final ModelCatalogLookup catalog;
     private final LlmProperties properties;
+    private final LlmRequestLogService requestLog;
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public LlmRouter(List<LlmProvider> providers, ModelCatalogLookup catalog,
-                     LlmProperties properties) {
+                     LlmProperties properties, LlmRequestLogService requestLog) {
         this.providers = providers.stream()
                 .collect(Collectors.toUnmodifiableMap(LlmProvider::id, Function.identity()));
         this.catalog = catalog;
         this.properties = properties;
+        this.requestLog = requestLog;
     }
 
     @Override
     public LlmResult complete(LlmRequest request) throws LlmException {
+        long startNanos = System.nanoTime();
         LlmProvider provider = providers.get(request.provider());
         if (provider == null) {
-            throw new LlmException(LlmException.Kind.UNKNOWN_MODEL,
+            LlmException e = new LlmException(LlmException.Kind.UNKNOWN_MODEL,
                     "No LlmProvider registered for '" + request.provider() + "'");
+            recordLog(request, null, e, startNanos);
+            throw e;
         }
-        catalog.findEnabled(request.provider(), request.model())
-                .orElseThrow(() -> new LlmException(LlmException.Kind.UNKNOWN_MODEL,
-                        "(" + request.provider() + ", " + request.model()
-                                + ") is not enabled in model_catalog"));
+        if (catalog.findEnabled(request.provider(), request.model()).isEmpty()) {
+            LlmException e = new LlmException(LlmException.Kind.UNKNOWN_MODEL,
+                    "(" + request.provider() + ", " + request.model()
+                            + ") is not enabled in model_catalog");
+            recordLog(request, null, e, startNanos);
+            throw e;
+        }
 
         int retriesUsed = 0;
         while (true) {
             try {
-                return callWithTimeout(provider, request);
+                LlmResult result = callWithTimeout(provider, request);
+                recordLog(request, result, null, startNanos);
+                return result;
             } catch (LlmException e) {
                 List<Duration> backoff = backoffFor(e.kind());
                 if (retriesUsed >= backoff.size()) {
+                    recordLog(request, null, e, startNanos);
                     throw e;
                 }
                 Duration delay = backoff.get(retriesUsed++);
@@ -73,6 +89,37 @@ public class LlmRouter implements LlmClient {
                         retriesUsed, backoff.size(), delay);
                 sleep(delay);
             }
+        }
+    }
+
+    /**
+     * Persist the request/response to the LLM request log (V14) — the single
+     * doorway means every provider call is captured here once, after retries,
+     * with total wall time. Best-effort and only when a tenant is bound (the
+     * agent loop's {@code runAsSystem} binds it; a company-less bypass path
+     * has no company to attribute the row to, so it's skipped). Agent/task ids
+     * ride along in the MDC, set by {@code LlmLoopRuntime} for the iteration.
+     */
+    private void recordLog(LlmRequest request, @Nullable LlmResult result,
+                           @Nullable LlmException error, long startNanos) {
+        if (!TenantContext.isBound()) {
+            return;
+        }
+        long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
+        requestLog.record(TenantContext.requireCompanyId(), mdcUuid(LogContext.AGENT_ID),
+                mdcUuid(LogContext.TASK_ID), request, result, error, latencyMs);
+    }
+
+    @Nullable
+    private static UUID mdcUuid(String key) {
+        String raw = MDC.get(key);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
