@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
 import { AppShell } from "./shell/AppShell";
 import { AppProvider } from "./shared/store";
 import { LandingPage } from "./pages/landing/LandingPage";
+import { DocsSite } from "./pages/docs/DocsSite";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { OnboardingWizard } from "./pages/onboarding/OnboardingWizard";
 import { useAuthSession } from "./shared/auth";
@@ -61,17 +62,28 @@ function OnboardingOrShell({ companyId }: { companyId: string }) {
   return <AppShell />;
 }
 
+// Docs is a public surface reachable whether or not a visitor is signed in, so
+// it's branched here at the root — above the auth gate — rather than living
+// inside either router. It renders its own <Routes> for the /docs subtree.
+// Everything else keeps its existing top-level routing untouched.
+function Root() {
+  const { pathname } = useLocation();
+  if (pathname === "/docs" || pathname.startsWith("/docs/")) return <DocsSite />;
+  if (USE_MOCKS) {
+    return (
+      <AppProvider>
+        <AppShell />
+      </AppProvider>
+    );
+  }
+  return <AuthGate />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        {USE_MOCKS ? (
-          <AppProvider>
-            <AppShell />
-          </AppProvider>
-        ) : (
-          <AuthGate />
-        )}
+        <Root />
       </BrowserRouter>
     </QueryClientProvider>
   );
