@@ -2,7 +2,6 @@ import { useState } from "react";
 import { formatTimeAgo, PRIORITY_LABEL } from "../../shared/format";
 import { TASK_EVENT_LABEL, taskEventTone } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
-import { useAppNav } from "../../shared/nav";
 import { Drawer } from "../../ui/Drawer";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
@@ -13,6 +12,7 @@ import { EmptyState } from "../../ui/EmptyState";
 import { Markdown } from "../../ui/Markdown";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { ConversationThread } from "../../ui/ConversationThread";
+import { AgentLink, TaskLink } from "../../ui/EntityLink";
 import "./TaskDrawer.css";
 
 interface TaskDrawerProps {
@@ -25,7 +25,6 @@ interface TaskDrawerProps {
 // renders this whenever the route carries an id, so a refresh restores it.
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const { state, dispatch } = useApp();
-  const nav = useAppNav();
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
 
@@ -43,6 +42,8 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const channel = task.assignedAgentId
     ? state.channels.find((c) => c.kind === "dm" && c.agentId === task.assignedAgentId)
     : undefined;
+  const parentTask = task.parentTaskId ? state.tasks.find((t) => t.id === task.parentTaskId) : undefined;
+  const childTasks = state.tasks.filter((t) => t.parentTaskId === task.id);
   const doneCount = task.subtasks.filter((s) => s.state === "done").length;
   const canReview = task.status === "pending_review" || task.status === "flagged";
 
@@ -76,12 +77,35 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
           </div>
           <ProgressBar value={task.progress} />
           <div className="task-drawer-pct">
-            {task.progress}%{task.etaMinutes != null ? ` · ETA: ${task.etaMinutes} minutes` : ""}
+            {task.progress}%{task.etaMinutes != null ? ` · ETA ${task.etaMinutes} min` : ""}
+          </div>
+
+          <div className="task-drawer-links">
+            <div className="task-drawer-link-row">
+              <span>Assigned to</span>
+              {agent ? <AgentLink agent={agent} /> : <span className="task-drawer-muted">Unassigned. An agent with the {task.requiredSkill} skill will claim it.</span>}
+            </div>
+            {parentTask && (
+              <div className="task-drawer-link-row">
+                <span>Part of</span>
+                <TaskLink task={parentTask} />
+              </div>
+            )}
+            {childTasks.length > 0 && (
+              <div className="task-drawer-link-row">
+                <span>Spawned {childTasks.length === 1 ? "task" : "tasks"}</span>
+                <span className="task-drawer-link-stack">
+                  {childTasks.map((c) => (
+                    <TaskLink key={c.id} task={c} />
+                  ))}
+                </span>
+              </div>
+            )}
           </div>
 
           {task.flagReason && (
             <>
-              <div className="section-title">Flagged — needs a human</div>
+              <div className="section-title">Flagged. A person needs to step in.</div>
               <div className="artifact-box flag">{task.flagReason}</div>
             </>
           )}
@@ -123,7 +147,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 <div className="detail-actions">
                   {task.status === "pending_review" && (
                     <button
-                      className="btn accent"
+                      className="btn primary"
                       onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
                     >
                       Approve
@@ -140,13 +164,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             </div>
           )}
 
-          {agent && (
-            <div className="detail-actions">
-              <button className="btn" onClick={() => nav.openAgent(agent.id)}>
-                View {agent.name}
-              </button>
-            </div>
-          )}
         </div>
       ),
     },
@@ -177,8 +194,14 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
       key: "output",
       label: "Output",
       content: task.artifact ? (
-        <div className="artifact-box">
-          <Markdown>{task.artifact.content}</Markdown>
+        <div className="task-drawer-output">
+          <div className="task-drawer-produced">
+            <span>Produced by</span>
+            {agent ? <AgentLink agent={agent} size={18} /> : <span>an agent</span>}
+          </div>
+          <div className="artifact-box">
+            <Markdown>{task.artifact.content}</Markdown>
+          </div>
         </div>
       ) : (
         <EmptyState title="No output yet." description="The agent's artifact will appear here once produced." />

@@ -8,26 +8,48 @@ export interface FeedEntry {
   agentName: string | null;
   text: string;
   createdAt: string;
+  taskId?: string;
 }
 
 // Compact live activity list — Mission Control's window into task_events
 // across every task. `agentName` renders an avatar; system/user events fall
 // back to a plain dot.
-export function Feed({ items, emptyLabel = "No activity yet." }: { items: FeedEntry[]; emptyLabel?: string }) {
+export function Feed({
+  items,
+  emptyLabel = "No activity yet.",
+  onOpenTask,
+}: {
+  items: FeedEntry[];
+  emptyLabel?: string;
+  onOpenTask?: (taskId: string) => void;
+}) {
   if (items.length === 0) return <EmptyState title={emptyLabel} />;
   return (
     <ul className="feed">
-      {items.map((item) => (
-        <li key={item.id} className="feed-item">
-          {item.agentName ? (
-            <Avatar name={item.agentName} seed={item.agentName} size={22} />
-          ) : (
-            <span className="feed-item-dot" aria-hidden />
-          )}
-          <span className="feed-item-text">{item.text}</span>
-          <span className="feed-item-time">{formatTimeAgo(item.createdAt)}</span>
-        </li>
-      ))}
+      {items.map((item) => {
+        const body = (
+          <>
+            {item.agentName ? (
+              <Avatar name={item.agentName} seed={item.agentName} size={22} />
+            ) : (
+              <span className="feed-item-dot" aria-hidden />
+            )}
+            <span className="feed-item-text">{item.text}</span>
+            <span className="feed-item-time">{formatTimeAgo(item.createdAt)}</span>
+          </>
+        );
+        return (
+          <li key={item.id} className="feed-item">
+            {onOpenTask && item.taskId ? (
+              <button className="feed-item-link" onClick={() => onOpenTask(item.taskId!)}>
+                {body}
+              </button>
+            ) : (
+              body
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

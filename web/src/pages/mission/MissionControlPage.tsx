@@ -21,6 +21,10 @@ import { Feed } from "../../ui/Feed";
 import { Banner } from "../../ui/Banner";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { Graph } from "../../ui/Graph";
+import { PageShell } from "../../ui/PageShell";
+import { TaskLink } from "../../ui/EntityLink";
+import { Markdown } from "../../ui/Markdown";
+import { useNavigate } from "react-router";
 import type { GraphEdge, GraphNode, GraphNodeStatus } from "../../ui/Graph";
 import "./MissionControlPage.css";
 
@@ -36,8 +40,9 @@ function nodeStatus(status: string): GraphNodeStatus {
 // the new Task.events contract extension), output preview, and a budget burn
 // bar with an 80% warning. Replaces the teaser-only placeholder.
 export function MissionControlPage() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const nav = useAppNav();
+  const navigate = useNavigate();
   const { agents, tasks, budgets } = state;
 
   const kpis = computeKpis(agents, tasks);
@@ -47,6 +52,7 @@ export function MissionControlPage() {
   const heroAgent = hero?.assignedAgentId ? agents.find((a) => a.id === hero.assignedAgentId) : undefined;
   const feedItems = synthesizeFeed(tasks, agents, 12).map((item) => ({
     id: item.id,
+    taskId: item.taskId,
     agentName: item.agentName,
     text: `${item.agentName ?? "System"} — ${item.eventType.replace("_", " ")}: ${item.taskTitle}`,
     createdAt: item.createdAt,
@@ -71,12 +77,25 @@ export function MissionControlPage() {
   const stalledSummary = summarizeStalledTasks(findStalledTasks(tasks, agents));
 
   return (
-    <div className="mission-page">
-      <header className="mission-head">
-        <h1>Mission Control</h1>
-        <p className="mission-pulse">{pulse}</p>
-      </header>
-
+    <PageShell
+      title="Mission Control"
+      subtitle={pulse}
+      actions={
+        <>
+          {kpis.awaitingReview > 0 && (
+            <button className="btn primary" onClick={() => navigate("/tasks/review")}>
+              Review {kpis.awaitingReview} {kpis.awaitingReview === 1 ? "task" : "tasks"}
+            </button>
+          )}
+          <button
+            className={kpis.awaitingReview > 0 ? "btn" : "btn primary"}
+            onClick={() => dispatch({ type: "setNewTaskOpen", open: true })}
+          >
+            New task
+          </button>
+        </>
+      }
+    >
       {stalledSummary.length > 0 && (
         <Banner
           tone={stalledSummary.some((s) => s.reason === "no-agent-with-skill") ? "danger" : "warning"}
@@ -86,11 +105,11 @@ export function MissionControlPage() {
       )}
 
       <div className="mission-kpi-row">
-        <StatCard label="Active Agents" value={`${kpis.activeAgents}/${kpis.totalAgents}`} />
-        <StatCard label="Tasks Running" value={kpis.tasksInProgress} />
-        <StatCard label="Completed Today" value={kpis.tasksCompletedToday} />
+        <StatCard label="Active agents" value={`${kpis.activeAgents}/${kpis.totalAgents}`} />
+        <StatCard label="Tasks running" value={kpis.tasksInProgress} />
+        <StatCard label="Completed today" value={kpis.tasksCompletedToday} />
         <StatCard
-          label="Awaiting Review"
+          label="Awaiting review"
           value={kpis.awaitingReview}
           tone={kpis.awaitingReview > 0 ? "warn" : "neutral"}
         />
@@ -98,7 +117,7 @@ export function MissionControlPage() {
 
       <div className="mission-grid">
         <div className="mission-col-main">
-          <Card title="Live Mission" className="mission-hero-card">
+          <Card title="Live mission" className="mission-hero-card">
             {hero ? (
               <button className="mission-hero" onClick={() => nav.openTask(hero.id)}>
                 <div className="mission-hero-top">
@@ -118,11 +137,19 @@ export function MissionControlPage() {
                 <ProgressBar value={hero.progress} live />
               </button>
             ) : (
-              <EmptyState title="Nothing in progress right now." description="Create a task to get agents working." />
+              <EmptyState
+                title="Nothing in progress right now."
+                description="Create a task and an agent with the matching skill will claim it."
+                action={
+                  <button className="btn primary sm" onClick={() => dispatch({ type: "setNewTaskOpen", open: true })}>
+                    New task
+                  </button>
+                }
+              />
             )}
           </Card>
 
-          <Card title="Workflow Preview">
+          <Card title="Workflow preview">
             {graphLayers.length ? (
               <Graph layers={graphLayers} edges={graphEdges} onNodeClick={nav.openTask} compact />
             ) : (
@@ -130,9 +157,14 @@ export function MissionControlPage() {
             )}
           </Card>
 
-          <Card title="Output Preview">
+          <Card title="Output preview">
             {hero?.artifact ? (
-              <pre className="mission-artifact">{hero.artifact.content}</pre>
+              <>
+                <div className="mission-artifact">
+                  <Markdown>{hero.artifact.content}</Markdown>
+                </div>
+                <TaskLink task={hero} />
+              </>
             ) : (
               <EmptyState title="No output ready yet." description="The latest artifact from the live mission will preview here." />
             )}
@@ -140,43 +172,45 @@ export function MissionControlPage() {
         </div>
 
         <div className="mission-col-side">
-          <Card title="Agent Status">
+          <Card title="Agent status">
             <ul className="mission-agent-grid">
               {agents.map((agent) => (
-                <li key={agent.id} className="mission-agent-row">
-                  <Avatar name={agent.name} seed={agent.id} size={24} />
-                  <div className="mission-agent-info">
-                    <div className="mission-agent-name">{agent.name}</div>
-                    <div className="mission-agent-role">{agent.roleTitle}</div>
-                  </div>
-                  <span className="mission-agent-status">
-                    <StatusDot status={agent.status} />
-                    {STATUS_LABEL[agent.status]}
-                  </span>
+                <li key={agent.id}>
+                  <button className="mission-agent-row" onClick={() => nav.openAgent(agent.id)}>
+                    <Avatar name={agent.name} seed={agent.id} size={24} />
+                    <div className="mission-agent-info">
+                      <div className="mission-agent-name">{agent.name}</div>
+                      <div className="mission-agent-role">{agent.roleTitle}</div>
+                    </div>
+                    <span className="mission-agent-status">
+                      <StatusDot status={agent.status} />
+                      {STATUS_LABEL[agent.status]}
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
           </Card>
 
-          <Card title="Budget Burn">
+          <Card title="Budget burn">
             {burn ? (
               <>
                 <ProgressBar value={burn.pct} color={burn.warn ? "var(--status-flagged)" : undefined} height={8} />
                 <div className="mission-budget-nums">
                   {formatTokens(burn.spentTokens)} / {formatTokens(burn.capTokens)} tokens ({burn.pct}%)
                 </div>
-                {burn.warn && <div className="mission-budget-warn">⚠ Company budget at {burn.pct}% — approaching cap.</div>}
+                {burn.warn && <div className="mission-budget-warn">Company budget is at {burn.pct}%. New work pauses at the cap.</div>}
               </>
             ) : (
               <EmptyState title="No company-wide cap set." />
             )}
           </Card>
 
-          <Card title="Live Activity">
-            <Feed items={feedItems} />
+          <Card title="Live activity">
+            <Feed items={feedItems} onOpenTask={nav.openTask} />
           </Card>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

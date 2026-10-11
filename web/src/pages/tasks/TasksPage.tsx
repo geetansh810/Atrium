@@ -64,7 +64,7 @@ export function TasksPage() {
       <header className="tasks-page-head">
         <div>
           <h1>Tasks</h1>
-          <p>Drag a card from Review to Done to approve it — everything else, agents drive.</p>
+          <p>Drag a card from Review to Done to approve it. Agents move everything else.</p>
         </div>
         <button
           className={`btn sm${needsReworkOnly ? " primary" : ""}`}

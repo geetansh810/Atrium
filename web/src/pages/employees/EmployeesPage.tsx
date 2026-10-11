@@ -2,23 +2,40 @@ import { PersonAvatar } from "../../shared/PersonAvatar";
 import { agentWorkload } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
+import { PageShell } from "../../ui/PageShell";
+import { EmptyState } from "../../ui/EmptyState";
 import "./EmployeesPage.css";
 
 // Real (not a placeholder): card grid with role/skills/model/live workload/
 // status, upgraded from the MF-1 teaser. Full profile page (EmployeeProfile,
 // tabs) is a click away.
 export function EmployeesPage() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const nav = useAppNav();
 
   const workloadByAgent = agentWorkload(state.tasks);
 
   return (
-    <div className="employees-page">
-      <header className="employees-page-head">
-        <h1>Employees</h1>
-        <p>{state.agents.length} agents on the roster.</p>
-      </header>
+    <PageShell
+      title="Employees"
+      subtitle={`${state.agents.length} ${state.agents.length === 1 ? "agent" : "agents"} on the roster.`}
+      actions={
+        <button className="btn primary" onClick={() => dispatch({ type: "setInviteOpen", open: true })}>
+          Hire agent
+        </button>
+      }
+    >
+      {state.agents.length === 0 && (
+        <EmptyState
+          title="No agents yet"
+          description="Hire an agent from a role template. It starts claiming matching tasks as soon as it is online."
+          action={
+            <button className="btn primary sm" onClick={() => dispatch({ type: "setInviteOpen", open: true })}>
+              Hire your first agent
+            </button>
+          }
+        />
+      )}
       <div className="employees-grid">
         {state.agents.map((agent) => {
           const workload = workloadByAgent.get(agent.id) ?? 0;
@@ -56,6 +73,6 @@ export function EmployeesPage() {
           );
         })}
       </div>
-    </div>
+    </PageShell>
   );
 }

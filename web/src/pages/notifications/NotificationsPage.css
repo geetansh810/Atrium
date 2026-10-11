@@ -32,7 +32,7 @@
 .notifications-composer {
   background: var(--panel-alt);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--r-3);
   padding: 14px;
   margin-bottom: 18px;
 }

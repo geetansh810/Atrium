@@ -24,9 +24,9 @@ export function Avatar({ name, seed, size = 28, square = false }: AvatarProps) {
       style={{
         width: size,
         height: size,
-        borderRadius: square ? "8px" : "50%",
+        borderRadius: square ? "var(--r-3)" : "50%",
         background: `var(--avatar-${idx})`,
-        color: "var(--text)",
+        color: "var(--on-accent)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

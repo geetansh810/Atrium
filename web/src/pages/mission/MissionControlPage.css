@@ -1,56 +1,7 @@
-.mission-page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 28px 24px 40px;
-  height: 100%;
-  overflow-y: auto;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-/* Entrance choreography — header, banner, KPIs, then the two columns. */
-.mission-page > * {
-  animation: rise-in var(--dur-3) var(--ease-out) both;
-}
-
-.mission-page > *:nth-child(2) { animation-delay: 50ms; }
-.mission-page > *:nth-child(3) { animation-delay: 100ms; }
-.mission-page > *:nth-child(n + 4) { animation-delay: 150ms; }
-
-.mission-head h1 {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 0 0 4px;
-}
-
-.mission-pulse {
-  color: var(--text-muted);
-  font-size: 13px;
-  margin: 0 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* The company pulse literally pulses — the page's one ambient live signal. */
-.mission-pulse::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--status-online);
-  --dot-color: var(--status-online);
-  animation: dot-pulse 2.4s var(--ease-out) infinite;
-  flex-shrink: 0;
-}
-
 .mission-kpi-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
-  margin-bottom: 16px;
 }
 
 .mission-kpi-row > * {
@@ -148,17 +99,15 @@
 }
 
 .mission-artifact {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
   color: var(--text);
-  white-space: pre-wrap;
   word-break: break-word;
   max-height: 220px;
   overflow-y: auto;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   padding: 12px;
   line-height: 1.55;
 }
@@ -178,9 +127,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: calc(100% + 12px);
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   padding: 4px 6px;
   margin: 0 -6px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   transition: background var(--dur-1) var(--ease-out);
 }
 
