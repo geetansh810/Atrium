@@ -12,7 +12,7 @@
 Rule: staging and prod differ only in size and secrets — never in shape. Everything is a container.
 
 ## 2. Build artifacts
-- `atrium/core-api` — the one container image: multi-stage Dockerfile, maven build → `eclipse-temurin:21-jre` runtime (Java 21 since M0.5b's virtual-thread bump; the JRE-17 line here was stale, corrected at M3.5). Tags: `m<milestone>-<shortsha>` + `latest-staging` / `latest-prod`. Never deploy `:latest` blind.
+- `atrium/core-api` — the one container image: multi-stage Dockerfile, maven build (BuildKit `~/.m2` cache mount) → `jlink`-trimmed Java 21 runtime on `alpine`, Spring Boot layered jar, non-root, heap sized to 50% of the container memory limit via `JAVA_TOOL_OPTIONS` (OPS1: 667MB → 297MB image). Tags: `m<milestone>-<shortsha>` + `latest-staging` / `latest-prod`. Never deploy `:latest` blind.
 - `web` is NOT a container — §3's architecture serves it as a plain Vite static build (`npm run build`) uploaded straight to S3 behind CloudFront, no nginx/server process at all (corrected at M3.5 — this line previously said "served by nginx," inconsistent with §3's own diagram, which has no container for web).
 - `atrium/office-realtime` never shipped — the office track retired 2026-07-15 before its Colyseus server was ever vendored.
 

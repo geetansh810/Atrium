@@ -83,7 +83,7 @@
   border: none;
   background: none;
   color: var(--text-muted);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   text-decoration: none;
   transition: color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
 }
@@ -102,7 +102,7 @@
   color: var(--text-faint);
   font-size: 12px;
   padding: 6px 10px;
-  border-radius: 7px;
+  border-radius: var(--r-2);
   transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
 
@@ -115,7 +115,7 @@
   font-family: var(--font-mono);
   font-size: 10.5px;
   background: var(--surface-3);
-  border-radius: 4px;
+  border-radius: var(--r-1);
   padding: 1px 5px;
 }
 

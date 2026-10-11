@@ -1,7 +1,7 @@
 .cmdk-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 9, 18, 0.55);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
@@ -76,7 +76,7 @@
   color: var(--text-muted);
   font-size: 13px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   text-align: left;
   transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
 }
@@ -94,7 +94,7 @@
   top: 7px;
   bottom: 7px;
   width: 2.5px;
-  border-radius: 3px;
+  border-radius: var(--r-1);
   background: var(--grad-brand);
 }
 

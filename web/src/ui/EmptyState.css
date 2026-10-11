@@ -3,7 +3,7 @@
   text-align: center;
   color: var(--text-muted);
   border: 1px dashed var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--r-3);
   animation: fade-in var(--dur-3) var(--ease-out) both;
 }
 

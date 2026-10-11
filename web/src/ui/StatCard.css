@@ -2,7 +2,7 @@
   position: relative;
   background: var(--surface-2);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 14px 16px;
   overflow: hidden;
   box-shadow: var(--edge-highlight), var(--shadow-1);

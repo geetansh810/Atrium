@@ -55,3 +55,6 @@
 **Contracts:** UI spec `atrium-docs/01-product-spec.md §3–4` · API shapes `04-api-contract.md` · redesign plan `/Users/geetanshagrawal/.claude/plans/multi-agent-employee-platform-redesign-fluttering-crescent.md`.
 
 Links: [[_Atrium]] · [[frontend-shared]] · [[web-office]] · [[core-api]] · [[milestones]]
+
+## UX1 design system (2026-10-12)
+Direction "Control room": token names in `web/src/index.css` are stable, values retargeted (amber = live/primary signal; `:root[data-theme="light"]` is the full light palette; toggle in `GlobalHeader` via `shared/themeMode.ts`, `?theme=` override). `ui/states.tsx` = Skeleton/ErrorState/ForbiddenState; `/design` gallery shows every primitive in every state. No hardcoded colour outside `index.css`/`theme.ts`/landing/mocks. Vendored skills: `.claude/skills/frontend-design`, `.claude/skills/web-design-guidelines`.

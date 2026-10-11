@@ -4,7 +4,7 @@
   height: 420px;
   max-height: 60vh;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   overflow: hidden;
 }
 
@@ -46,7 +46,7 @@
   flex: 1;
   background: var(--panel-alt);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   color: var(--text);
   padding: 8px 12px;
   font-size: 13px;
@@ -55,5 +55,5 @@
 
 .chat-input:focus { border-color: var(--accent); }
 
-.chat-icon-btn { background: none; border: none; color: var(--text-faint); padding: 4px; border-radius: 6px; }
+.chat-icon-btn { background: none; border: none; color: var(--text-faint); padding: 4px; border-radius: var(--r-2); }
 .chat-icon-btn:hover { color: var(--text); }

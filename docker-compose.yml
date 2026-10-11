@@ -7,6 +7,20 @@
 # PROD is a different shape entirely: backend on Render (render.yaml), frontend on
 # Netlify (netlify.toml). Same core-api Docker image — behavior differs by env
 # (SPRING_PROFILES_ACTIVE, DB/Redis/CORS URLs). See DEPLOYMENT.md.
+#
+# Lighter options (OPS1):
+#   docker compose up -d core-api   # backend only (pulls in postgres + redis);
+#                                   # run `npm run dev` in web/ on the host instead
+#   Memory caps below keep the whole stack under ~2GB; core-api's JVM sizes its
+#   heap from its cap (JAVA_TOOL_OPTIONS in core-api/Dockerfile).
+
+# Rotate container logs so a long-running stack can't fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -23,9 +37,14 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    mem_limit: 512m
+    logging: *default-logging
 
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    # Pub/sub relay + rate-limit counters only — nothing here needs to survive
+    # a restart, so skip RDB snapshots.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
       - "6379:6379"
     healthcheck:
@@ -33,6 +52,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    mem_limit: 128m
+    logging: *default-logging
 
   core-api:
     build: core-api
@@ -64,6 +85,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Healthcheck is defined in core-api/Dockerfile (actuator/health).
+    mem_limit: 768m
+    logging: *default-logging
 
   # Web frontend — Vite dev server with hot reload (LOCAL only; prod is Netlify).
   web:
@@ -82,7 +106,10 @@ services:
       - ./web:/app          # live-edit source → HMR
       - /app/node_modules   # keep the image's node_modules; don't shadow with the host's
     depends_on:
-      - core-api
+      core-api:
+        condition: service_healthy
+    mem_limit: 512m
+    logging: *default-logging
 
 volumes:
   pgdata:

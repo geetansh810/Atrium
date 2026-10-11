@@ -13,7 +13,7 @@
   gap: 10px;
   padding: 4px 6px;
   margin: 0 -6px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   animation: rise-in var(--dur-3) var(--ease-out) both;
   transition: background var(--dur-1) var(--ease-out);
 }

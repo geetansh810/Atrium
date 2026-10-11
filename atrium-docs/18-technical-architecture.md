@@ -107,7 +107,7 @@ Atrium/
 ├── .github/{workflows,scripts}/  # CI, deploy pipeline, smoke test
 ├── atrium-docs/              # docs 00–17 (contracts/plans) + compliance/ + this doc
 ├── project-graph/            # wiki-linked knowledge graph used by AI-assisted sessions
-├── docker-compose.yml        # pgvector/pg16 + redis:7 + core-api, local stack
+├── docker-compose.yml        # pgvector/pg16 + redis:7-alpine + core-api + web, local stack
 └── Makefile                  # dev / check / test entry points
 ```
 
@@ -1107,8 +1107,13 @@ integration-style.
 
 ### 16.1 Local
 
-`docker-compose.yml`: `pgvector/pgvector:pg16` + `redis:7` + `core-api` (multi-stage
-`eclipse-temurin:21` Dockerfile), healthcheck-ordered. Flyway runs on boot. LLM keys pass through
+`docker-compose.yml`: `pgvector/pgvector:pg16` + `redis:7-alpine` + `core-api` + `web` (Vite dev),
+healthcheck-ordered, each with a `mem_limit` and rotated json-file logs (OPS1). `core-api/Dockerfile`
+is three stages: Maven build with a BuildKit `~/.m2` cache mount → `jlink`-trimmed Java 21 runtime
+(explicit module list, documented in the file — add a module there if a new dep throws
+`NoClassDefFoundError` for a `java.*`/`jdk.*` class) → `alpine` + Spring Boot layered jar, non-root,
+`JAVA_TOOL_OPTIONS` sizing the heap at 50% of the container limit. Backend-only:
+`docker compose up -d core-api`. Flyway runs on boot. LLM keys pass through
 from the root `.env` (**Compose auto-loads `.env`, NOT `.env.local`** — the latter is a Vite
 convention; this exact confusion cost a session). The gotcha everyone hits once:
 **`docker compose up -d --build`** — plain `up -d` silently reuses a stale image.

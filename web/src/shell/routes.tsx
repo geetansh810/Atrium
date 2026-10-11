@@ -13,6 +13,7 @@ import { ReportsPage } from "../pages/reports/ReportsPage";
 import { LogsPage } from "../pages/logs/LogsPage";
 import { TeamPage } from "../pages/team/TeamPage";
 import { NotificationsPage } from "../pages/notifications/NotificationsPage";
+import { DesignGalleryPage } from "../pages/design/DesignGalleryPage";
 import { SettingsPage } from "../pages/settings/SettingsPage";
 
 export function AppRoutes() {
@@ -35,6 +36,7 @@ export function AppRoutes() {
       {/* Old office-view bookmarks — the SkyOffice route was retired 2026-07-15. */}
       <Route path="/office" element={<Navigate to="/team" replace />} />
       <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/design" element={<DesignGalleryPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

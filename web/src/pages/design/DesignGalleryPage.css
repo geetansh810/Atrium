@@ -1,0 +1,75 @@
+.design-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 960px;
+}
+
+.design-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.design-section-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.design-section-head p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  max-width: 64ch;
+}
+
+.design-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.design-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.design-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.design-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.design-toggle .btn[aria-pressed="true"],
+.design-row .btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.design-note {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

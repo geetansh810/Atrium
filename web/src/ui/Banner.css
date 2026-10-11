@@ -1,5 +1,5 @@
 .banner {
-  border-radius: 10px;
+  border-radius: var(--r-3);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--border);
   background: var(--surface-2);
@@ -25,15 +25,15 @@
 
 .banner-info {
   border-left-color: var(--status-in-focus);
-  background: linear-gradient(90deg, var(--info-soft), var(--surface-2) 55%);
+  background: var(--info-soft);
 }
 
 .banner-warning {
   border-left-color: var(--status-away);
-  background: linear-gradient(90deg, var(--warn-soft), var(--surface-2) 55%);
+  background: var(--warn-soft);
 }
 
 .banner-danger {
   border-left-color: var(--status-flagged);
-  background: linear-gradient(90deg, var(--danger-soft), var(--surface-2) 55%);
+  background: var(--danger-soft);
 }

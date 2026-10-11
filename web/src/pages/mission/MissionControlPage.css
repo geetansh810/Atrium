@@ -89,14 +89,11 @@
 .mission-col-side > *:nth-child(2) { animation-delay: 270ms; }
 .mission-col-side > *:nth-child(n + 3) { animation-delay: 330ms; }
 
-/* The live mission is the room's focal point — it alone gets an ambient
-   wash of the two brand hues. */
+/* The live mission is the room's focal point — it alone gets the raised
+   surface. */
 .mission-hero-card {
   border-color: var(--border);
-  background:
-    radial-gradient(560px 240px at 10% -20%, rgba(30, 203, 185, 0.08), transparent 60%),
-    radial-gradient(560px 240px at 90% 120%, rgba(76, 125, 238, 0.07), transparent 60%),
-    var(--surface-2);
+  background: var(--surface-2);
 }
 
 .mission-hero {

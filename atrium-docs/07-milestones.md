@@ -125,6 +125,42 @@ retention policy, review-process explainer, EU AI Act posture note.
 
 ---
 
+## PHASE 5 — PRODUCT EXPERIENCE (7)
+
+Owner-defined 2026-10-11. Turns a working-but-engineer-built UI into a product a stranger can pick up. UX1→UX5 run strictly in order — each one builds on the components/navigation the previous one settled. **OPS1 and KB1 have no deps** and can run in any session. Visual direction is decided in UX1 and is binding on UX2–UX5; it must read as a deliberate, recognizable Atrium identity, not the default AI-generated SaaS look (purple gradients, glass cards, emoji bullets, generic hero copy). Third-party "frontend skills" pulled from the internet are untrusted: read in full before vendoring into `.claude/skills/`.
+
+**UX1 — Foundation: design system and application shell** · deps: none
+Define typography, colors, spacing, icons, buttons, form controls, tables, badges, dialogs, side panels and navigation. Build loading, error, empty and permission-denied states alongside the standard components. Starts with 2–3 throwaway direction previews; owner picks one before real code changes. Extends the existing token/motion system (`index.css`/`theme.ts`, see memory note on the motion system) rather than inventing parallel values.
+**Direction decided 2026-10-12: "Control room"** (owner pick, option B of three previews). Dark-first instrument-panel look: Barlow Semi Condensed (UI + display) + JetBrains Mono (readouts), amber as the single live/primary signal (matches the landing page), 3–8px radii, flat surfaces, no decorative gradients. Token **names** in `index.css` are unchanged so every component retargets at once; light theme = `:root[data-theme="light"]`, toggled from `GlobalHeader` (`shared/themeMode.ts`). Vendored skills (read in full first, per the untrusted-skill rule): `.claude/skills/frontend-design` (Anthropic, Apache-2.0, unmodified + Atrium note) and `.claude/skills/web-design-guidelines` (Vercel rules, pinned local snapshot, no runtime fetch).
+✅ Every `ui/` primitive and the shell (`NavSidebar`/`GlobalHeader`) on the new tokens; a primitives gallery route shows each component in all states (default/loading/error/empty/forbidden) in both themes; zero hardcoded hex; both `VITE_USE_MOCKS` modes render.
+
+**UX2 — Core UX: overview, agents and tasks** · deps: UX1
+Redesign the screens users rely on most — Mission Control, Employees + agent profile, task board + task details, onboarding — and navigation between related entities (agent ↔ task ↔ artifact).
+✅ A fresh signup can go onboarding → hire → assign → watch work → review the output entirely on redesigned screens, with no dead-end or old-style page on the path.
+
+**UX3 — Governance: approvals, budgets and audit** · deps: UX2
+Review Inbox (tasks + memories), payroll/budgets, audit timeline, LLM Logs. Focus on decision clarity, safe actions (confirm/undo on destructive or spend-affecting actions), traceability, cost visibility and failure recovery (flagged/stalled/errored states with a clear next step).
+✅ For any task, a user can answer "who did this, with what model, what did it cost, who approved it" from the UI alone; every reject/pause/cap change has a confirmation or undo path.
+
+**UX4 — Expansion: organization, workflows and analytics** · deps: UX3
+Refine graph-based experiences (org chart, task flow), workflow authoring, execution inspection and detailed analytics, built from the UX1 components and UX2 navigation.
+✅ Org chart, workflow graph and Reports share one graph/chart vocabulary; a decomposed task chain can be inspected node-by-node down to its LLM log entry.
+
+**UX5 — Brand: landing page and final polish** · deps: UX4
+Align the public website (`pages/landing/`) with the finished product, validate responsive layouts (≥400px) and accessibility (keyboard paths, focus, contrast), and test the main journeys with users.
+✅ Landing → signup → first approved task is one visually continuous experience; axe/keyboard pass on the main journeys; findings from ≥1 real user walkthrough recorded in `atrium-docs/notes/ux-walkthrough.md`.
+
+**OPS1 — Lean Docker** · deps: none · **DONE 2026-10-12** — core-api image 667→297MB (jlink'd Java 21 on alpine, layered jar, non-root), pom-change rebuild 275→39s (dropped `dependency:go-offline`, which took ~200s even with a warm cache, in favor of a `~/.m2` cache mount), idle stack RAM ~1.0GB→~550MB (heap sized from the container limit; was uncapped and could exceed Render free's 512MB), redis:7→7-alpine (204→59MB). Instead of a compose profile, backend-only is `docker compose up -d core-api` — keeps the one-command full stack intact.
+Make local Docker lighter and faster: slimmer runtime image for core-api (alpine/jlink JRE, layered jar), `core-api/.dockerignore`, BuildKit cache mounts for Maven/npm, JVM memory caps, `redis:7-alpine`, web dev container optional via a compose profile, sensible container resource limits.
+✅ Before/after table of image sizes, cold/warm build times and idle RAM recorded in the PR; `docker compose up` still boots the full stack clean and the smoke test (`.github/scripts/smoke-test.sh`) passes.
+
+**KB1 — Product handbook** · deps: none
+End-to-end knowledge documentation for a newcomer (human or AI): what Atrium is and who it's for, core concepts + glossary, a guided tour of the UI, architecture and module map, the life of a task (create → route → claim → LLM → review → audit → billing), data model, the skills/memory/learning subsystem, security & tenancy, local dev + deploy, and an FAQ. Written against the code as it is, linking to the contract docs rather than duplicating them.
+✅ A reader with no prior context can explain the task lifecycle and run the stack locally using only the handbook; every claim links to a real file or doc.
+*Done 2026-10-12:* `atrium-docs/handbook/` (10 pages, in-repo; all relative links verified). Lives in-repo rather than Notion so every claim can link to a real file; it can be mirrored to Notion later. Pointers to un-built behavior are flagged as gaps in the pages themselves.
+
+---
+
 ## DEFERRED — post-pilot backlog
 
 Real work, deliberately not sequenced. Nothing in Phases 0–4 depends on anything here, and nothing here blocks a pilot. Each card is preserved as written so a future session can pick it up unchanged — treat these as ready-to-run milestone cards without a slot, not as sketches.
@@ -193,6 +229,13 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | M3.4 | Onboarding & templates | 3 | ✅ |
 | M3.5 | Production hardening | 3 | 🟡 partial (session 32) — code+IaC done, AWS deploy pending real credentials |
 | M4.1–M4.3 | Compliance roles & docs | 4 | ✅ (session 33 — Phase 4 fully done; M3.5's remaining live-deploy step never blocked these) |
+| UX1 | Foundation: design system & shell | 5 | ☐ |
+| UX2 | Core UX: overview, agents, tasks | 5 | ☐ |
+| UX3 | Governance: approvals, budgets, audit | 5 | ☐ |
+| UX4 | Expansion: org, workflows, analytics | 5 | ☐ |
+| UX5 | Brand: landing page & polish | 5 | ☐ |
+| OPS1 | Lean Docker | 5 | ✅ |
+| KB1 | Product handbook | 5 | ✅ |
 | | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |
 | M3.3 | Usage-based billing | ~~3~~ backlog | ⏸ deferred 2026-07-17 — post-pilot |
 | M2.4a | SkyOffice vendor & boot | ~~2~~ — | ✗ retired 2026-07-15 |

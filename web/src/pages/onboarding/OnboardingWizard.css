@@ -128,8 +128,8 @@
 .onboarding-error {
   color: var(--status-flagged);
   font-size: 12.5px;
-  background: rgba(224, 87, 76, 0.1);
-  border: 1px solid rgba(224, 87, 76, 0.3);
+  background: var(--danger-soft);
+  border: 1px solid var(--status-flagged);
   border-radius: 6px;
   padding: 8px 10px;
   margin-bottom: 12px;

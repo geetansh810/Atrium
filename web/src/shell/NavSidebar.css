@@ -51,7 +51,7 @@
   color: var(--text-muted);
   font-size: 13px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   text-align: left;
   text-decoration: none;
   transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
@@ -65,7 +65,7 @@
   top: 8px;
   bottom: 8px;
   width: 3px;
-  border-radius: 3px;
+  border-radius: var(--r-1);
   background: var(--grad-brand);
   opacity: 0;
   transform: scaleY(0.4);
@@ -130,7 +130,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(5, 9, 18, 0.55);
+    background: var(--scrim);
     backdrop-filter: blur(2px);
     z-index: 65;
     animation: fade-in var(--dur-2) var(--ease-out) both;
