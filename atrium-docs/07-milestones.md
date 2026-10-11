@@ -231,7 +231,7 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | M4.1–M4.3 | Compliance roles & docs | 4 | ✅ (session 33 — Phase 4 fully done; M3.5's remaining live-deploy step never blocked these) |
 | UX1 | Foundation: design system & shell | 5 | ✅ |
 | UX2 | Core UX: overview, agents, tasks | 5 | ◐ built; live journey unverified |
-| UX3 | Governance: approvals, budgets, audit | 5 | ☐ |
+| UX3 | Governance: approvals, budgets, audit | 5 | ◐ built; live check pending |
 | UX4 | Expansion: org, workflows, analytics | 5 | ☐ |
 | UX5 | Brand: landing page & polish | 5 | ☐ |
 | OPS1 | Lean Docker | 5 | ✅ |

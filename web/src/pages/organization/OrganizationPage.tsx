@@ -1,4 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { confirmAction } from "../../shared/confirm";
 import { useState } from "react";
 import { Avatar } from "../../shared/Avatar";
 import { PersonAvatar } from "../../shared/PersonAvatar";
@@ -171,10 +172,21 @@ export function OrganizationPage() {
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
   const taskById = new Map(state.tasks.map((t) => [t.id, t]));
 
-  const saveCap = (budgetId: string) => {
+  const saveCap = async (budgetId: string) => {
     const parsed = Number(capDraft.replace(/[^0-9]/g, ""));
-    if (parsed > 0) dispatch({ type: "setBudgetCap", budgetId, capTokens: parsed });
     setEditing(null);
+    const current = state.budgets.find((b) => b.id === budgetId);
+    if (!current || parsed <= 0 || parsed === current.capTokens) return;
+    const owner = current.agentId ? (agentById.get(current.agentId)?.name ?? "this agent") : "the whole company";
+    const ok = await confirmAction({
+      title: `Change the cap for ${owner}?`,
+      body: `${formatTokens(current.capTokens)} → ${formatTokens(parsed)} tokens per month. ${
+        parsed < current.spentTokens ? "It is below current spend, so work will pause immediately." : "Takes effect right away."
+      }`,
+      confirmLabel: "Change cap",
+      tone: parsed < current.spentTokens ? "danger" : "primary",
+    });
+    if (ok) dispatch({ type: "setBudgetCap", budgetId, capTokens: parsed });
   };
 
   const renderCap = (budgetId: string, capTokens: number) =>

@@ -1,3 +1,4 @@
+import { confirmAction } from "../../shared/confirm";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../../shared/Avatar";
@@ -50,7 +51,14 @@ export function TasksPage() {
   const handleDrop = (taskId: string, fromColumnKey: string, toColumnKey: string) => {
     if (fromColumnKey === toColumnKey) return;
     if (fromColumnKey === LEGAL_DRAG[0] && toColumnKey === LEGAL_DRAG[1]) {
-      dispatch({ type: "approveTask", taskId });
+      const task = state.tasks.find((t) => t.id === taskId);
+      void confirmAction({
+        title: `Approve "${task?.title ?? "this task"}"?`,
+        body: "Approving marks the work as shipped.",
+        confirmLabel: "Approve",
+      }).then((ok) => {
+        if (ok) dispatch({ type: "approveTask", taskId });
+      });
       return;
     }
     dispatch({

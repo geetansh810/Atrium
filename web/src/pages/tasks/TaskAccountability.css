@@ -1,0 +1,39 @@
+.task-accountability {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-2);
+  background: var(--panel);
+}
+
+.task-accountability > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+
+.task-accountability > div:last-child {
+  border-bottom: none;
+}
+
+.task-accountability dt {
+  color: var(--text-muted);
+}
+
+.task-accountability dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.task-accountability-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.task-accountability-faint {
+  color: var(--text-faint);
+}

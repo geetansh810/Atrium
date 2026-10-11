@@ -4,6 +4,7 @@ import { NavSidebar } from "./NavSidebar";
 import { GlobalHeader } from "./GlobalHeader";
 import { AppRoutes } from "./routes";
 import { Toast } from "../ui/Toast";
+import { ConfirmHost } from "../ui/ConfirmHost";
 import { CommandPalette } from "../ui/CommandPalette";
 import { ChatPanel } from "../dashboard/panels/ChatPanel";
 import { InviteAgentModal } from "../dashboard/panels/InviteAgentModal";
@@ -30,6 +31,7 @@ export function AppShell() {
       </div>
 
       <Toast />
+      <ConfirmHost />
       <CommandPalette />
 
       {chatOpen && <ChatPanel />}

@@ -13,7 +13,55 @@ import { Markdown } from "../../ui/Markdown";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { ConversationThread } from "../../ui/ConversationThread";
 import { AgentLink, TaskLink } from "../../ui/EntityLink";
+import { TaskAccountability } from "./TaskAccountability";
+import { useActorName } from "../../shared/actorName";
+import { confirmAction } from "../../shared/confirm";
+import { useNavigate } from "react-router";
+import { USE_MOCKS } from "../../shared/config";
 import "./TaskDrawer.css";
+
+// Failure recovery: a flagged task states what went wrong and the nearest fix.
+function FlagRecovery({
+  reason,
+  onBudget,
+  onSettings,
+  onLogs,
+}: {
+  reason: string;
+  onBudget: () => void;
+  onSettings: () => void;
+  onLogs?: () => void;
+}) {
+  const r = reason.toLowerCase();
+  let hint = "Read the agent's note, reply with guidance, and it will pick the task up again.";
+  let action: { label: string; run: () => void } | null = null;
+  if (r.includes("budget")) {
+    hint = "The agent hit its token cap, so it stopped. Raise the cap, then reply to resume.";
+    action = { label: "Open payroll", run: onBudget };
+  } else if (r.includes("config") || r.includes("key") || r.includes("provider")) {
+    hint = "The model provider is not configured or is unavailable. Check the API key, then reply to retry.";
+    action = { label: "Open settings", run: onSettings };
+  } else if (r.includes("max_attempts") || r.includes("attempt")) {
+    hint = "The agent used all its attempts. Reply with clearer instructions or reassign the task.";
+  }
+  return (
+    <div className="task-drawer-recovery">
+      <p>{hint}</p>
+      <div className="detail-actions">
+        {action && (
+          <button className="btn sm" onClick={action.run}>
+            {action.label}
+          </button>
+        )}
+        {onLogs && (
+          <button className="btn sm" onClick={onLogs}>
+            View LLM calls
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface TaskDrawerProps {
   taskId: string;
@@ -25,6 +73,8 @@ interface TaskDrawerProps {
 // renders this whenever the route carries an id, so a refresh restores it.
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const { state, dispatch } = useApp();
+  const navigate = useNavigate();
+  const actorName = useActorName();
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
 
@@ -58,7 +108,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((e) => ({
       id: e.id,
-      label: TASK_EVENT_LABEL[e.eventType] ?? e.eventType,
+      label: `${TASK_EVENT_LABEL[e.eventType] ?? e.eventType} · ${actorName(e.actor)}`,
       timestamp: formatTimeAgo(e.createdAt),
       tone: taskEventTone(e.eventType),
     }));
@@ -80,11 +130,10 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             {task.progress}%{task.etaMinutes != null ? ` · ETA ${task.etaMinutes} min` : ""}
           </div>
 
+          <div className="section-title">Accountability</div>
+          <TaskAccountability task={task} />
+
           <div className="task-drawer-links">
-            <div className="task-drawer-link-row">
-              <span>Assigned to</span>
-              {agent ? <AgentLink agent={agent} /> : <span className="task-drawer-muted">Unassigned. An agent with the {task.requiredSkill} skill will claim it.</span>}
-            </div>
             {parentTask && (
               <div className="task-drawer-link-row">
                 <span>Part of</span>
@@ -107,6 +156,12 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             <>
               <div className="section-title">Flagged. A person needs to step in.</div>
               <div className="artifact-box flag">{task.flagReason}</div>
+              <FlagRecovery
+                reason={task.flagReason}
+                onBudget={() => navigate("/organization?tab=payroll")}
+                onSettings={() => navigate("/settings")}
+                onLogs={USE_MOCKS ? undefined : () => navigate(`/logs?taskId=${task.id}`)}
+              />
             </>
           )}
 
@@ -148,7 +203,14 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                   {task.status === "pending_review" && (
                     <button
                       className="btn primary"
-                      onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
+                      onClick={async () => {
+                        const ok = await confirmAction({
+                          title: `Approve "${task.title}"?`,
+                          body: "Approving marks the work as shipped. This cannot be undone from the board.",
+                          confirmLabel: "Approve",
+                        });
+                        if (ok) dispatch({ type: "approveTask", taskId: task.id });
+                      }}
                     >
                       Approve
                     </button>

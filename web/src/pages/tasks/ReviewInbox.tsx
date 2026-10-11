@@ -1,3 +1,4 @@
+import { confirmAction } from "../../shared/confirm";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { AgentLink, TaskLink } from "../../ui/EntityLink";
@@ -55,14 +56,31 @@ function ApiMemoriesTab() {
               <button
                 className="btn primary sm"
                 disabled={review.isPending}
-                onClick={() => review.mutate({ memoryId: m.id, action: "approve" })}
+                onClick={async () => {
+                  const ok =
+                    m.scope === "agent" ||
+                    (await confirmAction({
+                      title: `Approve this ${m.scope}-wide memory?`,
+                      body: `Every agent in this ${m.scope === "company" ? "company" : "role"} will recall it in future prompts.`,
+                      confirmLabel: "Approve memory",
+                    }));
+                  if (ok) review.mutate({ memoryId: m.id, action: "approve" });
+                }}
               >
                 Approve
               </button>
               <button
                 className="btn danger sm"
                 disabled={review.isPending}
-                onClick={() => review.mutate({ memoryId: m.id, action: "reject" })}
+                onClick={async () => {
+                  const ok = await confirmAction({
+                    title: "Reject this memory?",
+                    body: "It is kept for audit but never recalled by any agent.",
+                    confirmLabel: "Reject memory",
+                    tone: "danger",
+                  });
+                  if (ok) review.mutate({ memoryId: m.id, action: "reject" });
+                }}
               >
                 Reject
               </button>
@@ -168,7 +186,14 @@ export function ReviewInbox() {
                 {!isFlagged && (
                   <button
                     className="btn primary sm"
-                    onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
+                    onClick={async () => {
+                      const ok = await confirmAction({
+                        title: `Approve "${task.title}"?`,
+                        body: "Approving marks the work as shipped.",
+                        confirmLabel: "Approve",
+                      });
+                      if (ok) dispatch({ type: "approveTask", taskId: task.id });
+                    }}
                   >
                     Approve
                   </button>

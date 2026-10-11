@@ -9,6 +9,7 @@ import { synthesizeFeed, TASK_EVENT_LABEL } from "../../shared/selectors";
 import { useAgentMemories } from "../../shared/queries";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
+import { confirmAction } from "../../shared/confirm";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { StatCard } from "../../ui/StatCard";
@@ -209,7 +210,18 @@ export function EmployeeProfile() {
           <div className="detail-actions">
             <button
               className={`btn${agent.paused ? " accent" : " danger"}`}
-              onClick={() => dispatch({ type: "setAgentPaused", agentId: agent.id, paused: !agent.paused })}
+              onClick={async () => {
+                if (!agent.paused) {
+                  const ok = await confirmAction({
+                    title: `Pause ${agent.name}?`,
+                    body: "It finishes nothing new until resumed. Work already in progress is not cancelled.",
+                    confirmLabel: "Pause agent",
+                    tone: "danger",
+                  });
+                  if (!ok) return;
+                }
+                dispatch({ type: "setAgentPaused", agentId: agent.id, paused: !agent.paused });
+              }}
             >
               {agent.paused ? "Resume agent" : "Pause agent"}
             </button>

@@ -1,3 +1,4 @@
+import { confirmAction } from "../shared/confirm";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, SVGProps } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -94,7 +95,15 @@ export function CommandPalette() {
 
   const close = () => setOpen(false);
 
-  const pauseAll = () => {
+  const pauseAll = async () => {
+    const active = state.agents.filter((a) => !a.paused).length;
+    const ok = await confirmAction({
+      title: `Pause ${active} ${active === 1 ? "agent" : "agents"}?`,
+      body: "No agent will claim new tasks until you resume each one from its profile.",
+      confirmLabel: "Pause all",
+      tone: "danger",
+    });
+    if (!ok) return;
     if (USE_MOCKS) {
       for (const agent of state.agents) {
         if (!agent.paused) dispatch({ type: "setAgentPaused", agentId: agent.id, paused: true });

@@ -123,3 +123,16 @@
   color: var(--text-muted);
   margin-bottom: 4px;
 }
+
+.logs-task-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-2);
+  background: var(--panel);
+  font-size: 13px;
+  color: var(--text-muted);
+}
