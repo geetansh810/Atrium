@@ -14,7 +14,7 @@
 
   --text: #e7e9ec;
   --text-muted: #8b929d;
-  --text-faint: #5f6672;
+  --text-faint: #848c99;
 
   /* The one live/primary signal. Amber = "this is happening now / do this". */
   --accent: #e8a63a;
@@ -29,7 +29,7 @@
   --status-away: #8f8a78;
   --status-in-focus: #5aa9e6;
   --status-flagged: #f0695c;
-  --status-offline: #5f6672;
+  --status-offline: #6c7480;
 
   /* Workflow node semantics */
   --node-pending: #5f6672;
@@ -103,27 +103,27 @@
 
   --text: #16181c;
   --text-muted: #565c66;
-  --text-faint: #7c838e;
+  --text-faint: #5c636e;
 
-  --accent: #a35f00;
-  --accent-hover: #874e00;
-  --invite: #a35f00;
-  --invite-hover: #874e00;
+  --accent: #8f5300;
+  --accent-hover: #744400;
+  --invite: #8f5300;
+  --invite-hover: #744400;
   --on-accent: #ffffff;
 
-  --status-online: #1d7a45;
-  --status-working: #a35f00;
-  --status-in-meeting: #7a6a2a;
-  --status-away: #8a8470;
-  --status-in-focus: #1f6fb0;
-  --status-flagged: #b3322a;
+  --status-online: #17683a;
+  --status-working: #8f5300;
+  --status-in-meeting: #665820;
+  --status-away: #6e6a58;
+  --status-in-focus: #1a5f99;
+  --status-flagged: #a02a23;
   --status-offline: #7c838e;
 
   --node-pending: #7c838e;
-  --node-running: #a35f00;
+  --node-running: #8f5300;
   --glow-running: rgba(163, 95, 0, 0.3);
-  --node-completed: #1d7a45;
-  --node-failed: #b3322a;
+  --node-completed: #17683a;
+  --node-failed: #a02a23;
 
   --surface-1: #f7f8f9;
   --surface-2: #eef0f2;

@@ -233,7 +233,7 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | UX2 | Core UX: overview, agents, tasks | 5 | ◐ built; live journey unverified |
 | UX3 | Governance: approvals, budgets, audit | 5 | ◐ built; live check pending |
 | UX4 | Expansion: org, workflows, analytics | 5 | ◐ built; live drill-down unverified |
-| UX5 | Brand: landing page & polish | 5 | ☐ |
+| UX5 | Brand: landing page & polish | 5 | ◐ built + axe/keyboard pass; user walkthrough pending |
 | OPS1 | Lean Docker | 5 | ✅ |
 | KB1 | Product handbook | 5 | ✅ |
 | | *— not in any phase's sequence; see the DEFERRED / RETIRED sections above —* | | |

@@ -223,7 +223,7 @@ export function LandingPage() {
                   <i></i>LIVE
                 </span>
               </div>
-              <div className="lp-zones">
+              <div className="lp-zones" tabIndex={0} role="group" aria-label="Task zones">
                 <div className="lp-zone lp-z-q">
                   <div className="lp-zone-hd">Queued</div>
                   <div ref={queuedRef}></div>

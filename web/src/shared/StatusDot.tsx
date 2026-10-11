@@ -35,6 +35,7 @@ export function StatusDot({ status, size = 8, pulse }: StatusDotProps) {
     <span
       className={`status-dot${live ? " status-dot-live" : ""}`}
       style={{ width: size, height: size, "--dot-color": STATUS_VAR[status] } as CSSProperties}
+      role="img"
       aria-label={STATUS_LABEL[status]}
     />
   );

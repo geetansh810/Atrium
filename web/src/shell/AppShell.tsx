@@ -25,9 +25,9 @@ export function AppShell() {
 
       <div className="app-shell-main-col">
         <GlobalHeader onMenuClick={() => setNavOpen((v) => !v)} />
-        <div className="app-shell-content">
+        <main className="app-shell-content">
           <AppRoutes />
-        </div>
+        </main>
       </div>
 
       <Toast />

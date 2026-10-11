@@ -124,7 +124,7 @@
   top: 2px;
   right: 2px;
   background: var(--status-flagged);
-  color: white;
+  color: var(--on-accent);
   font-size: 9px;
   font-weight: 700;
   min-width: 14px;
