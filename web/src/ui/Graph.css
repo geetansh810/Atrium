@@ -65,3 +65,17 @@
 .graph-node-failed rect {
   stroke: var(--node-failed);
 }
+
+.graph-node-selected rect {
+  fill: var(--surface-2);
+  stroke-width: 2.5;
+}
+
+.graph-node:focus-visible {
+  outline: none;
+}
+
+.graph-node:focus-visible rect {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}

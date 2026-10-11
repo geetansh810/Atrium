@@ -313,3 +313,9 @@
 .organization-page-head {
   animation: rise-in var(--dur-3) var(--ease-out) both;
 }
+
+/* Same status vocabulary as the workflow graph (shared/graphVocabulary). */
+.org-card-running { border-color: var(--node-running); }
+.org-card-completed { border-color: var(--node-completed); }
+.org-card-failed { border-color: var(--node-failed); }
+.org-legend { margin-bottom: 12px; }

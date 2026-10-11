@@ -232,7 +232,7 @@ The SkyOffice pixel-art office view was removed entirely — owner decision: gim
 | UX1 | Foundation: design system & shell | 5 | ✅ |
 | UX2 | Core UX: overview, agents, tasks | 5 | ◐ built; live journey unverified |
 | UX3 | Governance: approvals, budgets, audit | 5 | ◐ built; live check pending |
-| UX4 | Expansion: org, workflows, analytics | 5 | ☐ |
+| UX4 | Expansion: org, workflows, analytics | 5 | ◐ built; live drill-down unverified |
 | UX5 | Brand: landing page & polish | 5 | ☐ |
 | OPS1 | Lean Docker | 5 | ✅ |
 | KB1 | Product handbook | 5 | ✅ |

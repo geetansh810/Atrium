@@ -33,8 +33,8 @@ export function LogsPage() {
 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [limit, setLimit] = useState(50);
-  const [openId, setOpenId] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(params.get("log"));
   const taskIdFilter = params.get("taskId") ?? undefined;
   const taskTitle = state.tasks.find((t) => t.id === taskIdFilter)?.title;
 

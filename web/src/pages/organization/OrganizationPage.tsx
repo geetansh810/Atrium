@@ -11,10 +11,13 @@ import { formatCost, formatTokens } from "../../shared/format";
 import { costPerTask } from "../../shared/mockData";
 import { currentPeriod, useCostPerTask } from "../../shared/queries";
 import { orgTree } from "../../shared/selectors";
+import { AGENT_LEGEND, agentNodeStatus } from "../../shared/graphVocabulary";
+import { GraphLegend } from "../../ui/GraphLegend";
 import type { OrgNode } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
 import type { Agent, Task } from "../../shared/types";
+import { PageShell } from "../../ui/PageShell";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { EmptyState } from "../../ui/EmptyState";
@@ -94,7 +97,13 @@ function OrgCard({ agent, onOpen }: OrgCardProps) {
     }
   };
   return (
-    <div className="org-card" role="button" tabIndex={0} onClick={onOpen} onKeyDown={onKeyDown}>
+    <div
+      className={`org-card org-card-${agentNodeStatus(agent)}`}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={onKeyDown}
+    >
       <PersonAvatar name={agent.name} seed={agent.id} status={agent.status} size={32} />
       <div className="org-card-info">
         <div className="org-card-name">{agent.name}</div>
@@ -221,6 +230,9 @@ export function OrganizationPage() {
           <EmptyState title="No agents on the roster yet." />
         ) : (
           <div className="org-tree-scroll">
+            <div className="org-legend">
+              <GraphLegend entries={AGENT_LEGEND} />
+            </div>
             <ul className="org-tree">
               {tree.map((root) => (
                 <OrgTreeNode key={root.agent.id} node={root} collapsed={collapsed} onToggle={toggle} onOpen={nav.openAgent} />
@@ -294,12 +306,8 @@ export function OrganizationPage() {
   ];
 
   return (
-    <div className="organization-page">
-      <header className="organization-page-head">
-        <h1>Organization</h1>
-        <p>Reporting lines from each agent's manager, plus token-budget payroll.</p>
-      </header>
+    <PageShell title="Organization" subtitle="Reporting lines from each agent's manager, plus token-budget payroll.">
       <Tabs tabs={tabs} />
-    </div>
+    </PageShell>
   );
 }

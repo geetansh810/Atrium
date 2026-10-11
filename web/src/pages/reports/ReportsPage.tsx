@@ -12,6 +12,8 @@ import { useAgentPerformance, useAnalyticsSummary, useTasks7d, useTopSkills } fr
 import { useApp } from "../../shared/store";
 import type { AgentPerformance, DayCount, SkillShare } from "../../shared/types";
 import { Card } from "../../ui/Card";
+import { GraphLegend } from "../../ui/GraphLegend";
+import { NODE_STATUS_COLOR, TASK_LEGEND, taskNodeStatus } from "../../shared/graphVocabulary";
 import { StatCard } from "../../ui/StatCard";
 import { StatusPill } from "../../ui/StatusPill";
 import { EmptyState } from "../../ui/EmptyState";
@@ -118,13 +120,17 @@ export function ReportsPage() {
         </p>
       )}
 
-      <Card title="Task Status Distribution">
+      <Card title="Task status distribution">
+        <GraphLegend entries={TASK_LEGEND} />
         <div className="reports-status-bars">
           {Array.from(statusCounts.entries()).map(([status, count]) => (
             <div className="reports-status-row" key={status}>
               <span className="reports-status-label">{STATUS_LABEL[status] ?? status}</span>
               <span className="reports-status-bar-track">
-                <span className="reports-status-bar-fill" style={{ width: `${(count / maxStatusCount) * 100}%` }} />
+                <span
+                  className="reports-status-bar-fill"
+                  style={{ width: `${(count / maxStatusCount) * 100}%`, background: NODE_STATUS_COLOR[taskNodeStatus(status)] }}
+                />
               </span>
               <span className="reports-status-count">{count}</span>
             </div>

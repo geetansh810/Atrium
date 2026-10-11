@@ -25,15 +25,9 @@ import { PageShell } from "../../ui/PageShell";
 import { TaskLink } from "../../ui/EntityLink";
 import { Markdown } from "../../ui/Markdown";
 import { useNavigate } from "react-router";
-import type { GraphEdge, GraphNode, GraphNodeStatus } from "../../ui/Graph";
+import type { GraphEdge, GraphNode } from "../../ui/Graph";
+import { taskNodeStatus } from "../../shared/graphVocabulary";
 import "./MissionControlPage.css";
-
-function nodeStatus(status: string): GraphNodeStatus {
-  if (status === "approved") return "completed";
-  if (status === "flagged" || status === "rejected") return "failed";
-  if (status === "claimed" || status === "in_progress") return "running";
-  return "pending";
-}
 
 // Real Mission Control (MF-2): Company Pulse, KPI row, Live Mission hero,
 // Agent Status grid, a mini workflow-graph preview, live activity feed (from
@@ -63,13 +57,13 @@ export function MissionControlPage() {
   const graphRoot = hero ? (tasks.find((t) => t.id === hero.parentTaskId) ?? hero) : undefined;
   const graphChildren = graphRoot ? tasks.filter((t) => t.parentTaskId === graphRoot.id) : [];
   const rootNode: GraphNode | undefined = graphRoot
-    ? { id: graphRoot.id, label: graphRoot.title, sublabel: `${graphRoot.progress}%`, status: nodeStatus(graphRoot.status) }
+    ? { id: graphRoot.id, label: graphRoot.title, sublabel: `${graphRoot.progress}%`, status: taskNodeStatus(graphRoot.status) }
     : undefined;
   const childNodes: GraphNode[] = graphChildren.map((t) => ({
     id: t.id,
     label: t.title,
     sublabel: `${t.progress}%`,
-    status: nodeStatus(t.status),
+    status: taskNodeStatus(t.status),
   }));
   const graphLayers = rootNode ? (childNodes.length ? [[rootNode], childNodes] : [[rootNode]]) : [];
   const graphEdges: GraphEdge[] = rootNode ? graphChildren.map((t) => ({ from: rootNode.id, to: t.id })) : [];
