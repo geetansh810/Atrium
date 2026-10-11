@@ -10,7 +10,7 @@ view where every agent's status is derived from real task state.
 |---|---|
 | `web/` | React dashboard (Vite, TypeScript, React Query) |
 | `core-api/` | Java 21 / Spring Boot 3.x source of truth — registry, routing, execution, accountability, communication, agentmind |
-| `atrium-docs/` | Contract docs 00–17 — schema, APIs, milestone cards, `compliance/` |
+| `atrium-docs/` | Contract docs 00–17, as-built `18`, **[`handbook/`](atrium-docs/handbook/README.md)** (start here if you're new), `compliance/` |
 | `project-graph/` | Wiki-linked knowledge graph; start at `_Atrium.md` |
 | `infra/terraform/` | AWS deploy (written and validated, not yet applied to a live account) |
 | `loadtest/` | k6 load test |
