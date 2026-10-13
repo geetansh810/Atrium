@@ -1,76 +1,88 @@
 :root {
-  /* UX1 "Control room" direction (atrium-docs/07 Phase 5). Dark is the default
+  /* BaseCrew "crew pennant" direction. Dark is the default
      theme; :root[data-theme="light"] below redefines every colour token. Token
      NAMES are stable across themes and directions — components never branch. */
   color-scheme: dark;
 
-  --bg: #0f1115;
-  --panel: #15181d;
-  --panel-alt: #12151a;
-  --sidebar: #0b0d10;
-  --border: #272b32;
-  --border-subtle: #1d2127;
-  --border-hi: #353b45;
+  --bg: #070707;
+  --panel: #111111;
+  --panel-alt: #171717;
+  --sidebar: #050505;
+  --nav-bg: #050505;
+  --nav-text: #f7f3e8;
+  --nav-muted: #b9b3a7;
+  --nav-faint: #847d70;
+  --nav-hover: #191713;
+  --nav-border: #302c24;
+  --border: #34312b;
+  --border-subtle: #24221e;
+  --border-hi: #5b5549;
 
-  --text: #e7e9ec;
-  --text-muted: #8b929d;
-  --text-faint: #848c99;
+  --text: #f7f3e8;
+  --text-muted: #b9b3a7;
+  --text-faint: #847d70;
+  --brand-paper: #ffffff;
 
-  /* The one live/primary signal. Amber = "this is happening now / do this". */
-  --accent: #e8a63a;
-  --accent-hover: #f2b855;
-  --invite: #e8a63a;
-  --invite-hover: #f2b855;
-  --on-accent: #15110a;
+  /* The one live/primary signal. Pennant gold = "this is happening now / do this". */
+  --accent: #ffcc00;
+  --accent-hover: #ffe066;
+  --invite: #ffcc00;
+  --invite-hover: #ffe066;
+  --on-accent: #0a0905;
+  --on-invite: #0a0905;
 
-  --status-online: #6fcf97;
-  --status-working: #e8a63a;
-  --status-in-meeting: #d9c07a;
-  --status-away: #8f8a78;
-  --status-in-focus: #5aa9e6;
-  --status-flagged: #f0695c;
-  --status-offline: #6c7480;
+  --status-online: #53d887;
+  --status-working: #ffcc00;
+  --status-in-meeting: #d8b84a;
+  --status-away: #918b7f;
+  --status-in-focus: #5ca9ff;
+  --status-flagged: #ff6557;
+  --status-offline: #6d6a64;
 
   /* Workflow node semantics */
-  --node-pending: #5f6672;
-  --node-running: #e8a63a;
-  --glow-running: rgba(232, 166, 58, 0.4);
-  --node-completed: #6fcf97;
-  --node-failed: #f0695c;
+  --node-pending: #6d6a64;
+  --node-running: #ffcc00;
+  --glow-running: rgba(255, 204, 0, 0.38);
+  --node-completed: #53d887;
+  --node-failed: #ff6557;
 
-  --surface-1: #12151a;
-  --surface-2: #15181d;
-  --surface-3: #1d2127;
+  --surface-1: #0c0c0c;
+  --surface-2: #111111;
+  --surface-3: #1d1b17;
 
-  --avatar-1: #e8a63a;
-  --avatar-2: #6fcf97;
-  --avatar-3: #5aa9e6;
-  --avatar-4: #a58bd6;
-  --avatar-5: #f0695c;
-  --avatar-6: #c9b27a;
+  --avatar-1: #ffcc00;
+  --avatar-2: #53d887;
+  --avatar-3: #5ca9ff;
+  --avatar-4: #b093e8;
+  --avatar-5: #ff6557;
+  --avatar-6: #d0af46;
+  --avatar-skin-1: #f1c7a5;
+  --avatar-skin-2: #c98f65;
+  --avatar-skin-3: #8a5a3b;
+  --avatar-feature: #251a18;
 
   /* Soft fills — tinted translucent backgrounds for pills/badges/banners. */
-  --accent-soft: rgba(232, 166, 58, 0.14);
-  --invite-soft: rgba(232, 166, 58, 0.14);
-  --info-soft: rgba(90, 169, 230, 0.14);
-  --success-soft: rgba(111, 207, 151, 0.14);
-  --warn-soft: rgba(217, 192, 122, 0.15);
-  --danger-soft: rgba(240, 105, 92, 0.15);
+  --accent-soft: rgba(255, 204, 0, 0.14);
+  --invite-soft: rgba(255, 204, 0, 0.14);
+  --info-soft: rgba(92, 169, 255, 0.14);
+  --success-soft: rgba(83, 216, 135, 0.14);
+  --warn-soft: rgba(216, 184, 74, 0.15);
+  --danger-soft: rgba(255, 101, 87, 0.15);
 
   /* Reserved for live/primary signals: brand mark, active-nav rail, tab
      underline, default progress fill. Flat amber, no hue travel. */
-  --grad-brand: linear-gradient(120deg, #f2b855 0%, #e8a63a 100%);
+  --grad-brand: linear-gradient(120deg, #ffe066 0%, #ffcc00 100%);
 
   /* Elevation + overlays */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.45);
   --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.6);
   --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  --glow-accent: 0 0 0 3px rgba(232, 166, 58, 0.2);
+  --glow-accent: 0 0 0 3px rgba(255, 204, 0, 0.2);
   --scrim: rgba(5, 7, 10, 0.62);
   --scrim-light: rgba(5, 7, 10, 0.4);
   --sheen: rgba(255, 255, 255, 0.22);
-  --selection: rgba(232, 166, 58, 0.3);
+  --selection: rgba(255, 204, 0, 0.3);
 
   /* Motion — the one timing vocabulary every component uses. */
   --dur-1: 120ms;
@@ -80,80 +92,91 @@
   --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 
   /* Type: one condensed family for UI + display, mono for readouts. */
-  --font-display: "Barlow Semi Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Barlow Semi Condensed", system-ui, sans-serif;
   --font-body: "Barlow Semi Condensed", "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", monospace;
 
   /* Radius scale: small controls, containers, overlays. */
-  --r-1: 3px;
-  --r-2: 5px;
-  --r-3: 8px;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --bg: #eceef0;
-  --panel: #f7f8f9;
-  --panel-alt: #eef0f2;
-  --sidebar: #dfe2e6;
-  --border: #c3c6cc;
-  --border-subtle: #d4d7dc;
-  --border-hi: #a9aeb7;
+  --bg: #faf9f5;
+  --panel: #ffffff;
+  --panel-alt: #f5f3ed;
+  --sidebar: #ece8de;
+  --nav-bg: #ffffff;
+  --nav-text: #17130b;
+  --nav-muted: #514b42;
+  --nav-faint: #746d62;
+  --nav-hover: #f5f3ed;
+  --nav-border: #e5e1d8;
+  --border: #c9c4b9;
+  --border-subtle: #e5e1d8;
+  --border-hi: #8b8478;
 
-  --text: #16181c;
-  --text-muted: #565c66;
-  --text-faint: #5c636e;
+  --text: #11100d;
+  --text-muted: #514b42;
+  --text-faint: #70695e;
 
-  --accent: #8f5300;
-  --accent-hover: #744400;
-  --invite: #8f5300;
-  --invite-hover: #744400;
+  --accent: #806000;
+  --accent-hover: #614900;
+  --invite: #ffcc00;
+  --invite-hover: #e6b800;
   --on-accent: #ffffff;
+  --on-invite: #0a0905;
 
-  --status-online: #17683a;
-  --status-working: #8f5300;
-  --status-in-meeting: #665820;
-  --status-away: #6e6a58;
-  --status-in-focus: #1a5f99;
-  --status-flagged: #a02a23;
-  --status-offline: #7c838e;
+  --status-online: #0d713b;
+  --status-working: #806000;
+  --status-in-meeting: #6b5b09;
+  --status-away: #6f6651;
+  --status-in-focus: #075f9d;
+  --status-flagged: #a72d24;
+  --status-offline: #66778a;
 
-  --node-pending: #7c838e;
-  --node-running: #8f5300;
-  --glow-running: rgba(163, 95, 0, 0.3);
-  --node-completed: #17683a;
-  --node-failed: #a02a23;
+  --node-pending: #66778a;
+  --node-running: #806000;
+  --glow-running: rgba(128, 96, 0, 0.28);
+  --node-completed: #0d713b;
+  --node-failed: #a72d24;
 
-  --surface-1: #f7f8f9;
-  --surface-2: #eef0f2;
-  --surface-3: #dfe2e6;
+  --surface-1: #f4f2ec;
+  --surface-2: #ffffff;
+  --surface-3: #ebe7de;
 
-  --avatar-1: #a35f00;
-  --avatar-2: #1d7a45;
-  --avatar-3: #1f6fb0;
-  --avatar-4: #6b4fb0;
-  --avatar-5: #b3322a;
-  --avatar-6: #7a6a2a;
+  --avatar-1: #806000;
+  --avatar-2: #167541;
+  --avatar-3: #0869a8;
+  --avatar-4: #6048a5;
+  --avatar-5: #b4372d;
+  --avatar-6: #776520;
+  --avatar-skin-1: #f1c7a5;
+  --avatar-skin-2: #c98f65;
+  --avatar-skin-3: #8a5a3b;
+  --avatar-feature: #251a18;
 
-  --accent-soft: rgba(163, 95, 0, 0.12);
-  --invite-soft: rgba(163, 95, 0, 0.12);
-  --info-soft: rgba(31, 111, 176, 0.12);
-  --success-soft: rgba(29, 122, 69, 0.12);
-  --warn-soft: rgba(122, 106, 42, 0.14);
-  --danger-soft: rgba(179, 50, 42, 0.12);
+  --accent-soft: rgba(128, 96, 0, 0.12);
+  --invite-soft: rgba(255, 204, 0, 0.18);
+  --info-soft: rgba(7, 95, 157, 0.11);
+  --success-soft: rgba(13, 113, 59, 0.11);
+  --warn-soft: rgba(107, 91, 9, 0.13);
+  --danger-soft: rgba(167, 45, 36, 0.11);
 
-  --grad-brand: linear-gradient(120deg, #b06d00 0%, #a35f00 100%);
+  --grad-brand: linear-gradient(120deg, #ffe066 0%, #ffcc00 100%);
 
-  --shadow-1: 0 1px 2px rgba(22, 24, 28, 0.12);
-  --shadow-2: 0 6px 18px rgba(22, 24, 28, 0.14);
-  --shadow-3: 0 24px 60px rgba(22, 24, 28, 0.22);
+  --shadow-1: 0 1px 2px rgba(23, 19, 11, 0.1);
+  --shadow-2: 0 8px 22px rgba(23, 19, 11, 0.12);
+  --shadow-3: 0 26px 64px rgba(23, 19, 11, 0.18);
   --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --glow-accent: 0 0 0 3px rgba(163, 95, 0, 0.2);
-  --scrim: rgba(22, 24, 28, 0.45);
-  --scrim-light: rgba(22, 24, 28, 0.25);
+  --glow-accent: 0 0 0 3px rgba(128, 96, 0, 0.18);
+  --scrim: rgba(10, 9, 5, 0.52);
+  --scrim-light: rgba(10, 9, 5, 0.3);
   --sheen: rgba(255, 255, 255, 0.5);
-  --selection: rgba(163, 95, 0, 0.25);
+  --selection: rgba(128, 96, 0, 0.23);
 }
 
 * {
@@ -355,21 +378,23 @@ input {
 }
 
 .btn.accent {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--invite);
+  border-color: var(--invite);
+  color: var(--on-invite);
 }
 
 .btn.accent:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: var(--invite-hover);
+  border-color: var(--invite-hover);
   box-shadow: var(--shadow-2);
 }
 
 .btn.primary {
   background: var(--invite);
   border-color: var(--invite);
-  color: var(--on-accent);
+  color: var(--on-invite);
+  border-radius: var(--r-1);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 7px 100%);
 }
 
 .btn.primary:hover {

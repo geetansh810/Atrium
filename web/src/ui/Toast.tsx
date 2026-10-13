@@ -26,7 +26,7 @@ export function Toast() {
         <BotIcon width={18} height={18} />
       </span>
       <div className="toast-body">
-        <div className="toast-name">{PRODUCT_NAME} Bot</div>
+        <div className="toast-name">{PRODUCT_NAME}</div>
         <div className="toast-text">
           {notice ?? (
             <>

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { api, ApiError } from "../../shared/api";
 import { setAuthSession } from "../../shared/auth";
+import { BrandMark } from "../../shared/BrandMark";
 import { markSignupNeedsOnboarding } from "../../shared/onboarding";
-import { PRODUCT_NAME } from "../../shared/theme";
 import "./AuthPage.css";
 
 // M3.1: the signed-in-session entry point — signup creates the company + admin
@@ -12,7 +12,13 @@ import "./AuthPage.css";
 // M-LP1: reached via the marketing LandingPage's /signup and /login routes,
 // which set initialMode — the internal toggle still switches modes in place
 // without a route change, same as before.
-export function AuthPage({ initialMode = "signup" }: { initialMode?: "signup" | "login" }) {
+interface AuthPageProps {
+  initialMode?: "signup" | "login";
+  presentation?: "page" | "modal";
+  onClose?: () => void;
+}
+
+export function AuthPage({ initialMode = "signup", presentation = "page", onClose }: AuthPageProps) {
   const [mode, setMode] = useState<"signup" | "login">(initialMode);
   const [companyName, setCompanyName] = useState("");
   const [companySlug, setCompanySlug] = useState("");
@@ -22,6 +28,44 @@ export function AuthPage({ initialMode = "signup" }: { initialMode?: "signup" | 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (presentation !== "modal") return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose?.();
+      if (event.key === "Tab") {
+        const focusable = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), a[href]',
+          ) ?? [],
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const priorOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = priorOverflow;
+      previous?.focus();
+    };
+  }, [onClose, presentation]);
 
   const slugify = (name: string) =>
     name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -57,13 +101,24 @@ export function AuthPage({ initialMode = "signup" }: { initialMode?: "signup" | 
       ? companyName.trim() && companySlug.trim() && displayName.trim() && email.trim() && password.length >= 8
       : email.trim() && password.length > 0;
 
-  return (
-    <main className="auth-page">
-      <div className="auth-card">
-        <Link to="/" className="auth-home-link">
-          ← Back to home
-        </Link>
-        <h1 className="auth-title">{PRODUCT_NAME}</h1>
+  const card = (
+      <section
+        ref={dialogRef}
+        className={`auth-card${presentation === "modal" ? " auth-card-modal" : ""}`}
+        role={presentation === "modal" ? "dialog" : undefined}
+        aria-modal={presentation === "modal" ? true : undefined}
+        aria-labelledby="auth-title"
+      >
+        {presentation === "page" ? (
+          <Link to="/" className="auth-home-link">
+            ← Back to home
+          </Link>
+        ) : (
+          <button type="button" className="auth-close" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        )}
+        <h1 id="auth-title" className="auth-title"><BrandMark /></h1>
         <p className="auth-subtitle">
           {mode === "signup" ? "Create your company" : "Welcome back"}
         </p>
@@ -147,7 +202,22 @@ export function AuthPage({ initialMode = "signup" }: { initialMode?: "signup" | 
             {busy ? "Please wait…" : mode === "signup" ? "Create company" : "Log in"}
           </button>
         </form>
+      </section>
+  );
+
+  if (presentation === "modal") {
+    return (
+      <div className="auth-modal-backdrop" onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}>
+        {card}
       </div>
+    );
+  }
+
+  return (
+    <main className="auth-page">
+      {card}
     </main>
   );
 }

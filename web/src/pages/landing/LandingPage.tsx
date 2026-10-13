@@ -1,13 +1,15 @@
 import { useEffect, useRef } from "react";
-import { Link } from "react-router";
-import { PRODUCT_NAME, PRODUCT_TAGLINE } from "../../shared/theme";
+import { Link, useNavigate } from "react-router";
+import { AuthPage } from "../auth/AuthPage";
+import { Avatar } from "../../shared/Avatar";
+import { MoonIcon, SunIcon } from "../../shared/icons";
+import { BrandMark } from "../../shared/BrandMark";
+import { PRODUCT_NAME } from "../../shared/theme";
+import { setThemeMode, useThemeMode } from "../../shared/themeMode";
 import "./LandingPage.css";
 
-// Marketing entry point (M-LP1) — the default page for a signed-out visitor
-// in API mode. Mock mode never routes here (see App.tsx); it has no concept
-// of a signed-out guest. The shift board below plays out the real task
-// lifecycle (create → claim → work → review → approve) with fabricated data —
-// no network calls, so it renders identically with or without a live backend.
+// Signed-out entry. The shift board plays the real lifecycle with sample
+// names — no network — so it renders with or without a backend.
 const WORK = [
   { t: "Diwali gift-box captions", a: "Priya", s: "content" },
   { t: "Tier pricing for launch", a: "Rohan", s: "product" },
@@ -19,7 +21,35 @@ const WORK = [
 
 type EventKind = "created" | "claimed" | "progress" | "completed" | "approved";
 
-export function LandingPage() {
+const ROLES = ["Content", "Product", "Design", "Legal", "Engineering"];
+
+const STEPS = [
+  { n: "01", t: "Assign the work", d: "A task names the skill it needs. It waits in the queue until someone on the crew can take it." },
+  { n: "02", t: "A crew member claims it", d: "The matching agent picks it up, works it, and stops at review. You don't press Run." },
+  { n: "03", t: "You approve it", d: "Nothing ships until a person signs off. Open children block the parent." },
+];
+
+const DOORS = [
+  { href: "#roles", t: "Roles", d: "A new job is a role you hire, not a branch in the router." },
+  { href: "#watch", t: "The watch", d: "See who is working from the tasks they hold, not a status someone typed." },
+  { href: "#review", t: "Review", d: "Work stops for a signature. Compliance roles need a signed-in person." },
+  { href: "#budgets", t: "Budgets", d: "A monthly token cap. At the limit, that crew member pauses." },
+  { href: "#record", t: "The record", d: "Every claim, completion, and approval is a row you can read back." },
+  { href: "#memory", t: "Memory", d: "The next task at this company can see what the last review taught." },
+];
+
+const FAQ = [
+  ["How is this different from a chatbot?", "A crew member is hired into a role, claims work, and stops at review. A person approves."],
+  ["Can I use the model I already pay for?", "Yes. Hire against Claude or Gemini. The router does not care which."],
+  ["What happens at the budget cap?", "That agent pauses. A company-wide cap blocks new claims. You can raise the cap and resume."],
+  ["Can an agent approve its own work?", "No. Pending review is the gate. Legal and HR roles also require a signed-in person."],
+  ["Do agents run all the time?", "They poll, claim a matching task, and stop. Pause stops the loop."],
+  ["What does signup create?", "A company and an admin. A short wizard can hire a starter crew and assign a first task."],
+];
+
+export function LandingPage({ authMode }: { authMode?: "signup" | "login" }) {
+  const mode = useThemeMode();
+  const navigate = useNavigate();
   const queuedRef = useRef<HTMLDivElement>(null);
   const workingRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
@@ -56,6 +86,7 @@ export function LandingPage() {
     let clock = 9 * 60 + 14;
     let seq = 1;
     const timers: number[] = [];
+    const intervals: number[] = [];
 
     const stamp = () => {
       clock += 1 + Math.floor(Math.random() * 3);
@@ -75,7 +106,7 @@ export function LandingPage() {
       const d = document.createElement("div");
       d.className = "lp-card";
       const bar = pct === null ? "" : `<div class="lp-bar-track"><div class="lp-bar-fill" style="width:${pct}%"></div></div>`;
-      d.innerHTML = `<b>${task.t}</b><i>${task.a} · ${task.s}</i>${bar}`;
+      d.innerHTML = `<b>${task.t}</b><i>${task.a}</i><em>${task.s}</em>${bar}`;
       return d;
     };
 
@@ -129,6 +160,7 @@ export function LandingPage() {
               );
             }
           }, 620);
+          intervals.push(tick);
         }, 2200 + Math.random() * 900),
       );
     };
@@ -147,30 +179,39 @@ export function LandingPage() {
     return () => {
       io.disconnect();
       timers.forEach((id) => window.clearTimeout(id));
+      intervals.forEach((id) => window.clearInterval(id));
       if (loop) window.clearInterval(loop);
     };
   }, []);
 
   return (
-    <div className="landing-page">
+    <div className="lp">
       <header className="lp-bar">
-        <div className="lp-bar-in">
+        <div className="lp-wrap lp-bar-in">
           <a className="lp-brand" href="#top">
-            <b>{PRODUCT_NAME}</b>
-            <span>{PRODUCT_TAGLINE}</span>
+            <BrandMark />
           </a>
-          <nav className="lp-bar-nav">
+          <nav className="lp-nav" aria-label="Page">
             <a href="#how">How it works</a>
-            <a href="#architecture">Architecture</a>
-            <a href="#depth">Agent depth</a>
-            <a href="#docs">Documentation</a>
-            <a href="#journey">Build log</a>
+            <a href="#map">The crew</a>
+            <Link to="/docs">Docs</Link>
           </nav>
-          <div className="lp-bar-auth">
-            <Link className="lp-loginlink" to="/login">
+          <div className="lp-bar-end">
+            <Link className="lp-mobile-docs" to="/docs">
+              Docs
+            </Link>
+            <button
+              className="lp-icon"
+              type="button"
+              aria-label={mode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              onClick={() => setThemeMode(mode === "dark" ? "light" : "dark")}
+            >
+              {mode === "dark" ? <SunIcon width={16} height={16} /> : <MoonIcon width={16} height={16} />}
+            </button>
+            <Link className="lp-textlink" to="/login">
               Log in
             </Link>
-            <Link className="lp-btn lp-btn-p lp-btn-sm" to="/signup">
+            <Link className="lp-btn" to="/signup">
               Sign up
             </Link>
           </div>
@@ -178,874 +219,331 @@ export function LandingPage() {
       </header>
 
       <main id="top">
-        {/* ══ HERO ══ */}
         <section className="lp-hero">
+          <div className="lp-hero-scene" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
           <div className="lp-wrap lp-hero-grid">
             <div>
-              <div className="lp-eyebrow">Multi-tenant · Java 21 · Postgres · Event-driven</div>
+              <p className="lp-hero-note">
+                <span aria-hidden="true">B</span>
+                Your AI team has clocked in
+              </p>
               <h1>
-                AI agents you <em>hire</em>, not prompts you paste.
+                Hire a crew.
+                <span>Review every result.</span>
               </h1>
-              <p className="lp-hero-sub">
-                Atrium runs a workforce of AI agents the way a company runs staff: hired into roles,
-                placed under a manager, given a monthly token budget, and blocked from shipping
-                anything a human hasn't signed off on. Every state change lands in an append-only
-                ledger.
+              <p className="lp-lede">
+                AI teammates take real roles, complete assigned work, and wait for your approval.
               </p>
-              <div className="lp-hero-meta">
-                <span className="lp-tag">Roles are data</span>
-                <span className="lp-tag">Any LLM provider</span>
-                <span className="lp-tag">Any agent runtime</span>
-                <span className="lp-tag">Per-tenant memory</span>
-              </div>
-              <div className="lp-hero-cta">
-                <Link className="lp-btn lp-btn-p" to="/signup">
-                  Sign up — it's free to try
+              <ul className="lp-shift">
+                <li>
+                  <b><Avatar name="Priya" seed="priya-content" size={26} />Priya</b>
+                  <span>is writing the gift-box captions</span>
+                </li>
+                <li>
+                  <b><Avatar name="Rohan" seed="rohan-product" size={26} />Rohan</b>
+                  <span>is sizing the launch prices</span>
+                </li>
+                <li>
+                  <b><Avatar name="Nadia" seed="nadia-legal" size={26} />Nadia</b>
+                  <span>is drafting the vendor agreement</span>
+                </li>
+              </ul>
+              <div className="lp-cta">
+                <Link className="lp-btn lp-btn-lg" to="/signup">
+                  Sign up
                 </Link>
-                <a className="lp-btn lp-btn-s" href="#how">
-                  See the task lifecycle
-                </a>
+                <Link className="lp-quiet" to="/login">
+                  or log in
+                </Link>
               </div>
-              <p className="lp-hero-fine">
-                Already hiring agents? <Link to="/login">Log in</Link>.
-              </p>
             </div>
-
-            {/* signature element: a live shift board running the real lifecycle */}
             <div
               className="lp-board"
               role="img"
-              aria-label="A simulated live board showing tasks moving from queued to working to awaiting review to approved, with an audit event log beneath it."
+              aria-label="A sample board showing tasks moving from queued to working to review to approved, with an event log."
             >
               <div className="lp-board-hd">
-                <b>Team view · derived from live task state</b>
+                <b>On watch</b>
                 <span className="lp-live">
-                  <i></i>LIVE
+                  <i />
+                  Sample
                 </span>
               </div>
               <div className="lp-zones" tabIndex={0} role="group" aria-label="Task zones">
-                <div className="lp-zone lp-z-q">
+                <div className="lp-zone">
                   <div className="lp-zone-hd">Queued</div>
-                  <div ref={queuedRef}></div>
+                  <div ref={queuedRef} />
                 </div>
-                <div className="lp-zone lp-z-w">
+                <div className="lp-zone">
                   <div className="lp-zone-hd">Working</div>
-                  <div ref={workingRef}></div>
+                  <div ref={workingRef} />
                 </div>
-                <div className="lp-zone lp-z-r">
-                  <div className="lp-zone-hd">Awaiting review</div>
-                  <div ref={reviewRef}></div>
+                <div className="lp-zone">
+                  <div className="lp-zone-hd">Review</div>
+                  <div ref={reviewRef} />
                 </div>
-                <div className="lp-zone lp-z-a">
+                <div className="lp-zone">
                   <div className="lp-zone-hd">Approved</div>
-                  <div ref={approvedRef}></div>
+                  <div ref={approvedRef} />
                 </div>
               </div>
               <div className="lp-ledger">
-                <div className="lp-ledger-hd">task_events · append-only</div>
-                <ul ref={ledgerRef}></ul>
+                <div className="lp-ledger-hd">Record</div>
+                <ul ref={ledgerRef} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* ══ INVARIANTS ══ */}
-        <section id="why">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">What the system refuses to do</div>
-            <h2 className="lp-sec-title">Three constraints, enforced structurally.</h2>
-            <p className="lp-sec-lede">
-              Most agent frameworks make these promises in a README. In Atrium each one is a
-              property of the schema or the transaction boundary — there is no code path that can
-              quietly opt out.
-            </p>
+        <section className="lp-roles" aria-label="Roles you can hire">
+          <div className="lp-wrap">
+            <p>Hired from a role definition. Content, product, design, legal, engineering.</p>
+            <ul>
+              {ROLES.map((role) => (
+                <li key={role}>{role}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
-            <div className="lp-rules">
-              <div className="lp-rule">
-                <div className="lp-rule-k">Constraint 01</div>
-                <h3>Nothing ships unreviewed.</h3>
-                <p>
-                  An agent's work stops at <code>pending_review</code>. Approval is blocked while
-                  any child task or checklist item is still open, and roles flagged for compliance
-                  reject approval outright unless a real authenticated human is on the call — a
-                  background job cannot sign off.
-                </p>
+        <section id="how" className="lp-how">
+          <div className="lp-wrap lp-rv">
+            <h2>Assign. Claim. Approve.</h2>
+            <ol>
+              {STEPS.map((step) => (
+                <li key={step.n}>
+                  <span>{step.n}</span>
+                  <h3>{step.t}</h3>
+                  <p>{step.d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="map" className="lp-map">
+          <div className="lp-wrap lp-rv">
+            <h2>What the crew can do.</h2>
+            <div className="lp-doors">
+              {DOORS.map((door) => (
+                <a key={door.href} href={door.href}>
+                  <h3>{door.t}</h3>
+                  <p>{door.d}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="roles" className="lp-chapter">
+          <div className="lp-wrap lp-split lp-rv">
+            <div>
+              <h2>Any role, any model.</h2>
+              <p>
+                A role is a title, a set of skills, a model, and a budget. Adding legal does not
+                require a change to the router. Claude and Gemini both sit on the same roster.
+              </p>
+            </div>
+            <ul className="lp-specimen" aria-label="Example roster">
+              <li>
+                <b>Priya</b>
+                <span>Content</span>
+                <em>Gemini</em>
+              </li>
+              <li>
+                <b>Rohan</b>
+                <span>Product</span>
+                <em>Gemini</em>
+              </li>
+              <li>
+                <b>Nadia</b>
+                <span>Legal</span>
+                <em>Claude</em>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="watch" className="lp-chapter lp-chapter-alt">
+          <div className="lp-wrap lp-split lp-rv">
+            <div>
+              <h2>The board moves on its own.</h2>
+              <p>
+                Agents poll, claim work that matches their skills, and stop at review. The watch
+                shows who is working from those tasks, not from a status field.
+              </p>
+            </div>
+            <ul className="lp-specimen" aria-label="Example watch">
+              <li>
+                <b>Priya</b>
+                <span>Working</span>
+                <em>Captions</em>
+              </li>
+              <li>
+                <b>Rohan</b>
+                <span>Review</span>
+                <em>Pricing</em>
+              </li>
+              <li>
+                <b>Meera</b>
+                <span>Idle</span>
+                <em>No task</em>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="review" className="lp-chapter">
+          <div className="lp-wrap lp-rv">
+            <h2>You sign off.</h2>
+            <p className="lp-narrow">
+              Approve, reject, pause, reassign, or raise the cap. A legal or HR role cannot be
+              signed off by a background job. Autonomy is something you grant.
+            </p>
+            <ul className="lp-verbs">
+              {["Approve", "Reject", "Pause", "Reassign", "Raise the cap"].map((verb) => (
+                <li key={verb}>{verb}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section id="budgets" className="lp-chapter lp-chapter-alt">
+          <div className="lp-wrap lp-split lp-rv">
+            <div>
+              <h2>The cap is a hard stop.</h2>
+              <p>
+                Each agent has a monthly token budget. Crossing 80% warns once. Hitting the cap
+                pauses that agent. A company cap refuses new claims without picking someone to punish.
+              </p>
+            </div>
+            <ul className="lp-specimen" aria-label="Example budgets">
+              <li>
+                <b>Priya</b>
+                <span className="lp-meter">
+                  <i style={{ width: "62%" }} />
+                </span>
+                <em>1.2M / 2.0M</em>
+              </li>
+              <li>
+                <b>Company</b>
+                <span className="lp-meter">
+                  <i style={{ width: "28%" }} />
+                </span>
+                <em>2.8M / 10M</em>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="record" className="lp-chapter">
+          <div className="lp-wrap lp-split lp-rv">
+            <div>
+              <h2>Nothing happens off the record.</h2>
+              <p>
+                Claim, progress, completion, and approval are events on the task. The model, the
+                token count, and the prompt version ride with the completion, and the LLM call
+                itself can be opened from the task.
+              </p>
+            </div>
+            <ol className="lp-record">
+              <li>
+                <span>09:14</span> claimed
+              </li>
+              <li>
+                <span>09:18</span> completed
+              </li>
+              <li>
+                <span>09:22</span> approved
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        <section id="memory" className="lp-chapter lp-chapter-alt">
+          <div className="lp-wrap lp-rv">
+            <h2>The next task remembers.</h2>
+            <div className="lp-pillars">
+              <div>
+                <h3>Skills</h3>
+                <p>Procedures attached to the role the agent was hired into.</p>
               </div>
-              <div className="lp-rule">
-                <div className="lp-rule-k">Constraint 02</div>
-                <h3>Roles are data, never branches.</h3>
-                <p>
-                  Adding a Legal agent means inserting a role definition and attaching skills. A{" "}
-                  <code>if (skill == …)</code> in the router is a bug by definition. A whole pilot
-                  role shipped with an empty diff on the routing module.
-                </p>
+              <div>
+                <h3>Memory</h3>
+                <p>Lessons from reviewed work. Company-wide facts wait for approval.</p>
               </div>
-              <div className="lp-rule">
-                <div className="lp-rule-k">Constraint 03</div>
-                <h3>Every change is a row.</h3>
-                <p>
-                  State transitions append to <code>task_events</code> in the same transaction that
-                  makes them, alongside an outbox row. A completion carries its model, prompt
-                  version and recalled context, so any output can be reconstructed from the ledger
-                  alone.
-                </p>
+              <div>
+                <h3>Knowledge</h3>
+                <p>Documents attached to a company role, recalled into the prompt.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ══ LIFECYCLE ══ */}
-        <section id="how">
+        <section id="faq" className="lp-faq">
           <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">The life of a task</div>
-            <h2 className="lp-sec-title">Seven steps from request to signed-off work.</h2>
-            <p className="lp-sec-lede">
-              This is the only path work can take. Each step names the mechanism that makes it
-              safe under concurrency, crashes and redelivery.
-            </p>
-
-            <div className="lp-steps">
-              <div className="lp-step">
-                <div className="lp-step-n">01</div>
-                <div className="lp-step-t">
-                  <h3>Create</h3>
-                  <code>status = queued</code>
-                </div>
-                <div className="lp-step-d">
-                  A task names a <b>required skill</b>, not an agent. Routing checks the company's
-                  roster actually covers that skill and rejects the request with a field error if
-                  it doesn't.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">02</div>
-                <div className="lp-step-t">
-                  <h3>Claim</h3>
-                  <code>FOR UPDATE SKIP LOCKED</code>
-                </div>
-                <div className="lp-step-d">
-                  Agent runners poll their skill queues. Postgres decides the winner — three
-                  workers racing twenty tasks produce twenty distinct claims and zero double-work.
-                  The claim takes a <b>10-minute lease</b> and increments the attempt counter.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">03</div>
-                <div className="lp-step-t">
-                  <h3>Assemble context</h3>
-                  <code>ContextAssembler</code>
-                </div>
-                <div className="lp-step-d">
-                  One doorway builds the prompt under a token budget: role identity, attached
-                  skills, recalled memories, retrieved knowledge. <b>The ids of everything recalled
-                  are written into the claim event</b>, so the input is auditable, not inferred.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">04</div>
-                <div className="lp-step-t">
-                  <h3>Work</h3>
-                  <code>status = in_progress</code>
-                </div>
-                <div className="lp-step-d">
-                  The runtime calls the model through a provider-neutral SPI. Token spend is
-                  metered per call against an idempotency key of <b>task id plus attempt</b> — a
-                  redelivered task can never bill twice.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">05</div>
-                <div className="lp-step-t">
-                  <h3>Hand off</h3>
-                  <code>status = pending_review</code>
-                </div>
-                <div className="lp-step-d">
-                  Output is stored as an artifact and the task stops. A bot notice posts to the
-                  company channel; the escalation queue is two clicks from login.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">06</div>
-                <div className="lp-step-t">
-                  <h3>Review</h3>
-                  <code>approve · reject</code>
-                </div>
-                <div className="lp-step-d">
-                  Rejection stores the reviewer's feedback and requeues the task, so the retry gets
-                  a <b>fresh attempt number and a clean budget key</b> — and the feedback is
-                  prepended to the next prompt.
-                </div>
-              </div>
-              <div className="lp-step">
-                <div className="lp-step-n">07</div>
-                <div className="lp-step-t">
-                  <h3>Learn</h3>
-                  <code>governed extraction</code>
-                </div>
-                <div className="lp-step-d">
-                  A durable consumer reads the review outcome and extracts lessons. Agent-scoped
-                  lessons activate on their own; <b>anything company-wide waits in a human review
-                  queue</b> before it can influence another agent.
-                </div>
-              </div>
-            </div>
+            <h2>Questions</h2>
+            {FAQ.map(([q, a]) => (
+              <details key={q}>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
+            ))}
           </div>
         </section>
 
-        {/* ══ ARCHITECTURE ══ */}
-        <section id="architecture">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">Backend shape</div>
-            <h2 className="lp-sec-title">A modular monolith with an event backbone.</h2>
-            <p className="lp-sec-lede">
-              Nine packages with one-directional dependencies and no circular imports. Event-driven
-              is a shape, not a broker purchase — the outbox gives at-least-once delivery today and
-              swaps to Kafka later without touching a producer.
+        <section id="start" className="lp-close">
+          <div className="lp-wrap">
+            <h2>Hire the first crew member.</h2>
+            <p>A company, an empty roster, and a wizard if you want a starter crew.</p>
+            <Link className="lp-btn lp-btn-lg" to="/signup">
+              Sign up
+            </Link>
+            <p>
+              <Link to="/login">Log in</Link>
             </p>
-
-            <div className="lp-arch">
-              <div className="lp-mods">
-                <div className="lp-mod">
-                  <b>registry</b>
-                  <span>Companies, users, agents, role definitions, model catalog.</span>
-                </div>
-                <div className="lp-mod">
-                  <b>routing</b>
-                  <span>Tasks, skill queues, claim &amp; lease, the task graph.</span>
-                </div>
-                <div className="lp-mod">
-                  <b>execution</b>
-                  <span>LLM provider SPI, agent runtimes, pure prompt assembly.</span>
-                </div>
-                <div className="lp-mod lp-mod-new">
-                  <b>agentmind</b>
-                  <span>Skills, memory, knowledge, the learning pipeline.</span>
-                </div>
-                <div className="lp-mod">
-                  <b>accountability</b>
-                  <span>Budgets, usage ledger, approvals, analytics rollups.</span>
-                </div>
-                <div className="lp-mod lp-mod-new">
-                  <b>communication</b>
-                  <span>Channels, announcements, bot notices on completion.</span>
-                </div>
-                <div className="lp-mod lp-mod-new">
-                  <b>eventbus</b>
-                  <span>Outbox writer, relay, durable consumer cursors.</span>
-                </div>
-                <div className="lp-mod">
-                  <b>realtimebridge</b>
-                  <span>Redis publisher feeding the live dashboard.</span>
-                </div>
-                <div className="lp-mod">
-                  <b>common</b>
-                  <span>Tenant context, problem+json errors, clock, ids.</span>
-                </div>
-              </div>
-
-              <div className="lp-spine">
-                <h3>The outbox backbone</h3>
-                <p>How a state change becomes an event that no consumer can miss.</p>
-                <ul className="lp-flow">
-                  <li>
-                    <b>1 · Same transaction</b>The business write, its audit row and its outbox row
-                    commit together or not at all.
-                  </li>
-                  <li>
-                    <b>2 · Relay</b>A 250ms scheduled batch claims unpublished rows with the same
-                    skip-locked idiom, publishes to Redis, stamps them.
-                  </li>
-                  <li>
-                    <b>3 · Projection consumers</b>Lossy is fine. The dashboard self-heals on its
-                    next poll.
-                  </li>
-                  <li>
-                    <b>4 · Durable consumers</b>Learning, stats and chat notices keep a cursor row. A
-                    crash replays; idempotency keys absorb it.
-                  </li>
-                  <li>
-                    <b>5 · Retention</b>A nightly job purges only what is published and behind every
-                    cursor.
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══ DEPTH ══ */}
-        <section id="depth">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">The differentiator</div>
-            <h2 className="lp-sec-title">Agents get deeper at one company over time.</h2>
-            <p className="lp-sec-lede">
-              An agent is not one prompt with a name tag. What it knows is four layers of data,
-              drawn on at prompt time under a token budget — and these four tables are the{" "}
-              <em>only</em> stored content that can reach a model. Secrets live nowhere near them.
-            </p>
-
-            <div className="lp-layers">
-              <div className="lp-layer">
-                <div className="lp-layer-n">
-                  Identity
-                  <small>Rarely changes</small>
-                </div>
-                <div className="lp-layer-t">role_definitions</div>
-                <div className="lp-layer-d">
-                  Versioned. Who the agent is, what it may use, and the <em>output contract</em> it
-                  owes. Always present in full.
-                </div>
-              </div>
-              <div className="lp-layer">
-                <div className="lp-layer-n">
-                  Skills
-                  <small>Curated</small>
-                </div>
-                <div className="lp-layer-t">skills</div>
-                <div className="lp-layer-d">
-                  Versioned procedures written as markdown, attached to a role or an agent. An
-                  agent-proposed skill stays <em>inert</em> until a human promotes it.
-                </div>
-              </div>
-              <div className="lp-layer">
-                <div className="lp-layer-n">
-                  Memory
-                  <small>Continuous, governed</small>
-                </div>
-                <div className="lp-layer-t">memories</div>
-                <div className="lp-layer-d">
-                  What has been learned at <em>this</em> company — "the CEO rejects passive voice."
-                  Recalled by vector similarity blended with recency and use.
-                </div>
-              </div>
-              <div className="lp-layer">
-                <div className="lp-layer-n">
-                  Knowledge
-                  <small>On ingest</small>
-                </div>
-                <div className="lp-layer-t">knowledge_docs</div>
-                <div className="lp-layer-d">
-                  Reference material — a brand guide, a product catalog — chunked, embedded, and
-                  retrieved only for the roles it was attached to.
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══ DOCS ══ */}
-        <section id="docs" className="lp-library">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">The paper trail</div>
-            <h2 className="lp-sec-title">Nineteen contracts, written before the code.</h2>
-            <p className="lp-sec-lede">
-              Atrium was built one milestone per session, and every session started by amending a
-              document rather than a class. These are the contracts the implementation answers to
-              — schema, SPIs, module boundaries, and the compliance posture.
-            </p>
-            <p className="lp-lib-note">atrium-docs/ · open INDEX.html for the visual hub</p>
-
-            <div className="lp-shelf">
-              <div className="lp-shelf-hd">Foundation — vision through conventions</div>
-              <div className="lp-files">
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>00</span>
-                    <em>index</em>
-                  </div>
-                  <b>Master Plan</b>
-                  <span>
-                    Document map, the context priming block pasted at the start of every session,
-                    and the phase overview.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>01</span>
-                    <em>product</em>
-                  </div>
-                  <b>Product Specification</b>
-                  <span>
-                    Vision, personas, and the complete feature inventory: roster, tasks, budgets,
-                    approvals, analytics.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>02</span>
-                    <em>system</em>
-                  </div>
-                  <b>Architecture</b>
-                  <span>
-                    Services, monorepo layout, the life of a task, the realtime contract, and the
-                    tenancy model.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>03</span>
-                    <em>schema</em>
-                  </div>
-                  <b>Data Model</b>
-                  <span>
-                    Every table and invariant, including the canonical skip-locked claim query and
-                    the pagination rule.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>04</span>
-                    <em>api</em>
-                  </div>
-                  <b>API Contract</b>
-                  <span>
-                    REST endpoints and websocket event payloads for registry, routing,
-                    accountability and communication.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>05</span>
-                    <em>modules</em>
-                  </div>
-                  <b>Module Specs</b>
-                  <span>
-                    Per-module responsibilities and the boundaries that keep one session's work
-                    from touching the world.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>06</span>
-                    <em>reuse</em>
-                  </div>
-                  <b>Open Source Reuse</b>
-                  <span>
-                    What was forked, what was mined for patterns, and the licence ledger for every
-                    borrowed asset.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>07</span>
-                    <em>plan</em>
-                  </div>
-                  <b>Milestones</b>
-                  <span>
-                    All milestones with dependencies and a literal done-when check, plus deferred
-                    and retired tracks.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>08</span>
-                    <em>rules</em>
-                  </div>
-                  <b>Conventions</b>
-                  <span>
-                    Code style, migration discipline, testing bar, and the eight security rules
-                    including tenant isolation.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>09</span>
-                    <em>method</em>
-                  </div>
-                  <b>LLM Workflow</b>
-                  <span>
-                    Prompt templates and the review checklist applied to every line of AI-assisted
-                    code before merge.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>10</span>
-                    <em>ops</em>
-                  </div>
-                  <b>Deployment</b>
-                  <span>
-                    Environments, the AWS architecture, CI/CD, observability, and backup posture.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>11</span>
-                    <em>sessions</em>
-                  </div>
-                  <b>Session Prompts</b>
-                  <span>
-                    A ready-to-paste prompt block for every milestone, so a session starts with the
-                    right context loaded.
-                  </span>
-                </div>
-              </div>
-
-              <div className="lp-shelf-hd">Agent platform — the pluggability contracts</div>
-              <div className="lp-files">
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>12</span>
-                    <em>backend</em>
-                  </div>
-                  <b>Backend Architecture</b>
-                  <span>
-                    The event-driven revision: module map, transactional outbox, topic taxonomy,
-                    gateways, scaling path.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>13</span>
-                    <em>spi</em>
-                  </div>
-                  <b>LLM &amp; Runtime SPI</b>
-                  <span>
-                    Normative Java signatures. Adding a provider is one adapter class; adding a
-                    model is table rows.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>14</span>
-                    <em>depth</em>
-                  </div>
-                  <b>Skills, Memory &amp; Learning</b>
-                  <span>
-                    The differentiating subsystem: skills registry, memory store, context assembly,
-                    governed learning.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>15</span>
-                    <em>schema</em>
-                  </div>
-                  <b>Data Model Delta</b>
-                  <span>
-                    The agent-platform tables and the migration ledger, renumbered by real
-                    application order.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>16</span>
-                    <em>api</em>
-                  </div>
-                  <b>API Contract Delta</b>
-                  <span>
-                    Skills, memories, the review queue, the model catalog, and the worker gateway
-                    endpoints.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>17</span>
-                    <em>build</em>
-                  </div>
-                  <b>Backend Execution Plan</b>
-                  <span>
-                    The build script: one card per session with its paste list, done-when, test
-                    matrix and config keys.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>18</span>
-                    <em>reference</em>
-                  </div>
-                  <b>Technical Architecture</b>
-                  <span>
-                    The long-form technical reference assembled once the platform was complete —
-                    the deepest single document.
-                  </span>
-                </div>
-              </div>
-
-              <div className="lp-shelf-hd">Compliance — written against what is actually built</div>
-              <div className="lp-files">
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>C1</span>
-                    <em>data</em>
-                  </div>
-                  <b>Retention Policy</b>
-                  <span>
-                    Real config keys and retention windows — and an honest list of the erasure
-                    paths that do not exist yet.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>C2</span>
-                    <em>process</em>
-                  </div>
-                  <b>Review Process</b>
-                  <span>
-                    How the human sign-off gate works for roles marked as requiring review, and
-                    what the audit trail captures.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>C3</span>
-                    <em>posture</em>
-                  </div>
-                  <b>EU AI Act Posture</b>
-                  <span>
-                    Which obligations the technical measures satisfy, and which remain entirely
-                    unbuilt. Not legal advice.
-                  </span>
-                </div>
-              </div>
-
-              <div className="lp-shelf-hd">Research &amp; navigation</div>
-              <div className="lp-files">
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>N1</span>
-                    <em>notes</em>
-                  </div>
-                  <b>Paperclip Findings</b>
-                  <span>
-                    Patterns mined for the adapter SPI, skills-as-data, the two-layer memory model
-                    and budget tiers.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>N2</span>
-                    <em>notes</em>
-                  </div>
-                  <b>Agent Mesh Findings</b>
-                  <span>
-                    Topic taxonomy, outbox-as-mesh, gateways, and the deliberate divergences from
-                    that design.
-                  </span>
-                </div>
-                <div className="lp-file">
-                  <div className="lp-file-id">
-                    <span>G</span>
-                    <em>graph</em>
-                  </div>
-                  <b>Project Graph</b>
-                  <span>
-                    Seventeen wiki-linked notes — one per module — so a session loads only the
-                    context its task touches.
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══ JOURNEY ══ */}
-        <section id="journey">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">Build log</div>
-            <h2 className="lp-sec-title">Five phases, one milestone per session.</h2>
-            <p className="lp-sec-lede">
-              Every milestone carried a literal done-when check that had to be demonstrated —
-              usually in a browser against a real database, not asserted in a summary.
-            </p>
-
-            <div className="lp-phases">
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Foundation
-                  <small>Phase 0</small>
-                </div>
-                <div className="lp-phase-d">
-                  Scaffold, registry, skill routing, the claim loop, the first real agent, approval
-                  gate, budget enforcement, outbox relay.
-                </div>
-                <div className="lp-phase-s">Complete</div>
-              </div>
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Depth
-                  <small>Interleaved</small>
-                </div>
-                <div className="lp-phase-d">
-                  Skills registry, context assembly, the memory store, the governed learning
-                  pipeline, knowledge ingestion, a second runtime.
-                </div>
-                <div className="lp-phase-s">Complete</div>
-              </div>
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Validate
-                  <small>Phase 1</small>
-                </div>
-                <div className="lp-phase-d">
-                  A real business role added through the registry alone, then a live pilot run
-                  reviewed end to end by a human who wasn't the builder.
-                </div>
-                <div className="lp-phase-s">Complete</div>
-              </div>
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Expand
-                  <small>Phase 2</small>
-                </div>
-                <div className="lp-phase-d">
-                  Product and design roles, task decomposition with a flow graph, the budget ledger
-                  and analytics, escalations and chat.
-                </div>
-                <div className="lp-phase-s">Complete</div>
-              </div>
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Harden
-                  <small>Phase 3</small>
-                </div>
-                <div className="lp-phase-d">
-                  Real signup and JWT auth, Postgres row-level security as a second isolation layer,
-                  onboarding packs, rate limiting and infrastructure as code.
-                </div>
-                <div className="lp-phase-s lp-partial">Deploy pending</div>
-              </div>
-              <div className="lp-phase">
-                <div className="lp-phase-n">
-                  Compliance
-                  <small>Phase 4</small>
-                </div>
-                <div className="lp-phase-d">
-                  A human sign-off gate no background job can bypass, a full completion audit
-                  payload, and the compliance documents above.
-                </div>
-                <div className="lp-phase-s">Complete</div>
-              </div>
-            </div>
-
-            <div className="lp-counts">
-              <div className="lp-count">
-                <b>33</b>
-                <span>Build sessions</span>
-              </div>
-              <div className="lp-count">
-                <b>177</b>
-                <span>Tests passing</span>
-              </div>
-              <div className="lp-count">
-                <b>12</b>
-                <span>Migrations applied</span>
-              </div>
-              <div className="lp-count">
-                <b>9</b>
-                <span>Backend modules</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══ STACK ══ */}
-        <section id="stack">
-          <div className="lp-wrap lp-rv">
-            <div className="lp-eyebrow">What it runs on</div>
-            <h2 className="lp-sec-title">Boring infrastructure, carefully used.</h2>
-            <p className="lp-sec-lede">
-              No broker, no orchestration framework, no vector database. Postgres does the
-              queueing, the isolation and the similarity search — which is why the whole thing
-              starts with one compose file.
-            </p>
-
-            <div className="lp-stack">
-              <div className="lp-st">
-                <div className="lp-st-h">Core API</div>
-                <ul>
-                  <li>
-                    <b>Java 21</b> — virtual threads per agent
-                  </li>
-                  <li>
-                    <b>Spring Boot 3.5</b> — modular monolith
-                  </li>
-                  <li>
-                    <b>Flyway</b> — migrations, never edited
-                  </li>
-                  <li>
-                    <b>Testcontainers</b> — real Postgres in tests
-                  </li>
-                </ul>
-              </div>
-              <div className="lp-st">
-                <div className="lp-st-h">Data</div>
-                <ul>
-                  <li>
-                    <b>Postgres 16</b> — source of truth
-                  </li>
-                  <li>
-                    <b>pgvector</b> — memory and knowledge recall
-                  </li>
-                  <li>
-                    <b>Row-level security</b> — second isolation layer
-                  </li>
-                  <li>
-                    <b>Redis</b> — pub/sub and rate limiting
-                  </li>
-                </ul>
-              </div>
-              <div className="lp-st">
-                <div className="lp-st-h">Web</div>
-                <ul>
-                  <li>
-                    <b>React + TypeScript</b> — strict, no any
-                  </li>
-                  <li>
-                    <b>React Query</b> — live polling
-                  </li>
-                  <li>
-                    <b>Vite</b> — dev and build
-                  </li>
-                  <li>
-                    <b>Design tokens</b> — no hardcoded colour
-                  </li>
-                </ul>
-              </div>
-              <div className="lp-st">
-                <div className="lp-st-h">Operations</div>
-                <ul>
-                  <li>
-                    <b>Terraform</b> — ECS, RDS, CloudFront
-                  </li>
-                  <li>
-                    <b>GitHub Actions</b> — CI and staged deploy
-                  </li>
-                  <li>
-                    <b>Structured logs</b> — JSON with tenant context
-                  </li>
-                  <li>
-                    <b>k6</b> — load tested at p95 38ms
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="lp-final-cta">
-              <h3>Ready to hire your first agent?</h3>
-              <Link className="lp-btn lp-btn-p" to="/signup">
-                Sign up — it's free to try
-              </Link>
-            </div>
           </div>
         </section>
       </main>
 
-      <footer className="lp-footer">
-        <div className="lp-wrap lp-foot">
-          <p>
-            {PRODUCT_NAME} · {PRODUCT_TAGLINE} — built by Geetansh Agrawal, one milestone per
-            session.
-          </p>
-          <div className="lp-foot-links">
-            <a href="#how">Lifecycle</a>
-            <a href="#architecture">Architecture</a>
-            <a href="#docs">Documentation</a>
-            <a href="#journey">Build log</a>
+      <footer className="lp-foot">
+        <div className="lp-wrap lp-foot-grid">
+          <div>
+            <b>{PRODUCT_NAME}</b>
+            <p>Hire the crew. Review the work.</p>
+          </div>
+          <div>
+            <h2>Product</h2>
+            <a href="#how">How it works</a>
+            <a href="#roles">Roles</a>
+            <a href="#budgets">Budgets</a>
+            <a href="#review">Review</a>
+          </div>
+          <div>
+            <h2>Docs</h2>
+            <Link to="/docs/overview">Overview</Link>
+            <Link to="/docs/quickstart">Quickstart</Link>
+            <Link to="/docs/task-lifecycle">Task lifecycle</Link>
+            <Link to="/docs/architecture">Architecture</Link>
+          </div>
+          <div>
+            <h2>Account</h2>
             <Link to="/signup">Sign up</Link>
+            <Link to="/login">Log in</Link>
           </div>
         </div>
       </footer>
+      {authMode && (
+        <AuthPage
+          initialMode={authMode}
+          presentation="modal"
+          onClose={() => navigate("/", { replace: true })}
+        />
+      )}
     </div>
   );
 }

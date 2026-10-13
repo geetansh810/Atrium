@@ -5,7 +5,10 @@
 import { createDomainStore } from "./domains/createDomainStore";
 
 export type ThemeMode = "dark" | "light";
-const KEY = "atrium:theme";
+// BaseCrew starts dark for every fresh install. The brand-specific key also
+// prevents a legacy Atrium/CrewMate light preference from overriding the new
+// default after the visual rebrand.
+const KEY = "basecrew:theme";
 
 function read(): ThemeMode {
   // ?theme=light|dark wins over the stored choice (shareable links, screenshots).

@@ -50,6 +50,7 @@ const PAGES: { to: string; label: string; icon: Command["icon"] }[] = [
   { to: "/reports", label: "Reports", icon: ReportsIcon },
   { to: "/team", label: "Team", icon: TeamIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/docs", label: "Docs", icon: KnowledgeIcon },
 ];
 
 export function CommandPalette() {

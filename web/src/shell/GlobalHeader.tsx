@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { BellIcon, ChatIcon, MenuIcon, MoonIcon, PlusIcon, SearchIcon, SettingsIcon, SunIcon } from "../shared/icons";
+import { PRODUCT_NAME } from "../shared/theme";
 import { setThemeMode, useThemeMode } from "../shared/themeMode";
 import { useApp } from "../shared/store";
 import { useAppNav } from "../shared/nav";
@@ -54,7 +55,7 @@ export function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
       ? "Tasks"
       : location.pathname.startsWith("/employees/")
         ? "Employees"
-        : "Atrium");
+        : PRODUCT_NAME);
 
   return (
     <header className="global-header">

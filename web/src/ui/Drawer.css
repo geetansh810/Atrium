@@ -82,3 +82,9 @@
 .drawer-body.no-pad {
   padding: 0;
 }
+
+@media (max-width: 720px) {
+  .drawer {
+    width: 100% !important;
+  }
+}

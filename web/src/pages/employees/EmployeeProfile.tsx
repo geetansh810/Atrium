@@ -95,6 +95,7 @@ export function EmployeeProfile() {
     .filter((t) => t.assignedAgentId === agent.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const workload = agentTasks.filter((t) => ACTIVE_STATUSES.has(t.status)).length;
+  const onTask = agentTasks.some((t) => t.status === "claimed" || t.status === "in_progress");
   const activityFeed: FeedEntry[] = synthesizeFeed(agentTasks, [agent], 30).map((f) => ({
     id: f.id,
     agentName: null,
@@ -244,7 +245,7 @@ export function EmployeeProfile() {
   return (
     <PageShell
       title={agent.name}
-      subtitle={agent.roleTitle}
+      subtitle={`${agent.roleTitle}, ${agent.modelName}`}
       actions={
         <>
           {dm && (
@@ -264,7 +265,8 @@ export function EmployeeProfile() {
       <div className="employee-profile-identity">
         <Avatar name={agent.name} seed={agent.id} size={40} square />
         <span className="employee-profile-meta">
-          <StatusDot status={agent.status} /> {agent.paused ? "Paused" : STATUS_LABEL[agent.status]}
+          <StatusDot status={agent.paused ? "away" : onTask ? "working" : agent.status} />{" "}
+          {agent.paused ? "Paused" : onTask ? "On a task" : STATUS_LABEL[agent.status]}
         </span>
         <span className="employee-profile-meta">Joined {formatTimeAgo(agent.joinedAt)}</span>
         {workload > 0 && agentTasks[0] && (

@@ -90,6 +90,10 @@ interface OrgCardProps {
 // show reporting lines at a glance; workload/status detail lives one click
 // away on the agent's own profile.
 function OrgCard({ agent, onOpen }: OrgCardProps) {
+  const { state } = useApp();
+  const live = state.tasks.some(
+    (t) => t.assignedAgentId === agent.id && (t.status === "claimed" || t.status === "in_progress"),
+  );
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -104,10 +108,11 @@ function OrgCard({ agent, onOpen }: OrgCardProps) {
       onClick={onOpen}
       onKeyDown={onKeyDown}
     >
-      <PersonAvatar name={agent.name} seed={agent.id} status={agent.status} size={32} />
+      <PersonAvatar name={agent.name} seed={agent.id} status={live ? "working" : agent.status} size={32} />
       <div className="org-card-info">
         <div className="org-card-name">{agent.name}</div>
         <div className="org-card-role">{agent.roleTitle}</div>
+        <div className="org-card-role">{agent.modelName}</div>
       </div>
     </div>
   );

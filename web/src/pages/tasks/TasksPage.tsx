@@ -2,7 +2,7 @@ import { confirmAction } from "../../shared/confirm";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../../shared/Avatar";
-import { PRIORITY_LABEL } from "../../shared/format";
+import { formatTimeAgo, PRIORITY_LABEL } from "../../shared/format";
 import { skillColor } from "../../shared/skillColor";
 import { describeStalledSummary, findStalledTasks, kanbanColumns, summarizeStalledTasks } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
@@ -10,6 +10,7 @@ import { ProgressBar } from "../../shared/ProgressBar";
 import { KanbanBoard } from "../../ui/Kanban";
 import type { KanbanColumnData } from "../../ui/Kanban";
 import { Banner } from "../../ui/Banner";
+import { StatusPill, taskStatusTone } from "../../ui/StatusPill";
 import type { Task } from "../../shared/types";
 import { TaskDrawer } from "./TaskDrawer";
 import "./TasksPage.css";
@@ -32,6 +33,7 @@ export function TasksPage() {
   const navigate = useNavigate();
   const { id: openTaskId } = useParams();
   const [needsReworkOnly, setNeedsReworkOnly] = useState(false);
+  const [view, setView] = useState<"list" | "board">("list");
 
   const visibleTasks = needsReworkOnly ? state.tasks.filter((t) => t.feedback) : state.tasks;
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
@@ -72,15 +74,29 @@ export function TasksPage() {
       <header className="tasks-page-head">
         <div>
           <h1>Tasks</h1>
-          <p>Drag a card from Review to Done to approve it. Agents move everything else.</p>
+          <p>
+            {view === "board"
+              ? "Drag a card from Review to Done to approve it. Agents move everything else."
+              : "Grouped by status. Open a row to review it."}
+          </p>
         </div>
-        <button
-          className={`btn sm${needsReworkOnly ? " primary" : ""}`}
-          onClick={() => setNeedsReworkOnly((v) => !v)}
-          disabled={reworkCount === 0}
-        >
-          Needs rework ({reworkCount})
-        </button>
+        <div className="tasks-page-tools">
+          <div className="tasks-page-views" role="group" aria-label="Task view">
+            <button className={`btn sm${view === "list" ? " primary" : ""}`} type="button" onClick={() => setView("list")}>
+              List
+            </button>
+            <button className={`btn sm${view === "board" ? " primary" : ""}`} type="button" onClick={() => setView("board")}>
+              Board
+            </button>
+          </div>
+          <button
+            className={`btn sm${needsReworkOnly ? " primary" : ""}`}
+            onClick={() => setNeedsReworkOnly((v) => !v)}
+            disabled={reworkCount === 0}
+          >
+            Needs rework ({reworkCount})
+          </button>
+        </div>
       </header>
 
       {stalledSummary.length > 0 && (
@@ -91,6 +107,37 @@ export function TasksPage() {
         />
       )}
 
+      {view === "list" ? (
+        <div className="tasks-list">
+          {columns.map((column) => (
+            <section key={column.key}>
+              <h2>
+                {column.title}
+                <span>{column.items.length}</span>
+              </h2>
+              {column.items.length === 0 ? (
+                <p className="tasks-list-empty">Nothing here.</p>
+              ) : (
+                <ul>
+                  {column.items.map((task) => {
+                    const agent = task.assignedAgentId ? agentById.get(task.assignedAgentId) : undefined;
+                    return (
+                      <li key={task.id}>
+                        <button type="button" onClick={() => navigate(`/tasks/${task.id}`)}>
+                          <StatusPill label={task.status.replaceAll("_", " ")} tone={taskStatusTone(task.status)} />
+                          <span className="tasks-list-title">{task.title}</span>
+                          <span className="tasks-list-who">{agent?.name ?? "Unassigned"}</span>
+                          <span className="tasks-list-when">{formatTimeAgo(task.createdAt)}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      ) : (
       <div className="tasks-page-board">
         <KanbanBoard
           columns={columns}
@@ -124,6 +171,7 @@ export function TasksPage() {
           }}
         />
       </div>
+      )}
 
       {openTaskId && <TaskDrawer taskId={openTaskId} onClose={() => navigate("/tasks")} />}
     </div>

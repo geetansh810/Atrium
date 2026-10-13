@@ -286,8 +286,38 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   ];
 
   return (
-    <Drawer title={task.title} subtitle={agent?.name ?? "Unassigned"} onClose={onClose} width={640}>
-      <Tabs tabs={tabs} />
+    <Drawer title={task.title} subtitle={agent?.name ?? "Unassigned"} onClose={onClose} width={860} noPad>
+      <div className="task-layout">
+        <div className="task-layout-main">
+          <Tabs tabs={tabs} />
+        </div>
+        <aside className="task-props" aria-label="Task properties">
+          <div>
+            <span>Status</span>
+            <StatusPill label={task.status.replaceAll("_", " ")} tone={taskStatusTone(task.status)} />
+          </div>
+          <div>
+            <span>Priority</span>
+            <b>{PRIORITY_LABEL[task.priority] ?? task.priority}</b>
+          </div>
+          <div>
+            <span>Assignee</span>
+            <b>{agent ? <AgentLink agent={agent} size={16} /> : "Unassigned"}</b>
+          </div>
+          <div>
+            <span>Skill</span>
+            <b>{task.requiredSkill}</b>
+          </div>
+          <div>
+            <span>Part of</span>
+            <b>{parentTask ? <TaskLink task={parentTask} /> : "This is the root"}</b>
+          </div>
+          <div>
+            <span>Created</span>
+            <b>{formatTimeAgo(task.createdAt)}</b>
+          </div>
+        </aside>
+      </div>
     </Drawer>
   );
 }

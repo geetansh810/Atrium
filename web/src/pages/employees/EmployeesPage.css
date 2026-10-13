@@ -28,6 +28,15 @@
   background: var(--panel-alt);
 }
 
+:root[data-theme="light"] .employee-card {
+  box-shadow: var(--shadow-1);
+}
+
+:root[data-theme="light"] .employee-card:hover {
+  background: var(--panel);
+  box-shadow: var(--shadow-2);
+}
+
 .employee-card-top {
   display: flex;
   align-items: center;
