@@ -88,7 +88,7 @@
   gap: 10px;
   background: var(--panel-alt);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   padding: 9px 12px;
   text-align: left;
   color: var(--text);
@@ -133,7 +133,7 @@
 .employee-profile-memory-row {
   background: var(--panel-alt);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   padding: 10px 12px;
 }
 
@@ -149,4 +149,28 @@
   font-size: 12.5px;
   line-height: 1.5;
   margin: 0 0 6px;
+}
+
+.employee-profile-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.employee-profile-reports {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.employee-profile-reports .entity-link,
+.employee-profile-detail-row .entity-link {
+  max-width: none;
+  flex-shrink: 0;
+}
+
+.employee-profile-back {
+  align-self: flex-start;
 }

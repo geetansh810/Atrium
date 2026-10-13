@@ -82,7 +82,7 @@ export function KanbanColumn({ title, count, onDrop, children }: KanbanColumnPro
         <span className="kanban-column-title">{title}</span>
         <span className="kanban-column-count">{count}</span>
       </div>
-      <div className="kanban-column-body">
+      <div className="kanban-column-body" tabIndex={0} role="region" aria-label={`${title} tasks`}>
         {count === 0 ? <div className="kanban-column-empty">No tasks</div> : children}
       </div>
     </div>

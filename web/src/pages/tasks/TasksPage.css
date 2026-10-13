@@ -30,6 +30,76 @@
   margin: 0;
 }
 
+.tasks-page-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tasks-page-views {
+  display: flex;
+  gap: 4px;
+}
+
+.tasks-list {
+  overflow: auto;
+  padding-bottom: 24px;
+}
+
+.tasks-list h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 16px 0 4px;
+}
+
+.tasks-list h2 span,
+.tasks-list-empty,
+.tasks-list-who,
+.tasks-list-when {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.tasks-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tasks-list button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tasks-list button:hover {
+  background: var(--panel-alt);
+}
+
+.tasks-list-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks-list-empty {
+  margin: 0;
+  font-size: 13px;
+}
+
 .tasks-page-board {
   flex: 1;
   min-height: 0;
@@ -60,7 +130,7 @@
 .task-card-skill {
   width: 20px;
   height: 20px;
-  border-radius: 5px;
+  border-radius: var(--r-1);
   flex-shrink: 0;
   display: flex;
   align-items: center;

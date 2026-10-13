@@ -291,7 +291,9 @@ class SkillContextAssemblerTest extends IntegrationTestBase {
         assertThat(bundle.skills()).allSatisfy(s -> assertThat(s.indexOnly()).isFalse());
         assertThat(bundle.skills()).extracting(SkillExcerpt::name)
                 .containsExactly("Code review checklist", "Output format: unified diff");
-        assertThat(bundle.provenanceIds()).containsExactlyElementsOf(hiredSkillIds(company, agentId));
+        // findByAgentId has no ORDER BY, so CI can return the composite primary key
+        // (skill_id) order rather than role-position order. The names above pin order.
+        assertThat(bundle.provenanceIds()).containsExactlyInAnyOrderElementsOf(hiredSkillIds(company, agentId));
         assertThat(bundle.tokenCount()).isGreaterThan(0);
         assertThat(bundle.memories()).isEmpty();
         assertThat(bundle.knowledge()).isEmpty();

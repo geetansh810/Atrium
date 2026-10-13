@@ -10,7 +10,7 @@
   max-width: calc(100vw - 40px);
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   box-shadow: var(--shadow-2), var(--edge-highlight);
   padding: 12px;
   z-index: 30;
@@ -64,7 +64,7 @@
   font-size: 16px;
   line-height: 1;
   padding: 2px 4px;
-  border-radius: 6px;
+  border-radius: var(--r-2);
   flex-shrink: 0;
   transition: color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
 }

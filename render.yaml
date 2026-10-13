@@ -19,7 +19,9 @@
 #   • Free web services SLEEP after 15 min idle — that suspends the background
 #     agent poll loops, outbox relay, and lease reclaim, so agents stop working
 #     until the next HTTP request wakes the service (~30–60s JVM cold start).
-#   • Free web = 512 MB RAM; this JVM app can run tight under load.
+#   • Free web = 512 MB RAM; this JVM app can run tight under load. The image
+#     caps the heap at 50% of the container limit (JAVA_TOOL_OPTIONS in
+#     core-api/Dockerfile) so it stays inside 512 MB instead of OOM-killing.
 #   Upgrade core-api + Postgres to a paid plan before relying on it unattended.
 
 databases:

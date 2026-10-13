@@ -13,7 +13,7 @@ export function BuildLog() {
   return (
     <>
       <Lead>
-        Atrium was built one milestone per session, and every session started by amending a contract
+        BaseCrew was built one milestone per session, and every session started by amending a contract
         document rather than a class. Each milestone carried a literal done-when check that had to be
         demonstrated — usually in a browser against a real database, not asserted in a summary.
       </Lead>

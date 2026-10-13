@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # LOCAL development image for the web frontend — Vite dev server with hot reload.
 # Used only by the root docker-compose.yml. Production builds go through Netlify
 # (../netlify.toml) or the production ./Dockerfile.
@@ -6,7 +7,8 @@ WORKDIR /app
 
 # Install deps first so this layer caches unless the lockfile changes.
 COPY package.json package-lock.json ./
-RUN npm ci
+# BuildKit cache mount: a lockfile change reuses already-downloaded packages.
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 # Source is bind-mounted by docker-compose at runtime (live editing / HMR);
 # copying it here too keeps the image runnable on its own.

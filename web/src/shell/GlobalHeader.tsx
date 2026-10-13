@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { BellIcon, ChatIcon, MenuIcon, PlusIcon, SearchIcon, SettingsIcon } from "../shared/icons";
+import { BellIcon, ChatIcon, MenuIcon, MoonIcon, PlusIcon, SearchIcon, SettingsIcon, SunIcon } from "../shared/icons";
+import { PRODUCT_NAME } from "../shared/theme";
+import { setThemeMode, useThemeMode } from "../shared/themeMode";
 import { useApp } from "../shared/store";
 import { useAppNav } from "../shared/nav";
 import { useNotifications } from "../shared/notifications";
@@ -18,6 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/knowledge": "Knowledge",
   "/reports": "Reports",
   "/logs": "LLM Logs",
+  "/design": "Design system",
   "/team": "Team",
   "/notifications": "Notifications",
   "/settings": "Settings",
@@ -44,6 +47,7 @@ export function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   const nav = useAppNav();
   const time = useClock();
   const { unreadCount } = useNotifications();
+  const themeMode = useThemeMode();
   const onlineCount = state.agents.filter((a) => a.status !== "offline").length + 1;
   const title =
     PAGE_TITLES[location.pathname] ??
@@ -51,7 +55,7 @@ export function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
       ? "Tasks"
       : location.pathname.startsWith("/employees/")
         ? "Employees"
-        : "Atrium");
+        : PRODUCT_NAME);
 
   return (
     <header className="global-header">
@@ -80,6 +84,13 @@ export function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
           <span className="global-header-online-label">{onlineCount} online</span>
         </span>
 
+        <button
+          className="global-header-icon-btn"
+          aria-label={themeMode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+        >
+          {themeMode === "dark" ? <SunIcon /> : <MoonIcon />}
+        </button>
         <button className="global-header-icon-btn" aria-label="Chat" onClick={() => nav.openChat()}>
           <ChatIcon />
         </button>

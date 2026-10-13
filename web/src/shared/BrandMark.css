@@ -1,0 +1,20 @@
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text);
+}
+
+.brand-horizontal {
+  display: block;
+  width: 142px;
+  height: 55px;
+  object-fit: cover;
+  object-position: center;
+  background: var(--brand-paper);
+  clip-path: polygon(1% 13%, 28% 3%, 31% 15%, 62% 9%, 66% 17%, 99% 10%, 93% 88%, 55% 78%, 26% 86%, 5% 96%);
+}
+
+.brand-lockup.compact .brand-horizontal {
+  width: 118px;
+  height: 46px;
+}

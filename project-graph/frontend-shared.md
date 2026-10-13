@@ -2,6 +2,12 @@
 
 **What:** `web/src/shared/` — the single source for tokens, types, mock data, and app state.
 
+**Asset follow-up (2026-10-13):** `BrandMark` now uses the supplied horizontal street logo (`basecrew-horizontal.jpg`) at the reusable lockup sizes; the vertical pennant is used directly for `basecrew-favicon.jpg`. A later same-day polish pass removed the duplicate vertical pennant from the landing hero and split light-theme action gold from contrast-safe text gold.
+
+**State (2026-10-13): user-facing product is now BaseCrew.** The supplied black/white/gold pennant is shipped as `web/public/basecrew-logo.jpg` and rendered by `BrandMark` across landing, auth, docs, and the signed-in shell. `theme.ts` and `index.css` now use the BaseCrew crew-pennant system: true black and graphite surfaces, signal gold, warm white, tighter radii, angular primary actions, Space Grotesk display type, and a warm mineral light theme with the black rail retained. Java packages, DB, repo, and localStorage compatibility keys remain Atrium.
+
+**State (2026-10-12): `theme.ts` exports `PRODUCT_NAME` = `CrewMate` and `PRODUCT_TAGLINE`; `Avatar` is now a deterministic illustrated employee portrait rather than an initial.** Six palette/hair combinations and three skin tones are selected from the existing per-agent hash, so identity stays stable without stored images. Dark remains the navy/amber Control room. Light is structurally distinct: warm mineral canvas + white work surfaces, while the nav rail keeps a dedicated navy palette via `--nav-*` tokens scoped inside `NavSidebar` (including child BrandMark/avatars/buttons); burnt amber remains the action color and cobalt/green/red retain semantic meaning. It is no longer a global token inversion. Packages and repo stay Atrium.
+
 **State (2026-07-14, MF-4): contract now carries `Agent.paused`; nav.ts is the routing indirection layer.**
 - `theme.ts` — design tokens (navy base, panel, teal accent, status colors, avatar palette, plus MF-2's `--node-*`/`--glow-running`/`--surface-{1,2,3}`), mirrored as CSS vars in `index.css`. **No hardcoded hex in components** (grep-verified every MF session).
 - `types.ts` — TS types mirroring [[data-model]] columns (Agent incl. `paused` since MF-4, Task+Subtask+`TaskEvent`/`events[]` since MF-2, ActivityEvent, Channel/ChatMessage, Announcement, Budget, RoleTemplate, analytics shapes…). Never redeclare shapes ad hoc.
@@ -12,7 +18,7 @@
 - `nav.ts` (MF-1, since generalized each MF session) — `useAppNav()`'s `openTask`/`openAgent`/`openChat` are the one indirection between components and navigation; `openTask` (MF-3) and `openAgent` (MF-4) now do real `useNavigate()` routing, only `openChat` still dispatches a legacy `openPanel` (pending MF-6).
 - `selectors.ts` (MF-2) — pure derivations with no `storeTypes.ts` dependency, safe from any page: `computeKpis`, `companyBudgetBurn`, `companyPulse`, `liveMissionTask`, `synthesizeFeed`, `kanbanColumns` (consumed by MF-3's Tasks board), `orgTree` (consumed by MF-4's Organization page).
 - `ConversationThread` and `Kanban` don't live here (they're `ui/` primitives, not shared state) — see [[web-dashboard]].
-- Atoms: `icons.tsx` (~30 line icons), `StatusDot.tsx`, `Avatar.tsx` (deterministic tint), `ProgressBar.tsx`, `skillColor.ts`, `format.ts` (timeAgo, tokens, durations).
+- Atoms: `icons.tsx` (~30 line icons), `StatusDot.tsx`, `Avatar.tsx` (deterministic illustrated figure), `ProgressBar.tsx`, `skillColor.ts`, `format.ts` (timeAgo, tokens, durations).
 
 **Status palette:** green=online/working · orange=away/in_meeting · blue=in_focus · red-ish=flagged · grey=offline.
 

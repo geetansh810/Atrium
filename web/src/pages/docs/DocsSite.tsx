@@ -1,21 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useParams } from "react-router";
-import { PRODUCT_NAME } from "../../shared/theme";
-import { useEnterpriseTheme, type EnterpriseTheme } from "../landing/useEnterpriseTheme";
-import { ThemeToggle } from "../landing/ThemeToggle";
+import { BrandMark } from "../../shared/BrandMark";
+import { setThemeMode, useThemeMode } from "../../shared/themeMode";
 import { DEFAULT_SLUG, DOCS, findPage, pageNeighbors } from "./docsNav";
-import "../landing/LandingPage.css";
 import "./docs.css";
 
-function DocsHeader({
-  onMenu,
-  theme,
-  onToggle,
-}: {
-  onMenu: () => void;
-  theme: EnterpriseTheme;
-  onToggle: () => void;
-}) {
+function DocsHeader({ onMenu }: { onMenu: () => void }) {
+  const mode = useThemeMode();
   return (
     <header className="dx-header">
       <div className="dx-header-in">
@@ -24,18 +15,23 @@ function DocsHeader({
           <span />
           <span />
         </button>
-        <Link className="e-brand" to="/">
-          <span className="e-brand-mark" aria-hidden="true" />
-          <b>{PRODUCT_NAME}</b>
+        <Link className="dx-brand" to="/">
+          <BrandMark compact />
           <span className="dx-header-tag">Docs</span>
         </Link>
         <div className="dx-header-auth">
-          <ThemeToggle theme={theme} onToggle={onToggle} />
+          <button
+            className="dx-theme"
+            type="button"
+            onClick={() => setThemeMode(mode === "dark" ? "light" : "dark")}
+          >
+            {mode === "dark" ? "Light" : "Dark"}
+          </button>
           <Link className="dx-header-home" to="/">
             Home
           </Link>
-          <Link className="e-btn e-btn-primary e-btn-sm" to="/signup">
-            Start free
+          <Link className="dx-signup" to="/signup">
+            Sign up
           </Link>
         </div>
       </div>
@@ -68,7 +64,7 @@ function DocsSidebar({ activeSlug, onNavigate }: { activeSlug: string; onNavigat
   );
 }
 
-function DocPageView({ theme, onToggle }: { theme: EnterpriseTheme; onToggle: () => void }) {
+function DocPageView() {
   const { slug } = useParams();
   const page = findPage(slug);
   const { prev, next } = pageNeighbors(page.slug);
@@ -83,7 +79,7 @@ function DocPageView({ theme, onToggle }: { theme: EnterpriseTheme; onToggle: ()
 
   return (
     <>
-      <DocsHeader onMenu={() => setMenuOpen((v) => !v)} theme={theme} onToggle={onToggle} />
+      <DocsHeader onMenu={() => setMenuOpen((v) => !v)} />
       <div className={menuOpen ? "dx-shell menu-open" : "dx-shell"}>
         <aside className="dx-side-wrap">
           <DocsSidebar activeSlug={page.slug} onNavigate={() => setMenuOpen(false)} />
@@ -136,22 +132,19 @@ function DocPageView({ theme, onToggle }: { theme: EnterpriseTheme; onToggle: ()
   );
 }
 
-// Docs is a public surface reachable signed-in or signed-out; App.tsx mounts it
-// outside the auth gate. It carries its own light enterprise theme.
+// Public, signed in or not. App.tsx mounts this above the auth gate.
 export function DocsSite() {
-  const { theme, toggle } = useEnterpriseTheme();
   const location = useLocation();
 
-  // React Router doesn't restore scroll between docs pages on its own.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   return (
-    <div className="enterprise docs">
+    <div className="docs">
       <Routes>
         <Route path="/docs" element={<Navigate to={`/docs/${DEFAULT_SLUG}`} replace />} />
-        <Route path="/docs/:slug" element={<DocPageView theme={theme} onToggle={toggle} />} />
+        <Route path="/docs/:slug" element={<DocPageView />} />
         <Route path="/docs/*" element={<Navigate to={`/docs/${DEFAULT_SLUG}`} replace />} />
       </Routes>
     </div>

@@ -5,7 +5,6 @@ import { AppShell } from "./shell/AppShell";
 import { AppProvider } from "./shared/store";
 import { LandingPage } from "./pages/landing/LandingPage";
 import { DocsSite } from "./pages/docs/DocsSite";
-import { AuthPage } from "./pages/auth/AuthPage";
 import { OnboardingWizard } from "./pages/onboarding/OnboardingWizard";
 import { useAuthSession } from "./shared/auth";
 import { completeOnboarding, needsOnboarding } from "./shared/onboarding";
@@ -14,15 +13,14 @@ import { USE_MOCKS } from "./shared/config";
 const queryClient = new QueryClient();
 
 // M-LP1: the signed-out entry point — a marketing page at "/" with real
-// /signup and /login routes into AuthPage, replacing the old bare AuthPage-at-"/"
-// default. Any unknown path while signed out falls back to the landing page
-// rather than a 404, since there's no dashboard state to deep-link into yet.
+// /signup and /login keep shareable URLs but render AuthPage as a modal over
+// the landing page. Unknown signed-out paths return to the landing page.
 function PublicApp() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/signup" element={<AuthPage initialMode="signup" />} />
-      <Route path="/login" element={<AuthPage initialMode="login" />} />
+      <Route path="/signup" element={<LandingPage authMode="signup" />} />
+      <Route path="/login" element={<LandingPage authMode="login" />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -62,10 +60,8 @@ function OnboardingOrShell({ companyId }: { companyId: string }) {
   return <AppShell />;
 }
 
-// Docs is a public surface reachable whether or not a visitor is signed in, so
-// it's branched here at the root — above the auth gate — rather than living
-// inside either router. It renders its own <Routes> for the /docs subtree.
-// Everything else keeps its existing top-level routing untouched.
+// Docs is public, signed in or not, so it sits above the auth gate. DocsSite
+// renders its own routes for /docs. Everything else keeps the existing split.
 function Root() {
   const { pathname } = useLocation();
   if (pathname === "/docs" || pathname.startsWith("/docs/")) return <DocsSite />;

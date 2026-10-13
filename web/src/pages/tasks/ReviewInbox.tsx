@@ -1,6 +1,8 @@
+import { confirmAction } from "../../shared/confirm";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Avatar } from "../../shared/Avatar";
+import { AgentLink, TaskLink } from "../../ui/EntityLink";
+import { PageShell } from "../../ui/PageShell";
 import { formatTimeAgo } from "../../shared/format";
 import { USE_MOCKS } from "../../shared/config";
 import { useAuthSession } from "../../shared/auth";
@@ -52,16 +54,33 @@ function ApiMemoriesTab() {
             <p className="review-inbox-memory-content">{m.content}</p>
             <div className="review-card-actions">
               <button
-                className="btn accent sm"
+                className="btn primary sm"
                 disabled={review.isPending}
-                onClick={() => review.mutate({ memoryId: m.id, action: "approve" })}
+                onClick={async () => {
+                  const ok =
+                    m.scope === "agent" ||
+                    (await confirmAction({
+                      title: `Approve this ${m.scope}-wide memory?`,
+                      body: `Every agent in this ${m.scope === "company" ? "company" : "role"} will recall it in future prompts.`,
+                      confirmLabel: "Approve memory",
+                    }));
+                  if (ok) review.mutate({ memoryId: m.id, action: "approve" });
+                }}
               >
                 Approve
               </button>
               <button
                 className="btn danger sm"
                 disabled={review.isPending}
-                onClick={() => review.mutate({ memoryId: m.id, action: "reject" })}
+                onClick={async () => {
+                  const ok = await confirmAction({
+                    title: "Reject this memory?",
+                    body: "It is kept for audit but never recalled by any agent.",
+                    confirmLabel: "Reject memory",
+                    tone: "danger",
+                  });
+                  if (ok) review.mutate({ memoryId: m.id, action: "reject" });
+                }}
               >
                 Reject
               </button>
@@ -102,7 +121,15 @@ export function ReviewInbox() {
   const tasksTab = (
     <>
       {queue.length === 0 && (
-        <EmptyState title="All clear — nothing needs review." />
+        <EmptyState
+          title="Nothing needs review"
+          description="Finished work from your agents lands here. You can approve it or send it back with feedback."
+          action={
+            <button className="btn sm" onClick={() => navigate("/tasks")}>
+              Open the task board
+            </button>
+          }
+        />
       )}
 
       {queue.map((task) => {
@@ -111,13 +138,15 @@ export function ReviewInbox() {
         return (
           <div className="review-card" key={task.id}>
             <div className="review-card-top">
-              <span className="review-card-title">{task.title}</span>
-              <StatusPill label={isFlagged ? "Flagged" : "Pending Review"} tone={isFlagged ? "danger" : "warning"} />
+              <span className="review-card-title">
+                <TaskLink task={task} showStatus={false} />
+              </span>
+              <StatusPill label={isFlagged ? "Flagged" : "Needs review"} tone={isFlagged ? "danger" : "warning"} />
             </div>
             {agent && (
               <div className="review-card-agent">
-                <Avatar name={agent.name} seed={agent.id} size={20} />
-                {agent.name} · {formatTimeAgo(task.completedAt ?? task.createdAt)}
+                <AgentLink agent={agent} size={20} />
+                <span>{formatTimeAgo(task.completedAt ?? task.createdAt)}</span>
               </div>
             )}
 
@@ -139,7 +168,7 @@ export function ReviewInbox() {
                 />
                 <div className="review-card-actions">
                   <button className="btn primary sm" disabled={!feedback.trim()} onClick={() => sendBack(task)}>
-                    {isFlagged ? "Send guidance & resume" : "Reject with feedback"}
+                    {isFlagged ? "Send guidance and resume" : "Reject with feedback"}
                   </button>
                   <button
                     className="btn sm"
@@ -156,8 +185,15 @@ export function ReviewInbox() {
               <div className="review-card-actions">
                 {!isFlagged && (
                   <button
-                    className="btn accent sm"
-                    onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
+                    className="btn primary sm"
+                    onClick={async () => {
+                      const ok = await confirmAction({
+                        title: `Approve "${task.title}"?`,
+                        body: "Approving marks the work as shipped.",
+                        confirmLabel: "Approve",
+                      });
+                      if (ok) dispatch({ type: "approveTask", taskId: task.id });
+                    }}
                   >
                     Approve
                   </button>
@@ -188,13 +224,13 @@ export function ReviewInbox() {
   ];
 
   return (
-    <div className="review-inbox">
-      <header className="review-inbox-head">
-        <h1>Review Inbox</h1>
-        <p>{queue.length} item{queue.length === 1 ? "" : "s"} waiting on you.</p>
-      </header>
-
-      <Tabs tabs={tabs} />
-    </div>
+    <PageShell
+      title="Review inbox"
+      subtitle={queue.length === 0 ? "You're all caught up." : `${queue.length} ${queue.length === 1 ? "item" : "items"} waiting on you.`}
+    >
+      <div className="review-inbox">
+        <Tabs tabs={tabs} />
+      </div>
+    </PageShell>
   );
 }

@@ -9,6 +9,7 @@ import { synthesizeFeed, TASK_EVENT_LABEL } from "../../shared/selectors";
 import { useAgentMemories } from "../../shared/queries";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
+import { confirmAction } from "../../shared/confirm";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { StatCard } from "../../ui/StatCard";
@@ -17,6 +18,8 @@ import { EmptyState } from "../../ui/EmptyState";
 import { Feed } from "../../ui/Feed";
 import type { FeedEntry } from "../../ui/Feed";
 import { ConversationThread } from "../../ui/ConversationThread";
+import { PageShell } from "../../ui/PageShell";
+import { AgentLink, TaskLink } from "../../ui/EntityLink";
 import "./EmployeeProfile.css";
 
 const ACTIVE_STATUSES = new Set(["queued", "claimed", "in_progress", "flagged"]);
@@ -70,9 +73,17 @@ export function EmployeeProfile() {
   const agent = state.agents.find((a) => a.id === id);
   if (!agent) {
     return (
-      <div className="employee-profile-page">
-        <EmptyState title="Agent not found." description="It may have been removed." />
-      </div>
+      <PageShell title="Agent not found">
+        <EmptyState
+          title="This agent is not on the roster."
+          description="It may have been removed."
+          action={
+            <button className="btn sm" onClick={() => navigate("/employees")}>
+              Back to employees
+            </button>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -84,6 +95,7 @@ export function EmployeeProfile() {
     .filter((t) => t.assignedAgentId === agent.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const workload = agentTasks.filter((t) => ACTIVE_STATUSES.has(t.status)).length;
+  const onTask = agentTasks.some((t) => t.status === "claimed" || t.status === "in_progress");
   const activityFeed: FeedEntry[] = synthesizeFeed(agentTasks, [agent], 30).map((f) => ({
     id: f.id,
     agentName: null,
@@ -112,12 +124,16 @@ export function EmployeeProfile() {
           </div>
           <div className="employee-profile-detail-row">
             <span>Manager</span>
-            <span>{manager ? manager.name : "—"}</span>
+            <span>{manager ? <AgentLink agent={manager} /> : "None"}</span>
           </div>
           {reports.length > 0 && (
             <div className="employee-profile-detail-row">
               <span>Direct reports</span>
-              <span>{reports.map((r) => r.name).join(", ")}</span>
+              <span className="employee-profile-reports">
+              {reports.map((r) => (
+                <AgentLink key={r.id} agent={r} />
+              ))}
+            </span>
             </div>
           )}
           <div className="employee-profile-detail-row">
@@ -171,9 +187,9 @@ export function EmployeeProfile() {
       label: "Performance",
       content: (
         <div className="employee-profile-stats">
-          <StatCard label="Tasks Completed" value={stats.tasksCompleted} />
-          <StatCard label="Success Rate" value={`${stats.successRate}%`} />
-          <StatCard label="Focus Time" value={formatFocusTime(stats.focusMinutes)} />
+          <StatCard label="Tasks completed" value={stats.tasksCompleted} />
+          <StatCard label="Success rate" value={`${stats.successRate}%`} />
+          <StatCard label="Focus time" value={formatFocusTime(stats.focusMinutes)} />
           {!USE_MOCKS && (
             <p className="employee-profile-note">
               Focus Time isn't tracked yet — no presence source exists until a future milestone.
@@ -195,13 +211,24 @@ export function EmployeeProfile() {
           <div className="detail-actions">
             <button
               className={`btn${agent.paused ? " accent" : " danger"}`}
-              onClick={() => dispatch({ type: "setAgentPaused", agentId: agent.id, paused: !agent.paused })}
+              onClick={async () => {
+                if (!agent.paused) {
+                  const ok = await confirmAction({
+                    title: `Pause ${agent.name}?`,
+                    body: "It finishes nothing new until resumed. Work already in progress is not cancelled.",
+                    confirmLabel: "Pause agent",
+                    tone: "danger",
+                  });
+                  if (!ok) return;
+                }
+                dispatch({ type: "setAgentPaused", agentId: agent.id, paused: !agent.paused });
+              }}
             >
-              {agent.paused ? "Resume Agent" : "Pause Agent"}
+              {agent.paused ? "Resume agent" : "Pause agent"}
             </button>
             {agent.status === "in_focus" && (
               <button className="btn" onClick={() => dispatch({ type: "exitFocusPod", agentId: agent.id })}>
-                Exit Focus Pod
+                Exit focus pod
               </button>
             )}
           </div>
@@ -216,28 +243,40 @@ export function EmployeeProfile() {
   ];
 
   return (
-    <div className="employee-profile-page">
+    <PageShell
+      title={agent.name}
+      subtitle={`${agent.roleTitle}, ${agent.modelName}`}
+      actions={
+        <>
+          {dm && (
+            <button className="btn" onClick={() => nav.openChat(dm.id)}>
+              Message
+            </button>
+          )}
+          <button className="btn primary" onClick={() => dispatch({ type: "setNewTaskOpen", open: true })}>
+            Assign task
+          </button>
+        </>
+      }
+    >
       <button className="employee-profile-back" onClick={() => navigate("/employees")}>
         ← Employees
       </button>
-      <header className="employee-profile-head">
-        <Avatar name={agent.name} seed={agent.id} size={56} square />
-        <div className="employee-profile-head-info">
-          <span className="employee-profile-name">{agent.name}</span>
+      <div className="employee-profile-identity">
+        <Avatar name={agent.name} seed={agent.id} size={40} square />
+        <span className="employee-profile-meta">
+          <StatusDot status={agent.paused ? "away" : onTask ? "working" : agent.status} />{" "}
+          {agent.paused ? "Paused" : onTask ? "On a task" : STATUS_LABEL[agent.status]}
+        </span>
+        <span className="employee-profile-meta">Joined {formatTimeAgo(agent.joinedAt)}</span>
+        {workload > 0 && agentTasks[0] && (
           <span className="employee-profile-meta">
-            <StatusDot status={agent.status} /> {STATUS_LABEL[agent.status]}
+            Now: <TaskLink task={agentTasks.find((t) => ACTIVE_STATUSES.has(t.status)) ?? agentTasks[0]} showStatus={false} />
           </span>
-          <span className="employee-profile-meta">{agent.roleTitle}</span>
-          <span className="employee-profile-meta">Joined {formatTimeAgo(agent.joinedAt)}</span>
-        </div>
-        {dm && (
-          <button className="btn accent" onClick={() => nav.openChat(dm.id)}>
-            Message
-          </button>
         )}
-      </header>
+      </div>
 
       <Tabs tabs={tabs} />
-    </div>
+    </PageShell>
   );
 }

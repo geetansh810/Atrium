@@ -2,7 +2,6 @@ import { useState } from "react";
 import { formatTimeAgo, PRIORITY_LABEL } from "../../shared/format";
 import { TASK_EVENT_LABEL, taskEventTone } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
-import { useAppNav } from "../../shared/nav";
 import { Drawer } from "../../ui/Drawer";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
@@ -13,7 +12,56 @@ import { EmptyState } from "../../ui/EmptyState";
 import { Markdown } from "../../ui/Markdown";
 import { ProgressBar } from "../../shared/ProgressBar";
 import { ConversationThread } from "../../ui/ConversationThread";
+import { AgentLink, TaskLink } from "../../ui/EntityLink";
+import { TaskAccountability } from "./TaskAccountability";
+import { useActorName } from "../../shared/actorName";
+import { confirmAction } from "../../shared/confirm";
+import { useNavigate } from "react-router";
+import { USE_MOCKS } from "../../shared/config";
 import "./TaskDrawer.css";
+
+// Failure recovery: a flagged task states what went wrong and the nearest fix.
+function FlagRecovery({
+  reason,
+  onBudget,
+  onSettings,
+  onLogs,
+}: {
+  reason: string;
+  onBudget: () => void;
+  onSettings: () => void;
+  onLogs?: () => void;
+}) {
+  const r = reason.toLowerCase();
+  let hint = "Read the agent's note, reply with guidance, and it will pick the task up again.";
+  let action: { label: string; run: () => void } | null = null;
+  if (r.includes("budget")) {
+    hint = "The agent hit its token cap, so it stopped. Raise the cap, then reply to resume.";
+    action = { label: "Open payroll", run: onBudget };
+  } else if (r.includes("config") || r.includes("key") || r.includes("provider")) {
+    hint = "The model provider is not configured or is unavailable. Check the API key, then reply to retry.";
+    action = { label: "Open settings", run: onSettings };
+  } else if (r.includes("max_attempts") || r.includes("attempt")) {
+    hint = "The agent used all its attempts. Reply with clearer instructions or reassign the task.";
+  }
+  return (
+    <div className="task-drawer-recovery">
+      <p>{hint}</p>
+      <div className="detail-actions">
+        {action && (
+          <button className="btn sm" onClick={action.run}>
+            {action.label}
+          </button>
+        )}
+        {onLogs && (
+          <button className="btn sm" onClick={onLogs}>
+            View LLM calls
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface TaskDrawerProps {
   taskId: string;
@@ -25,7 +73,8 @@ interface TaskDrawerProps {
 // renders this whenever the route carries an id, so a refresh restores it.
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const { state, dispatch } = useApp();
-  const nav = useAppNav();
+  const navigate = useNavigate();
+  const actorName = useActorName();
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
 
@@ -43,6 +92,8 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const channel = task.assignedAgentId
     ? state.channels.find((c) => c.kind === "dm" && c.agentId === task.assignedAgentId)
     : undefined;
+  const parentTask = task.parentTaskId ? state.tasks.find((t) => t.id === task.parentTaskId) : undefined;
+  const childTasks = state.tasks.filter((t) => t.parentTaskId === task.id);
   const doneCount = task.subtasks.filter((s) => s.state === "done").length;
   const canReview = task.status === "pending_review" || task.status === "flagged";
 
@@ -57,7 +108,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((e) => ({
       id: e.id,
-      label: TASK_EVENT_LABEL[e.eventType] ?? e.eventType,
+      label: `${TASK_EVENT_LABEL[e.eventType] ?? e.eventType} · ${actorName(e.actor)}`,
       timestamp: formatTimeAgo(e.createdAt),
       tone: taskEventTone(e.eventType),
     }));
@@ -76,13 +127,41 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
           </div>
           <ProgressBar value={task.progress} />
           <div className="task-drawer-pct">
-            {task.progress}%{task.etaMinutes != null ? ` · ETA: ${task.etaMinutes} minutes` : ""}
+            {task.progress}%{task.etaMinutes != null ? ` · ETA ${task.etaMinutes} min` : ""}
+          </div>
+
+          <div className="section-title">Accountability</div>
+          <TaskAccountability task={task} />
+
+          <div className="task-drawer-links">
+            {parentTask && (
+              <div className="task-drawer-link-row">
+                <span>Part of</span>
+                <TaskLink task={parentTask} />
+              </div>
+            )}
+            {childTasks.length > 0 && (
+              <div className="task-drawer-link-row">
+                <span>Spawned {childTasks.length === 1 ? "task" : "tasks"}</span>
+                <span className="task-drawer-link-stack">
+                  {childTasks.map((c) => (
+                    <TaskLink key={c.id} task={c} />
+                  ))}
+                </span>
+              </div>
+            )}
           </div>
 
           {task.flagReason && (
             <>
-              <div className="section-title">Flagged — needs a human</div>
+              <div className="section-title">Flagged. A person needs to step in.</div>
               <div className="artifact-box flag">{task.flagReason}</div>
+              <FlagRecovery
+                reason={task.flagReason}
+                onBudget={() => navigate("/organization?tab=payroll")}
+                onSettings={() => navigate("/settings")}
+                onLogs={USE_MOCKS ? undefined : () => navigate(`/logs?taskId=${task.id}`)}
+              />
             </>
           )}
 
@@ -123,8 +202,15 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 <div className="detail-actions">
                   {task.status === "pending_review" && (
                     <button
-                      className="btn accent"
-                      onClick={() => dispatch({ type: "approveTask", taskId: task.id })}
+                      className="btn primary"
+                      onClick={async () => {
+                        const ok = await confirmAction({
+                          title: `Approve "${task.title}"?`,
+                          body: "Approving marks the work as shipped. This cannot be undone from the board.",
+                          confirmLabel: "Approve",
+                        });
+                        if (ok) dispatch({ type: "approveTask", taskId: task.id });
+                      }}
                     >
                       Approve
                     </button>
@@ -140,13 +226,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             </div>
           )}
 
-          {agent && (
-            <div className="detail-actions">
-              <button className="btn" onClick={() => nav.openAgent(agent.id)}>
-                View {agent.name}
-              </button>
-            </div>
-          )}
         </div>
       ),
     },
@@ -177,8 +256,14 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
       key: "output",
       label: "Output",
       content: task.artifact ? (
-        <div className="artifact-box">
-          <Markdown>{task.artifact.content}</Markdown>
+        <div className="task-drawer-output">
+          <div className="task-drawer-produced">
+            <span>Produced by</span>
+            {agent ? <AgentLink agent={agent} size={18} /> : <span>an agent</span>}
+          </div>
+          <div className="artifact-box">
+            <Markdown>{task.artifact.content}</Markdown>
+          </div>
         </div>
       ) : (
         <EmptyState title="No output yet." description="The agent's artifact will appear here once produced." />
@@ -201,8 +286,38 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   ];
 
   return (
-    <Drawer title={task.title} subtitle={agent?.name ?? "Unassigned"} onClose={onClose} width={640}>
-      <Tabs tabs={tabs} />
+    <Drawer title={task.title} subtitle={agent?.name ?? "Unassigned"} onClose={onClose} width={860} noPad>
+      <div className="task-layout">
+        <div className="task-layout-main">
+          <Tabs tabs={tabs} />
+        </div>
+        <aside className="task-props" aria-label="Task properties">
+          <div>
+            <span>Status</span>
+            <StatusPill label={task.status.replaceAll("_", " ")} tone={taskStatusTone(task.status)} />
+          </div>
+          <div>
+            <span>Priority</span>
+            <b>{PRIORITY_LABEL[task.priority] ?? task.priority}</b>
+          </div>
+          <div>
+            <span>Assignee</span>
+            <b>{agent ? <AgentLink agent={agent} size={16} /> : "Unassigned"}</b>
+          </div>
+          <div>
+            <span>Skill</span>
+            <b>{task.requiredSkill}</b>
+          </div>
+          <div>
+            <span>Part of</span>
+            <b>{parentTask ? <TaskLink task={parentTask} /> : "This is the root"}</b>
+          </div>
+          <div>
+            <span>Created</span>
+            <b>{formatTimeAgo(task.createdAt)}</b>
+          </div>
+        </aside>
+      </div>
     </Drawer>
   );
 }

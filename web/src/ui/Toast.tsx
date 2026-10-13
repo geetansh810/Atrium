@@ -21,12 +21,12 @@ export function Toast() {
   if (notice === null && greetingDismissed) return null;
 
   return (
-    <div className="toast">
+    <aside className="toast" aria-label="Assistant notice" aria-live="polite">
       <span className="toast-avatar">
         <BotIcon width={18} height={18} />
       </span>
       <div className="toast-body">
-        <div className="toast-name">{PRODUCT_NAME} Bot</div>
+        <div className="toast-name">{PRODUCT_NAME}</div>
         <div className="toast-text">
           {notice ?? (
             <>
@@ -43,6 +43,6 @@ export function Toast() {
       >
         ×
       </button>
-    </div>
+    </aside>
   );
 }

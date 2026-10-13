@@ -19,16 +19,18 @@ interface GraphProps {
   layers: GraphNode[][];
   edges: GraphEdge[];
   onNodeClick?: (id: string) => void;
+  selectedId?: string | null;
+  ariaLabel?: string;
   compact?: boolean;
 }
 
-const NODE_W = 132;
+const NODE_W = 172;
 const NODE_H = 44;
 
 // Hand-rolled SVG layered tree — no charting library. Mini form here backs
 // Mission Control's workflow preview (MF-2); the full task DAG (MF-5) and org
 // chart (MF-4) are bigger instances of the same component.
-export function Graph({ layers, edges, onNodeClick, compact = false }: GraphProps) {
+export function Graph({ layers, edges, onNodeClick, selectedId, ariaLabel = "Workflow graph", compact = false }: GraphProps) {
   const colGap = compact ? 64 : 96;
   const rowGap = compact ? 16 : 24;
   const maxRows = Math.max(1, ...layers.map((l) => l.length));
@@ -53,8 +55,8 @@ export function Graph({ layers, edges, onNodeClick, compact = false }: GraphProp
       viewBox={`0 0 ${width} ${height}`}
       width="100%"
       height={height}
-      role="img"
-      aria-label="Workflow graph"
+      role="group"
+      aria-label={ariaLabel}
     >
       <g className="graph-edges">
         {edges.map((edge) => {
@@ -83,12 +85,28 @@ export function Graph({ layers, edges, onNodeClick, compact = false }: GraphProp
             <g
               key={node.id}
               transform={`translate(${pos.x}, ${pos.y})`}
-              className={`graph-node graph-node-${node.status}${onNodeClick ? " graph-node-clickable" : ""}`}
+              className={`graph-node graph-node-${node.status}${onNodeClick ? " graph-node-clickable" : ""}${
+                selectedId === node.id ? " graph-node-selected" : ""
+              }`}
               onClick={onNodeClick ? () => onNodeClick(node.id) : undefined}
+              role={onNodeClick ? "button" : undefined}
+              tabIndex={onNodeClick ? 0 : undefined}
+              aria-pressed={onNodeClick ? selectedId === node.id : undefined}
+              aria-label={`${node.label}${node.sublabel ? `, ${node.sublabel}` : ""}, ${node.status}`}
+              onKeyDown={
+                onNodeClick
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onNodeClick(node.id);
+                      }
+                    }
+                  : undefined
+              }
             >
-              <rect width={NODE_W} height={NODE_H} rx={8} />
+              <rect width={NODE_W} height={NODE_H} rx={5} />
               <text x={10} y={18} className="graph-node-label">
-                {node.label.length > 18 ? `${node.label.slice(0, 17)}…` : node.label}
+                {node.label.length > 24 ? `${node.label.slice(0, 23)}…` : node.label}
               </text>
               {node.sublabel && (
                 <text x={10} y={33} className="graph-node-sublabel">

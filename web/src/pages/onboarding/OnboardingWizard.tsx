@@ -31,6 +31,7 @@ export function OnboardingWizard({ companyId, onDone }: { companyId: string; onD
   const [taskSkill, setTaskSkill] = useState("");
   const [taskError, setTaskError] = useState<string | null>(null);
   const [creatingTask, setCreatingTask] = useState(false);
+  const [firstTaskId, setFirstTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     logFunnelEvent("started", { companyId });
@@ -92,13 +93,14 @@ export function OnboardingWizard({ companyId, onDone }: { companyId: string; onD
     setCreatingTask(true);
     setTaskError(null);
     try {
-      await createTaskM.mutateAsync({
+      const created = await createTaskM.mutateAsync({
         title: taskTitle.trim(),
         description: taskDescription.trim(),
         requiredSkill: taskSkill,
         priority: 3,
         etaMinutes: null,
       });
+      setFirstTaskId(created.task.id);
       logFunnelEvent("first_task_created", { pack: pack?.key, skill: taskSkill });
       setPhase("done");
     } catch (err) {
@@ -216,16 +218,23 @@ export function OnboardingWizard({ companyId, onDone }: { companyId: string; onD
           <>
             <h1 className="onboarding-h1">You're all set</h1>
             <p className="onboarding-sub">
-              Your team is hired and — if a task was assigned — already working. Watch it come together on the
-              Team view, or head to Mission Control for the full picture.
+              {firstTaskId
+                ? "Your team is hired and the first task is queued. Open it to watch an agent claim it, then review the output when it lands in your inbox."
+                : "Your team is hired. Create a task from Mission Control and an agent with the matching skill will pick it up."}
             </p>
             <div className="onboarding-actions">
               <button className="btn" onClick={() => finish("/")}>
                 Go to Mission Control
               </button>
-              <button className="btn primary" onClick={() => finish("/team")}>
-                Go to Team view
-              </button>
+              {firstTaskId ? (
+                <button className="btn primary" onClick={() => finish(`/tasks/${firstTaskId}`)}>
+                  Watch the first task
+                </button>
+              ) : (
+                <button className="btn primary" onClick={() => finish("/team")}>
+                  See the team
+                </button>
+              )}
             </div>
           </>
         )}

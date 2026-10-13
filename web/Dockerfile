@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # PRODUCTION image for the web frontend — static build served by nginx.
 #
 # OPTIONAL: the default prod frontend host is Netlify (../netlify.toml), which
@@ -14,7 +15,8 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# BuildKit cache mount: a lockfile change reuses already-downloaded packages.
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY . .
 ARG VITE_API_BASE_URL
 ARG VITE_USE_MOCKS=0

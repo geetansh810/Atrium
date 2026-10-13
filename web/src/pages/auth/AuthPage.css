@@ -9,13 +9,55 @@
 }
 
 .auth-card {
+  position: relative;
   width: 100%;
   max-width: 380px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 32px;
   box-sizing: border-box;
+}
+
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  animation: auth-backdrop-in var(--dur-2) ease-out both;
+}
+
+.auth-card-modal {
+  margin: auto;
+  box-shadow: var(--shadow-3);
+  animation: auth-card-in var(--dur-3) var(--ease-out) both;
+}
+
+.auth-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 21px;
+  line-height: 1;
+}
+
+.auth-close:hover {
+  color: var(--text);
+  border-color: var(--border-hi);
 }
 
 .auth-home-link {
@@ -35,7 +77,8 @@
   font-size: 24px;
   margin: 0 0 4px;
   color: var(--text);
-  text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 .auth-subtitle {
@@ -48,7 +91,7 @@
 .auth-mode-toggle {
   display: flex;
   background: var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--r-2);
   padding: 3px;
   margin-bottom: 22px;
 }
@@ -61,7 +104,7 @@
   color: var(--text-muted);
   font-size: 12.5px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: var(--r-2);
   cursor: pointer;
 }
 
@@ -79,9 +122,9 @@
 .auth-error {
   color: var(--status-flagged);
   font-size: 12.5px;
-  background: rgba(224, 87, 76, 0.1);
-  border: 1px solid rgba(224, 87, 76, 0.3);
-  border-radius: 6px;
+  background: var(--danger-soft);
+  border: 1px solid var(--status-flagged);
+  border-radius: var(--r-2);
   padding: 8px 10px;
   margin-bottom: 12px;
 }
@@ -90,4 +133,35 @@
   width: 100%;
   justify-content: center;
   margin-top: 6px;
+}
+
+@keyframes auth-backdrop-in {
+  from { opacity: 0; }
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-modal-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .auth-card-modal {
+    max-width: none;
+    padding: 26px 20px 22px;
+    border-radius: var(--r-3) var(--r-3) 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-modal-backdrop,
+  .auth-card-modal {
+    animation: none;
+  }
 }

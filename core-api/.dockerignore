@@ -1,0 +1,10 @@
+# Keep the build context to what the Dockerfile COPYs — target/ alone can be
+# hundreds of MB after a local `mvnw test` and would be re-sent on every build.
+target/
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+.env
+.env.*

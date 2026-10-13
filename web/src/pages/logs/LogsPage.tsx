@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { PageShell } from "../../ui/PageShell";
 import { EmptyState } from "../../ui/EmptyState";
 import { DataTable, type DataTableColumn } from "../../ui/DataTable";
@@ -32,11 +33,14 @@ export function LogsPage() {
 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [limit, setLimit] = useState(50);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(params.get("log"));
+  const taskIdFilter = params.get("taskId") ?? undefined;
+  const taskTitle = state.tasks.find((t) => t.id === taskIdFilter)?.title;
 
   const query = useMemo(
-    () => ({ status: status === "all" ? undefined : status, limit }),
-    [status, limit],
+    () => ({ status: status === "all" ? undefined : status, limit, taskId: taskIdFilter }),
+    [status, limit, taskIdFilter],
   );
   const logsQuery = useLlmLogs(companyId, query);
 
@@ -126,6 +130,23 @@ export function LogsPage() {
         </div>
       }
     >
+      {taskIdFilter && (
+        <div className="logs-task-filter">
+          <span>
+            Showing calls for task <strong>{taskTitle ?? taskIdFilter}</strong>
+          </span>
+          <button
+            className="logs-chip"
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete("taskId");
+              setParams(next, { replace: true });
+            }}
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
       {logsQuery.isError ? (
         <EmptyState title="Couldn't load logs" description={describeApiError(logsQuery.error)} />
       ) : (

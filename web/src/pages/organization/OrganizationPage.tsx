@@ -1,4 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { confirmAction } from "../../shared/confirm";
 import { useState } from "react";
 import { Avatar } from "../../shared/Avatar";
 import { PersonAvatar } from "../../shared/PersonAvatar";
@@ -10,10 +11,13 @@ import { formatCost, formatTokens } from "../../shared/format";
 import { costPerTask } from "../../shared/mockData";
 import { currentPeriod, useCostPerTask } from "../../shared/queries";
 import { orgTree } from "../../shared/selectors";
+import { AGENT_LEGEND, agentNodeStatus } from "../../shared/graphVocabulary";
+import { GraphLegend } from "../../ui/GraphLegend";
 import type { OrgNode } from "../../shared/selectors";
 import { useApp } from "../../shared/store";
 import { useAppNav } from "../../shared/nav";
 import type { Agent, Task } from "../../shared/types";
+import { PageShell } from "../../ui/PageShell";
 import { Tabs } from "../../ui/Tabs";
 import type { TabItem } from "../../ui/Tabs";
 import { EmptyState } from "../../ui/EmptyState";
@@ -86,6 +90,10 @@ interface OrgCardProps {
 // show reporting lines at a glance; workload/status detail lives one click
 // away on the agent's own profile.
 function OrgCard({ agent, onOpen }: OrgCardProps) {
+  const { state } = useApp();
+  const live = state.tasks.some(
+    (t) => t.assignedAgentId === agent.id && (t.status === "claimed" || t.status === "in_progress"),
+  );
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -93,11 +101,18 @@ function OrgCard({ agent, onOpen }: OrgCardProps) {
     }
   };
   return (
-    <div className="org-card" role="button" tabIndex={0} onClick={onOpen} onKeyDown={onKeyDown}>
-      <PersonAvatar name={agent.name} seed={agent.id} status={agent.status} size={32} />
+    <div
+      className={`org-card org-card-${agentNodeStatus(agent)}`}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={onKeyDown}
+    >
+      <PersonAvatar name={agent.name} seed={agent.id} status={live ? "working" : agent.status} size={32} />
       <div className="org-card-info">
         <div className="org-card-name">{agent.name}</div>
         <div className="org-card-role">{agent.roleTitle}</div>
+        <div className="org-card-role">{agent.modelName}</div>
       </div>
     </div>
   );
@@ -171,10 +186,21 @@ export function OrganizationPage() {
   const agentById = new Map(state.agents.map((a) => [a.id, a]));
   const taskById = new Map(state.tasks.map((t) => [t.id, t]));
 
-  const saveCap = (budgetId: string) => {
+  const saveCap = async (budgetId: string) => {
     const parsed = Number(capDraft.replace(/[^0-9]/g, ""));
-    if (parsed > 0) dispatch({ type: "setBudgetCap", budgetId, capTokens: parsed });
     setEditing(null);
+    const current = state.budgets.find((b) => b.id === budgetId);
+    if (!current || parsed <= 0 || parsed === current.capTokens) return;
+    const owner = current.agentId ? (agentById.get(current.agentId)?.name ?? "this agent") : "the whole company";
+    const ok = await confirmAction({
+      title: `Change the cap for ${owner}?`,
+      body: `${formatTokens(current.capTokens)} → ${formatTokens(parsed)} tokens per month. ${
+        parsed < current.spentTokens ? "It is below current spend, so work will pause immediately." : "Takes effect right away."
+      }`,
+      confirmLabel: "Change cap",
+      tone: parsed < current.spentTokens ? "danger" : "primary",
+    });
+    if (ok) dispatch({ type: "setBudgetCap", budgetId, capTokens: parsed });
   };
 
   const renderCap = (budgetId: string, capTokens: number) =>
@@ -209,6 +235,9 @@ export function OrganizationPage() {
           <EmptyState title="No agents on the roster yet." />
         ) : (
           <div className="org-tree-scroll">
+            <div className="org-legend">
+              <GraphLegend entries={AGENT_LEGEND} />
+            </div>
             <ul className="org-tree">
               {tree.map((root) => (
                 <OrgTreeNode key={root.agent.id} node={root} collapsed={collapsed} onToggle={toggle} onOpen={nav.openAgent} />
@@ -282,12 +311,8 @@ export function OrganizationPage() {
   ];
 
   return (
-    <div className="organization-page">
-      <header className="organization-page-head">
-        <h1>Organization</h1>
-        <p>Reporting lines from each agent's manager, plus token-budget payroll.</p>
-      </header>
+    <PageShell title="Organization" subtitle="Reporting lines from each agent's manager, plus token-budget payroll.">
       <Tabs tabs={tabs} />
-    </div>
+    </PageShell>
   );
 }

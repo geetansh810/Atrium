@@ -8,15 +8,17 @@ interface ProgressBarProps {
   // (Mission Control hero, a working agent's card) — static measures like
   // budget burn stay still.
   live?: boolean;
+  label?: string;
 }
 
-export function ProgressBar({ value, color, height = 6, live = false }: ProgressBarProps) {
+export function ProgressBar({ value, color, height = 6, live = false, label = "Progress" }: ProgressBarProps) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <span
       className="progress-track"
       style={{ height, borderRadius: height / 2 }}
       role="progressbar"
+      aria-label={label}
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}

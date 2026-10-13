@@ -1,67 +1,69 @@
-// Design tokens — source of visual truth for the dashboard.
-// Picked from atrium-docs/assets/reference-1-office-main-view.png per 01-product-spec.md §4.
+// Design tokens — dark-theme mirror of index.css (the CSS file is the source of truth
+// and also carries the light theme). BaseCrew "crew pennant" direction.
 // PRODUCT_NAME is the single rename point per 01 §6.
-export const PRODUCT_NAME = "Atrium";
-export const PRODUCT_TAGLINE = "Build. Automate. Scale.";
+export const PRODUCT_NAME = "BaseCrew";
+export const PRODUCT_TAGLINE = "Hire the crew. Review the work.";
 
 export const theme = {
   color: {
-    bg: "#0B1120",
-    panel: "#161E31",
-    panelAlt: "#131A2C",
-    sidebar: "#0E1526",
-    border: "#283352",
-    borderSubtle: "#1E2740",
-    borderHi: "#35426B",
+    bg: "#070707",
+    panel: "#111111",
+    panelAlt: "#171717",
+    sidebar: "#050505",
+    border: "#34312B",
+    borderSubtle: "#24221E",
+    borderHi: "#5B5549",
 
-    text: "#EDF1F9",
-    textMuted: "#939DB3",
-    textFaint: "#5D6982",
+    text: "#F7F3E8",
+    textMuted: "#B9B3A7",
+    textFaint: "#847D70",
 
-    accent: "#17B3A3",
-    accentHover: "#1ECBB9",
-    invite: "#3D6FE0",
-    inviteHover: "#4C7DEE",
+    accent: "#FFCC00",
+    accentHover: "#FFE066",
+    invite: "#FFCC00",
+    inviteHover: "#FFE066",
 
     status: {
-      online: "#3ECF8E",
-      working: "#3ECF8E",
-      in_meeting: "#F5A623",
-      away: "#F5A623",
-      in_focus: "#4FA8E0",
-      flagged: "#E0574C",
-      offline: "#5C687F",
-      blocked: "#E0574C",
+      online: "#53D887",
+      working: "#FFCC00",
+      in_meeting: "#D8B84A",
+      away: "#918B7F",
+      in_focus: "#5CA9FF",
+      flagged: "#FF6557",
+      offline: "#6D6A64",
+      blocked: "#FF6557",
     },
 
     node: {
-      pending: "#5C687F",
-      running: "#4FA8E0",
-      completed: "#3ECF8E",
-      failed: "#E0574C",
+      pending: "#6D6A64",
+      running: "#FFCC00",
+      completed: "#53D887",
+      failed: "#FF6557",
     },
 
-    surface1: "#10182A",
-    surface2: "#161E31",
-    surface3: "#1E2740",
+    surface1: "#0C0C0C",
+    surface2: "#111111",
+    surface3: "#1D1B17",
 
-    botBubble: "#161E31",
+    botBubble: "#111111",
 
     // Reserved for live/primary signals only (brand mark, active-nav rail,
     // tab underline, default progress fill) — mirrors --grad-brand.
-    gradBrand: "linear-gradient(120deg, #1ECBB9 0%, #4C7DEE 100%)",
+    gradBrand: "linear-gradient(120deg, #FFE066 0%, #FFCC00 100%)",
 
-    avatar: ["#3D6FE0", "#17B3A3", "#9B7CE0", "#E0574C", "#F5A623", "#4FA8E0"],
+    avatar: ["#FFCC00", "#53D887", "#5CA9FF", "#B093E8", "#FF6557", "#D0AF46"],
+    avatarSkin: ["#F1C7A5", "#C98F65", "#8A5A3B"],
+    avatarFeature: "#251A18",
   },
   font: {
-    display: "'Space Grotesk', 'IBM Plex Sans', sans-serif",
-    body: "'IBM Plex Sans', system-ui, sans-serif",
-    mono: "'IBM Plex Mono', monospace",
+    display: "'Space Grotesk', 'Barlow Semi Condensed', system-ui, sans-serif",
+    body: "'Barlow Semi Condensed', 'IBM Plex Sans', system-ui, sans-serif",
+    mono: "'JetBrains Mono', 'IBM Plex Mono', monospace",
   },
   radius: {
-    sm: "4px",
-    md: "8px",
-    lg: "12px",
+    sm: "2px",
+    md: "4px",
+    lg: "6px",
   },
   // Motion vocabulary — mirrors --dur-*/--ease-* in index.css.
   motion: {

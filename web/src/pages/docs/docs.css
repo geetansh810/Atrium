@@ -3,8 +3,74 @@
    alongside this file), adding the docs shell chrome and prose styles.
    ============================================================================ */
 
+/* Tokens bridge onto the product theme (dark and light) so docs don't carry
+   a second palette. Code samples stay on a dark field either way. */
 .docs {
   min-height: 100vh;
+  --e-paper: var(--bg);
+  --e-paper-2: var(--surface-2);
+  --e-surface: var(--panel);
+  --e-ink: var(--text);
+  --e-text: var(--text);
+  --e-text-2: var(--text-muted);
+  --e-text-3: var(--text-faint);
+  --e-line: var(--border);
+  --e-line-2: var(--border-hi);
+  --e-brand: var(--accent);
+  --e-brand-2: var(--accent);
+  --e-brand-bright: var(--accent-hover);
+  --e-brand-tint: color-mix(in srgb, var(--accent) 16%, transparent);
+  --e-brand-glow: transparent;
+  --e-navy: #080808;
+  --e-navy-2: #171717;
+  --e-navy-line: var(--border);
+  --e-amber: var(--status-flagged);
+  --e-amber-tint: color-mix(in srgb, var(--status-flagged) 14%, transparent);
+  --e-amber-text: var(--text);
+  --e-ok: var(--status-online);
+  --e-ok-tint: color-mix(in srgb, var(--status-online) 14%, transparent);
+  --e-ok-text: var(--text);
+  --e-note-text: var(--text);
+  --e-nav-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --e-shadow-sm: none;
+  --e-shadow-md: none;
+  --e-shadow-lg: none;
+  --e-ease: var(--ease-out);
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-body);
+}
+
+.dx-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+.dx-signup {
+  background: var(--invite);
+  color: var(--on-invite);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--r-1);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 7px 100%);
+}
+.dx-signup:hover {
+  background: var(--invite-hover);
+}
+.dx-theme {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-2);
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 /* header ------------------------------------------------------------------- */

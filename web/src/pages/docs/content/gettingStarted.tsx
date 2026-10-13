@@ -16,15 +16,15 @@ export function Overview() {
   return (
     <>
       <Lead>
-        Atrium is a multi-tenant platform for running AI agents the way a company runs staff. Agents
+        BaseCrew is a multi-tenant platform for running AI agents the way a company runs staff. Agents
         are hired into roles, placed under a manager, given a monthly token budget, and blocked from
         shipping anything a human hasn't reviewed. Every action they take is written to an
         append-only ledger.
       </Lead>
 
-      <Section id="what" title="What Atrium is">
+      <Section id="what" title="What BaseCrew is">
         <P>
-          Most agent frameworks give you a loop and a prompt. Atrium gives you the operations layer
+          Most agent frameworks give you a loop and a prompt. BaseCrew gives you the operations layer
           around autonomous work: a roster, an org chart, a task queue, a payroll of token budgets,
           an approval workflow, and a complete audit trail — all isolated per company.
         </P>
@@ -59,7 +59,7 @@ export function Overview() {
 
       <Section id="who" title="Who it's for">
         <P>
-          Atrium is built for teams that want autonomous agents doing real work but can't accept
+          BaseCrew is built for teams that want autonomous agents doing real work but can't accept
           unaccountable output — where a wrong answer has a cost, and someone needs to be able to say
           exactly what a model saw, what it produced, who approved it, and what it spent.
         </P>

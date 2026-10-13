@@ -40,10 +40,10 @@ export const DOCS: DocCategory[] = [
       {
         slug: "overview",
         title: "Overview",
-        description: "What Atrium is and the three guarantees that hold everywhere.",
+        description: "What BaseCrew is and the three guarantees that hold everywhere.",
         Component: Overview,
         headings: [
-          { id: "what", label: "What Atrium is" },
+          { id: "what", label: "What BaseCrew is" },
           { id: "principles", label: "The three guarantees" },
           { id: "who", label: "Who it's for" },
           { id: "next", label: "Where to go next" },

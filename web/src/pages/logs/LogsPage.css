@@ -39,7 +39,7 @@
 
 .logs-provider {
   padding: 2px 7px;
-  border-radius: 5px;
+  border-radius: var(--r-1);
   background: var(--surface-3);
   color: var(--text-muted);
   font-size: 11px;
@@ -55,7 +55,7 @@
 
 .logs-more-btn {
   padding: 8px 18px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -96,7 +96,7 @@
 .logs-block {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: var(--r-2);
   background: var(--surface-2);
   border: 1px solid var(--border-subtle);
   color: var(--text);
@@ -122,4 +122,17 @@
   letter-spacing: 0.04em;
   color: var(--text-muted);
   margin-bottom: 4px;
+}
+
+.logs-task-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-2);
+  background: var(--panel);
+  font-size: 13px;
+  color: var(--text-muted);
 }

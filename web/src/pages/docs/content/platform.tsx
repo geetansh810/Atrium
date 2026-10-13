@@ -20,7 +20,7 @@ export function Architecture() {
   return (
     <>
       <Lead>
-        Atrium is a modular monolith with an event backbone: nine packages with one-directional
+        BaseCrew is a modular monolith with an event backbone: nine packages with one-directional
         dependencies and no circular imports, all speaking through a transactional outbox. Event-driven
         is a shape here, not a broker purchase.
       </Lead>
@@ -194,7 +194,7 @@ export function RolesSkills() {
   return (
     <>
       <Lead>
-        A capability in Atrium is data you insert, never code you branch on. Roles are the versioned
+        A capability in BaseCrew is data you insert, never code you branch on. Roles are the versioned
         identity an agent is hired into; skills are reusable procedures attached to roles and agents.
       </Lead>
 
@@ -335,7 +335,7 @@ export function Governance() {
   return (
     <>
       <Lead>
-        Governance in Atrium isn't a feature you enable — it's the architecture. The review gate, the
+        Governance in BaseCrew isn't a feature you enable — it's the architecture. The review gate, the
         audit trail, and the compliance controls are structural, so there's no configuration that
         turns accountability off.
       </Lead>
